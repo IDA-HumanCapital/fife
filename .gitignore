@@ -1,0 +1,7 @@
+*.csv
+*/*
+!fife/*.py
+!tests/*.py
+!docs/*
+!docs/source/*
+docs/_build/
