@@ -218,7 +218,7 @@ def test_gbtm_set_n_intervals(setup_config, setup_dataframe):
     modeler = lgb_modelers.GradientBoostedTreesModeler(config=setup_config,
                                                        data=setup_dataframe)
     n_intervals = modeler.set_n_intervals()
-    if not isinstance(n_intervals, (np.int)):
+    if not isinstance(n_intervals, int):
         errors_list.append('Returned "n_intervals" value is not of '
                            '"integer" datatype.')
     if not min_duration <= n_intervals <= max_duration:
