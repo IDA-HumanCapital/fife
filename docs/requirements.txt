@@ -1,0 +1,17 @@
+
+# docs
+sphinx==2.4.4
+sphinx_rtd_theme
+m2r
+
+# install
+ipython
+keras
+lifelines
+lightgbm
+matplotlib
+numpy
+pandas
+shap
+scikit-learn
+tensorflow
