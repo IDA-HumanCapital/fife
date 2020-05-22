@@ -55,7 +55,7 @@ FIFE modules offer further customization for Python programmers. See [Advanced U
 
 ##### Configuration
 
-* Download *example_config.json* from the (FIFE GitHub repo)[https://github.com/IDA-HumanCapital/fife] to the directory where you'd like to store your results
+* Download *example_config.json* from the [FIFE GitHub repo](https://github.com/IDA-HumanCapital/fife) to the directory where you'd like to store your results
 * Change `DATA_FILE_PATH` in *example_config.json* to the path to your data file (including the file name and extension)
 * Ensure that
 	* `INDIVIDUAL_IDENTIFIER` and `TIME_IDENTIFIER` in *example_config.json* match the corresponding identifiers in your data OR
@@ -63,7 +63,7 @@ FIFE modules offer further customization for Python programmers. See [Advanced U
 
 * Don't have a data file ready but want to see what FIFE can do?
 	* Change the directory of your Anaconda prompt to the location of *example_config.json*
-	* Execute `python -c "from fife.utils import create_example_data; import pandas as pd; create_example_data().to_csv('Input_Data.csv', index=False)"`
+	* Execute `python -c "import fife.utils; fife.utils.create_example_data().to_csv('Input_Data.csv', index=False)"`
 
 ##### Execution
 
@@ -86,9 +86,9 @@ Input data may be provided in any of the following file formats with the corresp
 | Feather                      | .feather   |
 | Comma-separated values (CSV) | .csv       |
 | CSV with gzip compression    | .csv.gz    |
-| Pickle 	                   | .p or .pkl |
-| HDF5 		                   | .h5 	    |
-| JSON 		                   | .json      |
+| Pickle 	               | .p or .pkl |
+| HDF5 		               | .h5 	    |
+| JSON 		               | .json      |
 
 Input data may not contain any of the following feature names:
 -	`_duration`
