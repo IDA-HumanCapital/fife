@@ -55,7 +55,7 @@ FIFE modules offer further customization for Python programmers. See [Advanced U
 
 ##### Configuration
 
-* Copy *example_config.json* to the directory where you'd like to store your results
+* Download *example_config.json* from the (FIFE GitHub repo)[https://github.com/IDA-HumanCapital/fife] to the directory where you'd like to store your results
 * Change `DATA_FILE_PATH` in *example_config.json* to the path to your data file (including the file name and extension)
 * Ensure that
 	* `INDIVIDUAL_IDENTIFIER` and `TIME_IDENTIFIER` in *example_config.json* match the corresponding identifiers in your data OR
