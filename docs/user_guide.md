@@ -61,6 +61,10 @@ FIFE modules offer further customization for Python programmers. See [Advanced U
 	* `INDIVIDUAL_IDENTIFIER` and `TIME_IDENTIFIER` in *example_config.json* match the corresponding identifiers in your data OR
 	* The individual and time identifiers are the leftmost and second-leftmost columns in your data, respectively
 
+* Don't have a data file ready but want to see what FIFE can do?
+	* Change the directory of your Anaconda prompt to the location of *example_config.json*
+	* Execute `python -c "from fife.utils import create_example_data; import pandas as pd; create_example_data().to_csv('Input_Data.csv', index=False)"`
+
 ##### Execution
 
 * Change the directory of your Anaconda prompt to the location of *example_config.json*
