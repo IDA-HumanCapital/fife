@@ -28,7 +28,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
     def hyperoptimize(self,
                       train_subset: Union[None, pd.core.series.Series] = None,
                       validation_subset: Union[None, pd.core.series.Series] = None,
-                      n_trials: int = 64) -> pd.core.frame.DataFrame:
+                      n_trials: int = 64) -> dict:
         """Search for hyperparameters with greater out-of-sample performance."""
 
         def evaluate_params(trial, train_data, validation_data):
@@ -97,22 +97,22 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                                                          validation_data),
                            n_trials=n_trials)
             params[time_horizon] = study.best_params
-        return pd.DataFrame(params).T
+        return params
 
     def train(self,
               train_subset: Union[None, pd.core.series.Series] = None,
-              validation_subset: Union[None, pd.core.series.Series] = None,
+              validation_early_stopping: bool = True,
               params: Union[None, dict] = None) -> List[lgb.basic.Booster]:
         """Train a LightGBM model for each lead length."""
         models = []
+        if params is None:
+            params = {time_horizon: {'objective': 'binary',
+                                     'num_iterations': self.config['MAX_EPOCHS']}
+                      for time_horizon in range(self.n_intervals)}
         if train_subset is None:
             train_subset = (~self.data[self.validation_col]
                             & ~self.data[self.test_col]
                             & ~self.data[self.predict_col])
-        if validation_subset is None:
-            validation_subset = (self.data[self.validation_col]
-                                 & ~self.data[self.test_col]
-                                 & ~self.data[self.predict_col])
         for time_horizon in range(self.n_intervals):
             train_data = self.data[(self.data[self.duration_col]
                                     + self.data[self.event_col]
@@ -121,26 +121,24 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             train_data = lgb.Dataset(
                 train_data[self.categorical_features + self.numeric_features],
                 label=train_data[self.duration_col] > time_horizon)
-            if params:
-                model = lgb.train(params[time_horizon],
-                                  train_data,
-                                  categorical_feature=self.categorical_features,
-                                  verbose_eval=True)
-            else:
+            if validation_early_stopping:
+                validation_subset = (self.data[self.validation_col]
+                                     & ~self.data[self.test_col]
+                                     & ~self.data[self.predict_col])
                 validation_data = self.data[(self.data[self.duration_col]
                                              + self.data[self.event_col]
                                              > time_horizon)
                                             & validation_subset]
-                validation_data = train_data.create_valid(
-                    validation_data[self.categorical_features
-                                    + self.numeric_features],
-                    label=validation_data[self.duration_col] > time_horizon)
-                model = lgb.train({'objective': 'binary'},
+                model = lgb.train(params[time_horizon],
                                   train_data,
-                                  num_boost_round=self.config['MAX_EPOCHS'],
                                   early_stopping_rounds=self.config['PATIENCE'],
                                   valid_sets=[validation_data],
                                   valid_names=['validation_set'],
+                                  categorical_feature=self.categorical_features,
+                                  verbose_eval=True)
+            else:
+                model = lgb.train(params[time_horizon],
+                                  train_data,
                                   categorical_feature=self.categorical_features,
                                   verbose_eval=True)
             models.append(model)
