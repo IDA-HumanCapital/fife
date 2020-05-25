@@ -33,7 +33,7 @@ setup(
     ],
     packages=['fife'],
     install_requires=['ipython', 'keras', 'lifelines', 'lightgbm',
-                      'matplotlib', 'numpy', 'pandas', 'shap',
+                      'matplotlib', 'numpy', 'optuna', 'pandas', 'shap',
                       'scikit-learn', 'tensorflow'],
     entry_points={
         'console_scripts': [
