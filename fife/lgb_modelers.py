@@ -26,9 +26,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
     """
 
     def hyperoptimize(self,
-                      train_subset: Union[None, pd.core.series.Series] = None,
-                      validation_subset: Union[None, pd.core.series.Series] = None,
-                      n_trials: int = 64) -> dict:
+                      rolling_validation: bool = True,
+                      n_trials: int = 64,
+                      train_subset: Union[None, pd.core.series.Series] = None) -> dict:
         """Search for hyperparameters with greater out-of-sample performance."""
 
         def evaluate_params(trial, train_data, validation_data):
@@ -71,22 +71,26 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             train_subset = (~self.data[self.validation_col]
                             & ~self.data[self.test_col]
                             & ~self.data[self.predict_col])
-        if validation_subset is None:
-            validation_subset = (self.data[self.validation_col]
-                                 & ~self.data[self.test_col]
-                                 & ~self.data[self.predict_col])
         for time_horizon in range(self.n_intervals):
             train_data = self.data[(self.data[self.duration_col]
                                     + self.data[self.event_col]
                                     > time_horizon)
                                    & train_subset]
+            if rolling_validation and train_data[self.config['TIME_IDENTIFIER']].nunique() > 1:
+                last_period = train_data[self.config['TIME_IDENTIFIER']].max()
+                validation_data = train_data[train_data[self.config['TIME_IDENTIFIER']] == last_period]
+                train_data = train_data[train_data[self.config['TIME_IDENTIFIER']] < last_period]
+            else:
+                validation_subset = (self.data[self.validation_col]
+                                     & ~self.data[self.test_col]
+                                     & ~self.data[self.predict_col])
+                validation_data = self.data[(self.data[self.duration_col]
+                                             + self.data[self.event_col]
+                                             > time_horizon)
+                                            & validation_subset]
             train_data = lgb.Dataset(
                 train_data[self.categorical_features + self.numeric_features],
                 label=train_data[self.duration_col] > time_horizon)
-            validation_data = self.data[(self.data[self.duration_col]
-                                         + self.data[self.event_col]
-                                         > time_horizon)
-                                        & validation_subset]
             validation_data = train_data.create_valid(
                 validation_data[self.categorical_features
                                 + self.numeric_features],
@@ -100,9 +104,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         return params
 
     def train(self,
-              train_subset: Union[None, pd.core.series.Series] = None,
+              params: Union[None, dict] = None,
               validation_early_stopping: bool = True,
-              params: Union[None, dict] = None) -> List[lgb.basic.Booster]:
+              train_subset: Union[None, pd.core.series.Series] = None) -> List[lgb.basic.Booster]:
         """Train a LightGBM model for each lead length."""
         models = []
         if params is None:
