@@ -332,19 +332,19 @@ dict(zip(gbt_modeler.model[0].feature_name(),
          gbt_modeler.model[0].feature_importance()))
 ```
 
-In general we are most interested in forecasts for individuals that are still in the population in the final period of the data. The `forecast` method gives us exactly those forecasts. The survival probabilities in the forecasts are cumulative - they are not conditional on survival through any prior future period. See the description of [*Survival_Curves.csv*](#survival_curves.csv) for more details.
+In general we are most interested in forecasts for individuals that are still in the population in the final period of the data. The `forecast` method gives us exactly those forecasts. The survival probabilities in the forecasts are cumulative - they are not conditional on survival through any prior future period. See the description of [Survival_Curves.csv](#survival-curves-csv) for more details.
 
 ```python
 gbt_modeler.forecast()
 ```
 
-The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [*Metrics.csv*](#metrics.csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only on the validation set. If we specified one or more test periods in our configuration we could have used `gbt_modeler.data['_test']` instead.
+The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv*](-metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only on the validation set. If we specified one or more test periods in our configuration we could have used `gbt_modeler.data['_test']` instead.
 
 ```python
 gbt_modeler.evaluate(gbt_modeler.data['_validation'])
 ```
 
-In each time period, what share of the observations two periods past would we expect to still be around? See the description of [_Retention_Rates.csv_](#retention_rates.csv) for more details.
+In each time period, what share of the observations two periods past would we expect to still be around? See the description of [Retention_Rates.csv](#retention-rates-csv) for more details.
 ```python
 gbt_modeler.tabulate_retention_rates(2)
 ```
