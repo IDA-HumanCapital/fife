@@ -242,7 +242,6 @@ class PanelDataProcessor(DataProcessor):
                               + numeric_features
                               + [self.config['INDIVIDUAL_IDENTIFIER']]]
         self.data['_predict_obs'] = self.flag_final_periods(1)
-        self.data['_validation'] = self.flag_validation_individuals()
         if self.config.get('TEST_PERIODS', 0) > 0:
             self.data['_test'] = self.flag_final_periods(
                 self.config['TEST_PERIODS'])
@@ -254,6 +253,8 @@ class PanelDataProcessor(DataProcessor):
             self.data['_test'] = False
             self.data['_event_observed'] = self.flag_event_observed()
             self.data['_duration'] = self.compute_survival_duration()
+        self.data['_validation'] = (self.flag_validation_individuals()
+                                    & ~self.data['_test'])
         sample_size = self.config.get('SHAP_SAMPLE_SIZE', 0)
         self.raw_subset = (self.data[self.data['_predict_obs']]
                            .sample(n=sample_size).sort_index())
