@@ -180,7 +180,7 @@ class SurvivalModeler(ABC):
     def evaluate(self, subset: Union[None, pd.core.series.Series] = None,
                  threshold_positive: Union[None, float] = 0.5,
                  share_positive: Union[None, float] = None,
-                 predict_beyond_subset: bool = True
+                 predict_beyond_subset: bool = False
                  ) -> pd.core.frame.DataFrame:
         """Tabulate model performance metrics.
 
