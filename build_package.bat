@@ -6,11 +6,13 @@ rem | You may need to specify your local path to activate.bat
 @echo off
 setlocal enabledelayedexpansion
 call C:/Users/%username%/Miniconda3/Scripts/activate.bat
+call C:/Users/%username%/AppData/Local/Continuum/anaconda3/Scripts/activate.bat
+call conda create -y -n fife_env python=3.7
+call C:/Users/%username%/Miniconda3/Scripts/activate.bat fife_env
+call C:/Users/%username%/AppData/Local/Continuum/anaconda3/Scripts/activate.bat fife_env
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade setuptools wheel
 rmdir build /s /q
 python setup.py sdist bdist_wheel
-call conda create -y -n fife_env python=3.7
-call C:/Users/%username%/Miniconda3/Scripts/activate.bat fife_env
 call conda install -y -c conda-forge shap
 for /F %%i in ('python setup.py --version') do set version=%%i
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl pytest
