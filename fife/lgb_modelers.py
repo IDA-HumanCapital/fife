@@ -31,7 +31,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                       train_subset: Union[None, pd.core.series.Series] = None) -> dict:
         """Search for hyperparameters with greater out-of-sample performance."""
 
-        def evaluate_params(trial, train_data, validation_data):
+        def evaluate_params(trial: optuna.trial.Trial,
+                            train_data: lgb.Dataset,
+                            validation_data: lgb.Dataset) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
             params['num_iterations'] = trial.suggest_int('num_iterations', 8, 128)
@@ -66,6 +68,8 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
+        if n_trials <= 0:
+            return None
         params = {}
         if train_subset is None:
             train_subset = (~self.data[self.validation_col]
@@ -133,6 +137,10 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                                              + self.data[self.event_col]
                                              > time_horizon)
                                             & validation_subset]
+                validation_data = train_data.create_valid(
+                    validation_data[self.categorical_features
+                                    + self.numeric_features],
+                    label=validation_data[self.duration_col] > time_horizon)
                 model = lgb.train(params[time_horizon],
                                   train_data,
                                   early_stopping_rounds=self.config['PATIENCE'],
