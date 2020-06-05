@@ -52,14 +52,6 @@ def main():
 
     # Process data
     data = utils.import_data_file(config['DATA_FILE_PATH'])
-    if config['INDIVIDUAL_IDENTIFIER'] == '':
-        config['INDIVIDUAL_IDENTIFIER'] = data.columns[0]
-        print('Individual identifier column name not given; assumed to be '
-              f'leftmost column ({config["INDIVIDUAL_IDENTIFIER"]})')
-    if config['TIME_IDENTIFIER'] == '':
-        config['TIME_IDENTIFIER'] = data.columns[1]
-        print('Time identifier column name not given; assumed to be '
-              f'second-leftmost column ({config["TIME_IDENTIFIER"]})')
     data_processor = processors.PanelDataProcessor(config, data)
     data_processor.build_processed_data()
     print(f'Data processing time: {time() - checkpoint_time} seconds')

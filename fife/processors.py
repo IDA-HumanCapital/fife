@@ -160,6 +160,10 @@ class DataProcessor:
             config: A dictionary of configuration parameters.
             data: A DataFrame to be processed.
         """
+        if config.get('INDIVIDUAL_IDENTIFIER', '') == '':
+            config['INDIVIDUAL_IDENTIFIER'] = data.columns[0]
+            print('Individual identifier column name not given; assumed to be '
+                  f'leftmost column ({config["INDIVIDUAL_IDENTIFIER"]})')
         self.config = config
         self.data = data
 
@@ -221,6 +225,21 @@ class PanelDataProcessor(DataProcessor):
         numeric_ranges (pd.core.frame.DataFrame): Contains for each numeric
             feature the maximum and minimum value in the training set.
     """
+
+    def __init__(self,
+                 config: Union[None, dict] = None,
+                 data: Union[None, pd.core.frame.DataFrame] = None) -> None:
+        """Initialize the PanelDataProcessor.
+
+        Args:
+            config: A dictionary of configuration parameters.
+            data: A DataFrame to be processed.
+        """
+        if config.get('TIME_IDENTIFIER', '') == '':
+            config['TIME_IDENTIFIER'] = data.columns[1]
+            print('Time identifier column name not given; assumed to be '
+                  f'second-leftmost column ({config["TIME_IDENTIFIER"]})')
+        super().__init__(config, data)
 
     def build_processed_data(self) -> None:
         """Clean, augment, and store a panel dataset and related information.
