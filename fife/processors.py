@@ -165,7 +165,8 @@ class DataProcessor:
 
     def drop_degenerate_features(self) -> pd.core.frame.DataFrame:
         """Drop constant features or those with too many missing values."""
-        thresh = int((1 - self.config['MAX_NULL_SHARE']) * self.data.shape[0])
+        thresh = int((1 - self.config.get('MAX_NULL_SHARE', 0.999))
+                     * self.data.shape[0])
         data = self.data.dropna(thresh=thresh, axis=1)
         for col in data.columns:
             if all(data[col][1:].values == data[col][:-1].values):
@@ -199,7 +200,7 @@ class DataProcessor:
             elif (col.endswith(
                     tuple(self.config.get('NUMERIC_SUFFIXES', []))) or
                   (self.data[col].nunique() >
-                   self.config['MAX_UNIQUE_NUMERIC_CATS'])):
+                   self.config.get('MAX_UNIQUE_NUMERIC_CATS', 1024))):
                 numeric_cols.append(col)
             else:
                 categorical_cols.append(col)
@@ -275,7 +276,8 @@ class PanelDataProcessor(DataProcessor):
         self.data = deduplicate_column_values(
             self.data, ['_duration', '_event_observed',
                         '_predict_obs', '_test', '_validation',
-                        self.config['INDIVIDUAL_IDENTIFIER']])
+                        self.config['INDIVIDUAL_IDENTIFIER'],
+                        self.config['TIME_IDENTIFIER']])
 
     def check_panel_consistency(self) -> None:
         """Ensure observations have unique individual-period combinations."""
@@ -304,7 +306,7 @@ class PanelDataProcessor(DataProcessor):
     def flag_validation_individuals(self) -> pd.core.series.Series:
         """Flag observations from a random share of individuals."""
         unique_ids = self.data[self.config['INDIVIDUAL_IDENTIFIER']].unique()
-        size = int(self.config['VALIDATION_SHARE'] * unique_ids.shape[0])
+        size = int(self.config.get('VALIDATION_SHARE', 0) * unique_ids.shape[0])
         validation_ids = np.random.choice(unique_ids,
                                           size=size,
                                           replace=False)

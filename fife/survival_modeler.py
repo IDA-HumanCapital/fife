@@ -163,7 +163,7 @@ class SurvivalModeler(ABC):
              ~self.data[self.test_col] &
              ~self.data[self.predict_col])][self.duration_col].value_counts()
         n_intervals = (train_obs_by_lead_length[
-            train_obs_by_lead_length > self.config['MIN_SURVIVORS_IN_TRAIN']]
+            train_obs_by_lead_length > self.config.get('MIN_SURVIVORS_IN_TRAIN', 64)]
                        .index.max())
         return n_intervals
 
