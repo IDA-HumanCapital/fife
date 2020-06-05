@@ -256,7 +256,8 @@ class PanelDataProcessor(DataProcessor):
             self.data['_duration'] = self.compute_survival_duration()
         self.data['_validation'] = (self.flag_validation_individuals()
                                     & ~self.data['_test'])
-        sample_size = self.config.get('SHAP_SAMPLE_SIZE', 0)
+        sample_size = min(self.config.get('SHAP_SAMPLE_SIZE', 0),
+                          self.data['_predict_obs'].sum())
         self.raw_subset = (self.data[self.data['_predict_obs']]
                            .sample(n=sample_size).sort_index())
         held_out_obs = (self.data['_validation'] | self.data['_test'] |
