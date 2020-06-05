@@ -26,11 +26,25 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
     """
 
     def hyperoptimize(self,
-                      rolling_validation: bool = True,
                       n_trials: int = 64,
+                      rolling_validation: bool = True,
                       train_subset: Union[None, pd.core.series.Series] = None) -> dict:
-        """Search for hyperparameters with greater out-of-sample performance."""
+        """Search for hyperparameters with greater out-of-sample performance.
 
+        Args:
+            n_trials: The number of hyperparameter sets to evaluate for each
+                time horizon. Return None if non-positive.
+            rolling_validation: Whether or not to evaluate performance on the
+                most recent possible period instead of the validation set
+                labeled by self.validation_col
+            train_subset:  A Boolean Series that is True for observations on which
+                to train. If None, default to all observations not flagged by
+                self.validation_col, self.test_col, or self.predict_col.
+
+        Returns:
+            A dictionary containing the best-performing parameter dictionary for
+            each time horizon.
+        """
         def evaluate_params(trial: optuna.trial.Trial,
                             train_data: lgb.Dataset,
                             validation_data: lgb.Dataset) -> Union[None, dict]:
@@ -164,7 +178,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             subset: A Boolean Series that is True for observations for which
                 predictions will be produced. If None, default to all
                 observations.
-                cumulative: If True, produce cumulative survival probabilies.
+            cumulative: If True, produce cumulative survival probabilies.
                 If False, produce marginal survival probabilities (i.e., one
                 minus the hazard rate).
 

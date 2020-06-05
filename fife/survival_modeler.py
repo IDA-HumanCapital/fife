@@ -344,6 +344,12 @@ class SurvivalModeler(ABC):
         retention_rates.index.name = 'Period'
         return retention_rates
 
+    def hyperoptimize(self,
+                      n_trials: int = 64,
+                      rolling_validation: bool = True,
+                      train_subset: Union[None, pd.core.series.Series] = None) -> dict:
+        """Search for hyperparameters with greater out-of-sample performance."""
+
     def compute_shap_values(
             self, subset: Union[None, pd.core.series.Series] = None) -> dict:
         """Compute SHAP values by lead length, observation, and feature."""
