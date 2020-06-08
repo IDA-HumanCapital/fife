@@ -349,7 +349,7 @@ In each time period, what share of the observations two periods past would we ex
 gbt_modeler.tabulate_retention_rates(2)
 ```
 
-Other modelers define different ways of using data to create forecasts, but they all the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
+Other modelers define different ways of using data to create forecasts, but they all support the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
 
 ### Acknowledgement
 
