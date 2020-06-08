@@ -23,7 +23,7 @@ def compute_metrics_for_binary_outcome(
         actuals: pd.core.series.Series,
         predictions: pd.core.series.Series,
         threshold_positive: Union[None, float] = 0.5,
-        share_positive: Union[None, float] = None) -> OrderedDict:
+        share_positive: Union[None, str, float] = None) -> OrderedDict:
     """Evaluate predicted probabilities against actual binary outcome values.
 
     Args:
@@ -33,11 +33,12 @@ def compute_metrics_for_binary_outcome(
         threshold_positive: None or a value in [0, 1] representing the minimum
             predicted probability considered to be a positive prediction;
             overridden by share_positive.
-        share_positive: None or a value in [0, 1] representing the share of
-            observations with the highest predicted probabilities considered to
-            have positive predictions; probability ties may cause share of
-            positives in output to exceed given value; overrides
-            threshold_positive.
+        share_positive: None, "predicted", or a value in [0, 1] representing
+            the share of observations with the highest predicted probabilities
+            considered to have positive predictions. Specify "predicted" to use
+            the predicted share positive in each time horizon. Probability ties
+            may cause share of positives in output to exceed given value.
+            Overrides threshold_positive.
 
     Returns:
         An ordered dictionary containing key-value pairs for area under the
@@ -57,6 +58,8 @@ def compute_metrics_for_binary_outcome(
             metrics['False Positives'], metrics['True Negatives'] = \
             [0, 0, 0, 0]
     else:
+        if share_positive == 'predicted':
+            share_positive = predictions.mean()
         if share_positive is not None:
             threshold_positive = np.quantile(predictions, 1 - share_positive)
         metrics['True Positives'], metrics['False Negatives'], \
@@ -179,7 +182,7 @@ class SurvivalModeler(ABC):
 
     def evaluate(self, subset: Union[None, pd.core.series.Series] = None,
                  threshold_positive: Union[None, float] = 0.5,
-                 share_positive: Union[None, float] = None,
+                 share_positive: Union[None, str, float] = None,
                  predict_beyond_subset: bool = False
                  ) -> pd.core.frame.DataFrame:
         """Tabulate model performance metrics.
@@ -191,11 +194,12 @@ class SurvivalModeler(ABC):
             threshold_positive: None or a value in [0, 1] representing the
                 minimum predicted probability considered to be a positive
                 prediction; overridden by share_positive.
-            share_positive: None or a value in [0, 1] representing the share of
-                observations with the highest predicted probabilities
-                considered to have positive predictions; probability ties may
-                cause share of positives in output to exceed given value;
-                overrides threshold_positive.
+            share_positive: None, "predicted", or a value in [0, 1] representing
+                the share of observations with the highest predicted probabilities
+                considered to have positive predictions. Specify "predicted" to use
+                the predicted share positive in each time horizon. Probability ties
+                may cause share of positives in output to exceed given value.
+                Overrides threshold_positive.
             predict_beyond_subset: Whether or not predictions for time
                 horizons that extend beyond the last period of the given subset
                 will be evaluated.
