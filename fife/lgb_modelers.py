@@ -54,7 +54,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             params['cat_smooth'] = trial.suggest_uniform('cat_smooth', 0, 2048)
             params['max_cat_to_onehot'] = trial.suggest_int('max_cat_to_onehot', 1, 64)
             params['max_bin'] = trial.suggest_int('max_bin', 32, 1024)
-            params['min_data_in_bin'] = trial.suggest_int('min_data_in_bin ', 1, 64)
+            params['min_data_in_bin'] = trial.suggest_int('min_data_in_bin', 1, 64)
             params['objective'] = 'binary'
             params['verbosity'] = -1
             booster = lgb.Booster(params=params,
