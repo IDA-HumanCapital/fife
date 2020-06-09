@@ -36,7 +36,8 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 time horizon. Return None if non-positive.
             rolling_validation: Whether or not to evaluate performance on the
                 most recent possible period instead of the validation set
-                labeled by self.validation_col
+                labeled by self.validation_col. Ignored for a given time horizon
+                if there is only one possible period for training and evaluation.
             train_subset:  A Boolean Series that is True for observations on which
                 to train. If None, default to all observations not flagged by
                 self.validation_col, self.test_col, or self.predict_col.

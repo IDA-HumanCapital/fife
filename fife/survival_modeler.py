@@ -91,7 +91,7 @@ class SurvivalModeler(ABC):
     """
 
     def __init__(self,
-                 config: Union[None, dict] = None,
+                 config: Union[None, dict] = {},
                  data: Union[None, pd.core.frame.DataFrame] = None,
                  categorical_features: Union[None, List[str]] = None,
                  duration_col: str = '_duration',
@@ -120,6 +120,14 @@ class SurvivalModeler(ABC):
                 observation will be used for evaluating model performance
                 during training.
         """
+        if (config.get('TIME_IDENTIFIER', '') == '') and data is not None:
+            config['TIME_IDENTIFIER'] = data.columns[1]
+            print('Time identifier column name not given; assumed to be '
+                  f'second-leftmost column ({config["TIME_IDENTIFIER"]})')
+        if (config.get('INDIVIDUAL_IDENTIFIER', '') == '') and data is not None:
+            config['INDIVIDUAL_IDENTIFIER'] = data.columns[0]
+            print('Individual identifier column name not given; assumed to be '
+                  f'leftmost column ({config["INDIVIDUAL_IDENTIFIER"]})')
         self.config = config
         self.data = data
         self.duration_col = duration_col

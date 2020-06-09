@@ -31,17 +31,18 @@ def main():
         print('No configuration file specified.')
         candidate_configs = [file for file in os.listdir() if
                              file.endswith('.json')]
-        assert len(candidate_configs) >= 1, (
-            ('No json files found in current directory. '
-             'Please specify a configuration file in your command, '
-             'e.g., "fife example_config.json".'))
-        assert len(candidate_configs) <= 1, (
-            ('Multiple json files found in current directory. '
-             'Please specify a configuration file in your command, '
-             'e.g., "fife example_config.json".'))
-        print(f'Using {candidate_configs[0]} as configuration file.')
-        with open(candidate_configs[0], 'r') as file:
-            config = json.load(file)
+        if len(candidate_configs) == 0:
+            print('No json files found in current directory. '
+                  'Will proceed with default configuration. ')
+            config = {}
+        else:
+            assert len(candidate_configs) <= 1, (
+                ('Multiple json files found in current directory. '
+                 'Please specify a configuration file in your command, '
+                 'e.g., "fife example_config.json".'))
+            print(f'Using {candidate_configs[0]} as configuration file.')
+            with open(candidate_configs[0], 'r') as file:
+                config = json.load(file)
 
     utils.make_results_reproducible(config['SEED'])
     utils.redirect_output_to_log(path=config['RESULTS_PATH'])

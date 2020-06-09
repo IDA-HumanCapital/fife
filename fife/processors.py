@@ -35,7 +35,7 @@ def deduplicate_column_values(data: pd.core.frame.DataFrame,
         n=min(max_obs, data.shape[0]), replace=False)
     deduplicated_cols = list(
         comparison_data.T.drop_duplicates(keep='last').index)
-    deduplicated_data = data[deduplicated_cols + reserved_cols]
+    deduplicated_data = data[reserved_cols + deduplicated_cols]
     duplicated_cols = [col for col in data if
                        col not in deduplicated_data.columns]
     if duplicated_cols:
@@ -152,7 +152,7 @@ class DataProcessor:
     """Prepare data by identifying features as degenerate or categorical."""
 
     def __init__(self,
-                 config: Union[None, dict] = None,
+                 config: Union[None, dict] = {},
                  data: Union[None, pd.core.frame.DataFrame] = None) -> None:
         """Initialize the DataProcessor.
 
@@ -160,7 +160,7 @@ class DataProcessor:
             config: A dictionary of configuration parameters.
             data: A DataFrame to be processed.
         """
-        if config.get('INDIVIDUAL_IDENTIFIER', '') == '':
+        if (config.get('INDIVIDUAL_IDENTIFIER', '') == '') and data is not None:
             config['INDIVIDUAL_IDENTIFIER'] = data.columns[0]
             print('Individual identifier column name not given; assumed to be '
                   f'leftmost column ({config["INDIVIDUAL_IDENTIFIER"]})')
@@ -227,7 +227,7 @@ class PanelDataProcessor(DataProcessor):
     """
 
     def __init__(self,
-                 config: Union[None, dict] = None,
+                 config: Union[None, dict] = {},
                  data: Union[None, pd.core.frame.DataFrame] = None) -> None:
         """Initialize the PanelDataProcessor.
 
@@ -235,7 +235,7 @@ class PanelDataProcessor(DataProcessor):
             config: A dictionary of configuration parameters.
             data: A DataFrame to be processed.
         """
-        if config.get('TIME_IDENTIFIER', '') == '':
+        if (config.get('TIME_IDENTIFIER', '') == '') and data is not None:
             config['TIME_IDENTIFIER'] = data.columns[1]
             print('Time identifier column name not given; assumed to be '
                   f'second-leftmost column ({config["TIME_IDENTIFIER"]})')
@@ -294,10 +294,10 @@ class PanelDataProcessor(DataProcessor):
         self.numeric_ranges = pd.DataFrame.from_dict(
             numeric_ranges, orient='index', columns=['Minimum', 'Maximum'])
         self.data = deduplicate_column_values(
-            self.data, ['_duration', '_event_observed',
-                        '_predict_obs', '_test', '_validation',
-                        self.config['INDIVIDUAL_IDENTIFIER'],
-                        self.config['TIME_IDENTIFIER']])
+            self.data, [self.config['INDIVIDUAL_IDENTIFIER'],
+                        self.config['TIME_IDENTIFIER'],
+                        '_duration', '_event_observed',
+                        '_predict_obs', '_test', '_validation'])
 
     def check_panel_consistency(self) -> None:
         """Ensure observations have unique individual-period combinations."""
@@ -326,7 +326,7 @@ class PanelDataProcessor(DataProcessor):
     def flag_validation_individuals(self) -> pd.core.series.Series:
         """Flag observations from a random share of individuals."""
         unique_ids = self.data[self.config['INDIVIDUAL_IDENTIFIER']].unique()
-        size = int(self.config.get('VALIDATION_SHARE', 0) * unique_ids.shape[0])
+        size = int(self.config.get('VALIDATION_SHARE', 0.25) * unique_ids.shape[0])
         validation_ids = np.random.choice(unique_ids,
                                           size=size,
                                           replace=False)

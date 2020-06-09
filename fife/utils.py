@@ -13,9 +13,9 @@ import pandas as pd
 import shap
 
 
-def make_results_reproducible(seed: int) -> None:
+def make_results_reproducible(seed: int = 9999) -> None:
     """Ensure executing from a fresh state produces identical results."""
-    os.environ['PYTHONHASHSEED'] = str(9999)
+    os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     rn.seed(seed)
 
