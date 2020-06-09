@@ -251,8 +251,8 @@ class SurvivalModeler(ABC):
         return metrics
 
     def tabulate_survival_by_quantile(
-            self, subset: Union[None, pd.core.series.Series] = None,
-            n_quantiles: int = 5,
+            self, n_quantiles: int,
+			subset: Union[None, pd.core.series.Series] = None,
             predict_beyond_subset: bool = True) -> pd.core.frame.DataFrame:
         """Count number survived, grouped by survival probability.
 

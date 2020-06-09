@@ -22,15 +22,16 @@ import pandas as pd
 
 def main():
     """Execute default FIFE pipeline from data to forecasts and metrics."""
-    # Set up I/O
     checkpoint_time = time()
+
+    # Read config file, if any
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r') as file:
             config = json.load(file)
     else:
         print('No configuration file specified.')
-        candidate_configs = [file for file in os.listdir() if
-                             file.endswith('.json')]
+        candidate_configs = [file for file in os.listdir()
+                             if file.endswith('.json')]
         if len(candidate_configs) == 0:
             print('No json files found in current directory. '
                   'Will proceed with default configuration. ')
@@ -44,6 +45,19 @@ def main():
             with open(candidate_configs[0], 'r') as file:
                 config = json.load(file)
 
+    # Use default values of config parameters not specified
+    DEFAULT_CONFIG = {'SEED': 9999,
+                      'RESULTS_PATH': '.',
+					  'TREE_MODELS': True,
+					  'RETENTION_INTERVAL': 1,
+					  'QUANTILES': 5,
+                      'SHAP_SAMPLE_SIZE': 128,
+                      'FIXED_EFFECT_FEATURES': []}
+    for k, v in DEFAULT_CONFIG.items():
+        if k not in config.keys():
+            config[k] = v
+
+    # Ensure reproducibility
     utils.make_results_reproducible(config['SEED'])
     utils.redirect_output_to_log(path=config['RESULTS_PATH'])
     print('Produced using FIFE: Finite-Interval Forecasting Engine')
@@ -51,8 +65,26 @@ def main():
     print('Please cite using the suggested citation in the LICENSE file.\n')
     utils.print_config(config)
 
-    # Process data
+    # Read data file
+    if 'DATA_FILE_PATH' not in config.keys():
+        valid_suffixes = ('.csv', '.csv.gz', '.p', 'pkl', '.h5')
+        candidate_data_files = [file for file in os.listdir()
+                                if file.endswith(valid_suffixes)]
+        assert len(candidate_data_files) >= 1, (
+            ('No data files found in current directory. '
+             f'Valid data file suffixes are {valid_suffixes}. '
+             'If you want to use data in another directory, '
+             'please specify the DATA_FILE_PATH in a config file.'))
+        assert len(candidate_configs) <= 1, (
+            ('Multiple data files found in current directory. '
+             'please specify the DATA_FILE_PATH in a config file.'))
+        print(f'Using {candidate_data_files[0]} as data file.')
+        config['DATA_FILE_PATH'] = candidate_data_files[0]
     data = utils.import_data_file(config['DATA_FILE_PATH'])
+    print(f'I/O setup time: {time() - checkpoint_time} seconds')
+    checkpoint_time = time()
+
+    # Process data
     data_processor = processors.PanelDataProcessor(config, data)
     data_processor.build_processed_data()
     print(f'Data processing time: {time() - checkpoint_time} seconds')
@@ -74,7 +106,7 @@ def main():
     utils.ensure_folder_existence(
         f'{config["RESULTS_PATH"]}/Intermediate/Models')
     categorical_features = list(data_processor.categorical_maps.keys())
-    if config.get('TREE_MODELS'):
+    if config['TREE_MODELS']:
         modeler = \
             lgb_modelers.GradientBoostedTreesModeler(
                 config=config, data=data_processor.data,
@@ -135,8 +167,8 @@ def main():
 
     # Save event counts by quantile
     utils.save_output_table(modeler.tabulate_survival_by_quantile(
-        modeler.data['_validation'] & ~modeler.data['_test'],
-        n_quantiles=config['QUANTILES']),
+        n_quantiles=config['QUANTILES'],
+		subset=modeler.data['_validation'] & ~modeler.data['_test']),
                             'Counts_by_Quantile',
                             index=False,
                             path=config['RESULTS_PATH'])

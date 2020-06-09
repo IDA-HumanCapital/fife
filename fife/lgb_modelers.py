@@ -133,7 +133,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         models = []
         if params is None:
             params = {time_horizon: {'objective': 'binary',
-                                     'num_iterations': self.config['MAX_EPOCHS']}
+                                     'num_iterations': self.config.get('MAX_EPOCHS', 256)}
                       for time_horizon in range(self.n_intervals)}
         if train_subset is None:
             train_subset = (~self.data[self.validation_col]
@@ -161,7 +161,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                     label=validation_data[self.duration_col] > time_horizon)
                 model = lgb.train(params[time_horizon],
                                   train_data,
-                                  early_stopping_rounds=self.config['PATIENCE'],
+                                  early_stopping_rounds=self.config.get('PATIENCE', 4),
                                   valid_sets=[validation_data],
                                   valid_names=['validation_set'],
                                   categorical_feature=self.categorical_features,
