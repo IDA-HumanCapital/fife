@@ -95,10 +95,13 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                                     + self.data[self.event_col]
                                     > time_horizon)
                                    & train_subset]
-            if rolling_validation and train_data[self.config['TIME_IDENTIFIER']].nunique() > 1:
-                last_period = train_data[self.config['TIME_IDENTIFIER']].max()
-                validation_data = train_data[train_data[self.config['TIME_IDENTIFIER']] == last_period]
-                train_data = train_data[train_data[self.config['TIME_IDENTIFIER']] < last_period]
+            in_last_period = (train_data[self.config['TIME_IDENTIFIER']]
+                              == train_data[self.config['TIME_IDENTIFIER']].max())
+            if (rolling_validation
+                and ((train_data[self.duration_col][in_last_period] > time_horizon).nunique() > 1)
+                and ((train_data[self.duration_col][~in_last_period] > time_horizon).nunique() > 1)):
+                validation_data = train_data[in_last_period]
+                train_data = train_data[~in_last_period]
             else:
                 validation_subset = (self.data[self.validation_col]
                                      & ~self.data[self.test_col]
