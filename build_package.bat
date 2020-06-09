@@ -13,13 +13,14 @@ call C:/Users/%username%/AppData/Local/Continuum/anaconda3/Scripts/activate.bat 
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade setuptools wheel
 rmdir build /s /q
 python setup.py sdist bdist_wheel
-call conda install -y -c conda-forge shap tensorflow
+call conda install -y -c conda-forge shap
+call conda install -y -c anaconda tensorflow
 for /F %%i in ('python setup.py --version') do set version=%%i
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl pytest
 pytest
 if '!errorlevel!' == '0' (
 	python -c "from fife.utils import create_example_data; import pandas as pd; create_example_data().to_csv('Input_Data.csv', index=False)"
-	fife
+	fife example_config.json
 	if '!errorlevel!' == '0' (
 		pip freeze > requirements.txt
 		color 0A

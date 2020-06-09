@@ -47,7 +47,7 @@ def main():
 
     # Use default values of config parameters not specified
     DEFAULT_CONFIG = {'SEED': 9999,
-                      'RESULTS_PATH': '.',
+                      'RESULTS_PATH': 'FIFE_results',
 					  'TREE_MODELS': True,
 					  'RETENTION_INTERVAL': 1,
 					  'QUANTILES': 5,

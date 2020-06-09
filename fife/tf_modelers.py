@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 import shap
 import tensorflow as tf
-import keras
-import keras.backend as K
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.layers import (
+import tensorflow.keras as keras
+import tensorflow.keras.backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import (
     Concatenate, Dense, Dropout, Embedding, Flatten, Input, Lambda, Layer)
-from keras.callbacks import EarlyStopping
-from keras.regularizers import l2
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.regularizers import l2
 
 
 def binary_encode_feature(
@@ -246,6 +246,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             self, subset: Union[None, pd.core.series.Series] = None) -> dict:
         """Compute SHAP values by lead length, observation, and feature.
 
+        SHAP values for networks with embedding layers are not supported as of
+        9 Jun 2020.
+
         Compute SHAP values for restricted mean survival time in addition to
         each lead length.
 
@@ -258,6 +261,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             A dictionary of numpy arrays, each of which contains SHAP values
             for the outcome given by its key.
         """
+        print('SHAP values for networks with embedding layers are not '
+              'supported as of 9 Jun 2020.')
+        return None
         model = make_predictions_marginal(self.model)
         subset = survival_modeler.default_subset_to_all(subset, self.data)
         shap_subset = split_categorical_features(self.data[subset],

@@ -1,9 +1,8 @@
 """Conduct unit testing for fife.tf_modelers module."""
 
 from fife import tf_modelers
-from keras.models import Model
-from keras.layers import Input, Dense, Embedding, Flatten
-import keras.engine as ke
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Embedding, Flatten
 import numpy as np
 import pandas as pd
 
@@ -118,7 +117,6 @@ def test_make_predictions_marginal():
     input_layer = Input(shape=(32,))
     output_layer = Dense(32)(input_layer)
     model = Model(inputs=input_layer, outputs=output_layer)
-    model.layers[-1].name = 'cumprod_output'
     marginal_model = tf_modelers.make_predictions_marginal(model)
     assert len(marginal_model.layers) == len(model.layers)
 
@@ -174,9 +172,9 @@ def test_ffnnm_construct_embedding_network(setup_ffnnm_dataframe,
             categorical_features=categorical_features)
         modeler.n_intervals = n_intervals
         modeler.model = modeler.construct_embedding_network()
-        assertions.append(isinstance(modeler.model, ke.training.Model))
+        assertions.append(isinstance(modeler.model, Model))
         if not assertions[-1]:
-            errors_list.append('Model not of type keras.engine.training.Model')
+            errors_list.append('Model not of type tensorflow.keras.Model')
     except Exception as error:
         assertions.append(False)
         errors_list.append(str(error))
@@ -222,9 +220,9 @@ def test_ffnnm_train(setup_ffnnm_dataframe,
         if not assertions[-1]:
             errors_list.append('Model weights have not changed, suggesting '
                                'failure to train')
-        assertions.append(isinstance(modeler.model, ke.training.Model))
+        assertions.append(isinstance(modeler.model, Model))
         if not assertions[-1]:
-            errors_list.append('Model not of type keras.engine.training.Model')
+            errors_list.append('Model not of type tensorflow.keras.Model')
     except Exception as error:
         assertions.append(False)
         errors_list.append(str(error))
