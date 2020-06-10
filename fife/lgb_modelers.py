@@ -117,7 +117,8 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 validation_data[self.categorical_features
                                 + self.numeric_features],
                 label=validation_data[self.duration_col] > time_horizon)
-            study = optuna.create_study(pruner=optuna.pruners.MedianPruner())
+            study = optuna.create_study(pruner=optuna.pruners.MedianPruner(),
+                                        sampler=optuna.samplers.TPESampler(seed=self.config['SEED']))
             study.optimize(lambda trial: evaluate_params(trial,
                                                          train_data,
                                                          validation_data),
