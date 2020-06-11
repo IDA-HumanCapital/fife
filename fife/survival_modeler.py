@@ -180,7 +180,7 @@ class SurvivalModeler(ABC):
                 self.validation_col,
                 self.period_col,
                 self.max_lead_col,
-                self.config.get("INDIVIDUAL_IDENTIFIER"),
+                self.config["INDIVIDUAL_IDENTIFIER"],
             ]
             if self.data is not None and categorical_features is not None:
                 self.categorical_features = [
