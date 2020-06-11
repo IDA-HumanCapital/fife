@@ -81,7 +81,7 @@ def main():
             "If you want to use data in another directory, "
             "please specify the DATA_FILE_PATH in a config file."
         )
-        assert len(candidate_configs) <= 1, (
+        assert len(candidate_data_files) <= 1, (
             "Multiple data files found in current directory. "
             "please specify the DATA_FILE_PATH in a config file."
         )
