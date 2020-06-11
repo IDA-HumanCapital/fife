@@ -112,11 +112,14 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         model (keras.Model): A trained neural network.
     """
 
+    def init(self):
+        super().__init__(config, data)
+
     def build_model(self) -> None:
         """Train and store a neural network, freezing embeddings midway."""
-        tf.random.set_seed(self.config["SEED"])
+        tf.random.set_seed(self.config.get("SEED", 9999))
         self.n_intervals = self.set_n_intervals()
-        self.data = self.data.fillna(self.config["NON_CAT_MISSING_VALUE"])
+        self.data = self.data.fillna(self.config.get("NON_CAT_MISSING_VALUE", -1))
         self.model = self.construct_embedding_network()
         self.model = self.train()
         if self.categorical_features:
@@ -144,10 +147,12 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                 Embedding(
                     input_dim=self.data[col].max() + 2,
                     output_dim=int(
-                        (self.data[col].nunique() + 2) ** self.config["EMBED_EXPONENT"]
+                        (self.data[col].nunique() + 2)
+                        ** self.config.get("EMBED_EXPONENT", 0)
                     ),
-                    embeddings_regularizer=l2(self.config["EMBED_L2_REG"]),
-                )(lyr)
+                    embeddings_regularizer=l2(self.config.get("EMBED_L2_REG", 2.0)))(
+                        lyr
+                    )
                 for (col, lyr) in zip(
                     self.categorical_features, categorical_input_layers
                 )
@@ -155,16 +160,20 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             flatten_layers = [Flatten()(lyr) for lyr in embed_layers]
             numeric_input_layer = Input(shape=(len(self.numeric_features),))
             concat_layer = Concatenate(axis=1)(flatten_layers + [numeric_input_layer])
-            dropout_layer = Dropout(self.config["DROPOUT_SHARE"])(concat_layer)
+            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(
+                concat_layer
+            )
         else:
             categorical_input_layers = []
             numeric_input_layer = Input(shape=(len(self.numeric_features),))
-            dropout_layer = Dropout(self.config["DROPOUT_SHARE"])(numeric_input_layer)
+            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(
+                numeric_input_layer
+            )
         for _ in range(self.config["DENSE_LAYERS"]):
             dense_layer = Dense(
-                self.config["NODES_PER_DENSE_LAYER"], activation="sigmoid"
+                self.config.get("NODES_PER_DENSE_LAYER", 512), activation="sigmoid"
             )(dropout_layer)
-            dropout_layer = Dropout(self.config["DROPOUT_SHARE"])(dense_layer)
+            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(dense_layer)
         output_layer = Dense(self.n_intervals, activation="sigmoid", name="output")(
             dropout_layer
         )
@@ -225,8 +234,8 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         model.fit(
             x_train,
             y_surv[train_subset],
-            batch_size=min(self.config["BATCH_SIZE"], train_subset.sum()),
-            epochs=self.config["MAX_EPOCHS"],
+            batch_size=min(self.config.get("BATCH_SIZE", 512), train_subset.sum()),
+            epochs=self.config.get("MAX_EPOCHS", 256),
             validation_data=(x_valid, y_surv[valid_subset]),
             verbose=2,
             callbacks=[
@@ -234,7 +243,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                     monitor="val_loss",
                     mode="min",
                     verbose=1,
-                    patience=self.config["PATIENCE"],
+                    patience=self.config.get("PATIENCE", 4),
                     restore_best_weights=True,
                 )
             ],
