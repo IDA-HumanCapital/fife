@@ -30,7 +30,6 @@ if '!errorlevel!' == '0' (
 		echo "Functional test failed."
 	)
 ) else (
-	color 0c
 	echo "Unit test failed."
 )
 cmd /k
