@@ -23,6 +23,48 @@ def test_gbtm_init():
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
 
+def test_gbtm_hyperoptimize(setup_config, setup_dataframe):
+    """Test that GradientBoostedTreesModeler.hyperoptimize() returns a nested
+    dictionary of parameters.
+    """
+    errors_list = []
+    cat_features_list = setup_dataframe.select_dtypes(
+        include=["object"]
+    ).columns.tolist()
+    for cat_feature in cat_features_list:
+        setup_dataframe[cat_feature] = setup_dataframe[cat_feature].astype("category")
+    setup_dataframe["FILE_DATE"] = pd.Series(
+        pd.factorize(setup_dataframe["FILE_DATE"])[0]
+    )
+    subset_training_obs = (
+        ~setup_dataframe["_validation"]
+        & ~setup_dataframe["_test"]
+        & ~setup_dataframe["_predict_obs"]
+    )
+    training_obs_lead_lengths = setup_dataframe[subset_training_obs][
+        "_duration"
+    ].value_counts()
+    n_intervals = training_obs_lead_lengths[
+        training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
+    ].index.max()
+    modeler = lgb_modelers.GradientBoostedTreesModeler(
+        config=setup_config,
+        data=setup_dataframe,
+        categorical_features=cat_features_list,
+    )
+    modeler.n_intervals = n_intervals
+    params = modeler.hyperoptimize(2)
+    if len(params.keys()) != n_intervals:
+        errors_list.append(
+            "Number of parameter sets returned does not "
+            "match number of lead lengths."
+        )
+    for k, v in params.items():
+        if not isinstance(v, dict):
+            errors_list.append(f"Parameter set {v} (with key {k}) " f"is not a dict.")
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
+
 def test_gbtm_train(setup_config, setup_dataframe):
     """Test that GradientBoostedTreesModeler.train() returns a list
     containing a trained model for each time interval.
