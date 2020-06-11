@@ -130,10 +130,13 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                            n_trials=n_trials)
             params[time_horizon] = study.best_params
             params[time_horizon]['objective'] = 'binary'
-            default_params - {'objective': 'binary'}
-            default_booster = lgb.train(params=default_params,
-                                        train_set=train_data)
+            default_params = {'objective': 'binary',
+                              'num_iterations': 100}
+            default_booster = lgb.Booster(params=default_params,
+                                          train_set=train_data)
             default_booster.add_valid(validation_data, 'validation_set')
+            for _ in range(default_params['num_iterations']):
+                default_booster.update()
             default_validation_loss = default_booster.eval_valid()[0][2]
             if default_validation_loss <= study.best_value:
                 params = default_params
