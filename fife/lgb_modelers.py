@@ -139,7 +139,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 default_booster.update()
             default_validation_loss = default_booster.eval_valid()[0][2]
             if default_validation_loss <= study.best_value:
-                params = default_params
+                params[time_horizon] = default_params
         return params
 
     def train(self,
