@@ -261,25 +261,27 @@ class PanelDataProcessor(DataProcessor):
         self.data = self.data[categorical_features
                               + numeric_features
                               + [self.config['INDIVIDUAL_IDENTIFIER']]]
-        self.data['_predict_obs'] = self.flag_final_periods(1)
-        if self.config.get('TEST_PERIODS', 0) > 0:
-            self.data['_test'] = self.flag_final_periods(
-                self.config['TEST_PERIODS'])
-            self.data['_event_observed'] = self.flag_event_observed(
-                group=self.data['_test'])
-            self.data['_duration'] = self.compute_survival_duration(
-                group=self.data['_test'])
-        else:
-            self.data['_test'] = False
-            self.data['_event_observed'] = self.flag_event_observed()
-            self.data['_duration'] = self.compute_survival_duration()
+        self.data['_period'] = pd.factorize(self.data[self.config['TIME_IDENTIFIER']],
+                                            sort=True)[0]
+        self.data['_predict_obs'] = self.data['_period'] == self.data['_period'].max()
+        self.data['_test'] = ((self.data['_period']
+                               + self.config.get('TEST_PERIODS', 0))
+                              > self.data['_period'].max())
+        self.data['_maximum_lead'] = (self.groupby('_test').transform('max')
+                                      - self.data['_period'])
+        gaps = (self.data.groupby(self.config['INDIVIDUAL_IDENTIFIER'])['_period'].shift()
+                < self.data['_period'] - 1)
+        spells = gaps.groupby(self.config['INDIVIDUAL_IDENTIFIER']).cumsum()
+        self.data['_duration'] = spells.groupby([self.config['INDIVIDUAL_IDENTIFIER'],
+                                                 spells]).cumcount(ascending=False)
+        self.data['_event_observed'] = self.flag_event_observed()
         self.data['_validation'] = (self.flag_validation_individuals()
                                     & ~self.data['_test'])
         sample_size = min(self.config.get('SHAP_SAMPLE_SIZE', 0),
                           self.data['_predict_obs'].sum())
         self.raw_subset = (self.data[self.data['_predict_obs']]
                            .sample(n=sample_size).sort_index())
-        held_out_obs = (self.data['_validation'] | self.data['_test'] |
+        held_out_obs = (self.data['_test'] |
                         self.data['_predict_obs'])
         self.categorical_maps = {}
         for col in categorical_features:
@@ -290,14 +292,14 @@ class PanelDataProcessor(DataProcessor):
             self.data[col], numeric_ranges[col] = \
                 normalize_numeric_feature(
                     self.data[col],
-                    self.data['_test'] | self.data['_validation'])
+                    held_out_obs)
         self.numeric_ranges = pd.DataFrame.from_dict(
             numeric_ranges, orient='index', columns=['Minimum', 'Maximum'])
         self.data = deduplicate_column_values(
             self.data, [self.config['INDIVIDUAL_IDENTIFIER'],
                         self.config['TIME_IDENTIFIER'],
-                        '_duration', '_event_observed',
-                        '_predict_obs', '_test', '_validation'])
+                        '_duration', '_event_observed', '_predict_obs',
+                        '_test', '_validation', '_period'])
 
     def check_panel_consistency(self) -> None:
         """Ensure observations have unique individual-period combinations."""
@@ -317,12 +319,6 @@ class PanelDataProcessor(DataProcessor):
             [self.config['INDIVIDUAL_IDENTIFIER'],
              self.config['TIME_IDENTIFIER']]).reset_index(drop=True)
 
-    def flag_final_periods(self, n_periods: int) -> pd.core.series.Series:
-        """Flag observations from the most recent periods."""
-        period_cutoff = pd.factorize(self.data[self.config['TIME_IDENTIFIER']],
-                                     sort=True)[1][-n_periods]
-        return self.data[self.config['TIME_IDENTIFIER']] >= period_cutoff
-
     def flag_validation_individuals(self) -> pd.core.series.Series:
         """Flag observations from a random share of individuals."""
         unique_ids = self.data[self.config['INDIVIDUAL_IDENTIFIER']].unique()
@@ -332,27 +328,6 @@ class PanelDataProcessor(DataProcessor):
                                           replace=False)
         return (self.data[self.config['INDIVIDUAL_IDENTIFIER']]
                 .isin(validation_ids))
-
-    def flag_event_observed(self, group: pd.core.series.Series = None
-                            ) -> pd.core.series.Series:
-        """Flag observations from individuals observed to depart the data."""
-        time_id = self.config['TIME_IDENTIFIER']
-        individual_id = self.data[self.config['INDIVIDUAL_IDENTIFIER']]
-        last_period = self.data.groupby(individual_id)[time_id].transform(max)
-        if group is None:
-            return last_period < self.data[time_id].max()
-        return last_period < self.data.groupby(group)[time_id].transform(max)
-
-    def compute_survival_duration(self, group: pd.core.series.Series = None
-                                  ) -> pd.core.series.Series:
-        """Count future observations of the individual at each observation."""
-        factorized_time_ids = pd.factorize(
-            self.data[self.config['TIME_IDENTIFIER']], sort=True)[0]
-        groups = [self.data[self.config['INDIVIDUAL_IDENTIFIER']]]
-        if group is not None:
-            groups.append(group)
-        return (pd.Series(factorized_time_ids).groupby(groups).transform(max)
-                - factorized_time_ids)
 
     def process_new_data(self, new_data: pd.core.frame.DataFrame
                          ) -> pd.core.frame.DataFrame:

@@ -216,18 +216,6 @@ def test_sort_panel_data(setup_config, setup_dataframe):
         first_two_rows_already_sorted)
 
 
-def test_flag_final_periods(setup_config, setup_dataframe):
-    """Test that flag_final_periods flags observations in the maximum period
-    and only those observations as being in the final period.
-    """
-    data_processor = processors.PanelDataProcessor(config=setup_config,
-                                                   data=setup_dataframe)
-    final_periods_flag = data_processor.flag_final_periods(1)
-    final_period = np.max(data_processor.data["FILE_DATE"])
-    pseudo_final_period_flag = data_processor.data["FILE_DATE"] == final_period
-    assert final_periods_flag.equals(pseudo_final_period_flag)
-
-
 def test_flag_validation_individuals(setup_config, setup_dataframe):
     """Test that validation set is given share of observations and contains
     all observations of each individual therein.
@@ -250,24 +238,6 @@ def test_flag_validation_individuals(setup_config, setup_dataframe):
         (rates_individuals_within_validation_group == 0))
     assert share_approximately_correct
     assert np.mean(individual_consistently_in_validation_group) == 1
-
-
-def test_flag_event_observed(setup_config, setup_dataframe):
-    """Test that individuals not observed in the maximum period have
-    all observations flagged as event observed."""
-    data_processor = processors.PanelDataProcessor(config=setup_config,
-                                                   data=setup_dataframe)
-    data_processor.data["not_right_censored"] = \
-        data_processor.flag_event_observed()
-    data_processor.data["max_date_by_person"] = (
-        data_processor.data.groupby(
-            data_processor.config["INDIVIDUAL_IDENTIFIER"])
-        [data_processor.config["TIME_IDENTIFIER"]].transform(max))
-    date_is_less_than_max_for_event_observed_obs = (
-        data_processor.data.loc[
-            data_processor.data["not_right_censored"], "max_date_by_person"] <
-        data_processor.data[data_processor.config["TIME_IDENTIFIER"]].max())
-    assert np.prod(date_is_less_than_max_for_event_observed_obs)
 
 
 SEED = 9999
