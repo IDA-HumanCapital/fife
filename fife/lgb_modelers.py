@@ -95,11 +95,14 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                                     + self.data[self.event_col]
                                     > time_horizon)
                                    & train_subset]
-            in_last_period = (train_data[self.config['TIME_IDENTIFIER']]
-                              == train_data[self.config['TIME_IDENTIFIER']].max())
+            rolling_validation_n_periods = int(max(self.config.get('VALIDATION_SHARE', 0.25)
+                                                   * train_data[self.config['TIME_IDENTIFIER']].nunique(), 1))
+            rolling_validation_period_cutoff = pd.factorize(train_data.data[self.config['TIME_IDENTIFIER']],
+                                                            sort=True)[1][-rolling_validation_n_periods]
+            rolling_validation_subset = train_data[self.config['TIME_IDENTIFIER']] >= rolling_validation_period_cutoff
             if (rolling_validation
-                and ((train_data[self.duration_col][in_last_period] > time_horizon).nunique() > 1)
-                and ((train_data[self.duration_col][~in_last_period] > time_horizon).nunique() > 1)):
+                and ((train_data[self.duration_col][rolling_validation_subset] > time_horizon).nunique() > 1)
+                and ((train_data[self.duration_col][~rolling_validation_subset] > time_horizon).nunique() > 1)):
                 validation_data = train_data[in_last_period]
                 train_data = train_data[~in_last_period]
             else:
