@@ -15,54 +15,55 @@ import shap
 
 def make_results_reproducible(seed: int = 9999) -> None:
     """Ensure executing from a fresh state produces identical results."""
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     rn.seed(seed)
 
 
-def ensure_folder_existence(path: str = '') -> None:
+def ensure_folder_existence(path: str = "") -> None:
     """Create a directory if it doesn't already exist."""
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def redirect_output_to_log(path: str = '') -> None:
+def redirect_output_to_log(path: str = "") -> None:
     """Send future output to a text file instead of console."""
-    ensure_folder_existence(f'{path}/Output/Logs/')
-    sys.stdout = open(f'{path}/Output/Logs/Log.txt', 'w')
+    ensure_folder_existence(f"{path}/Output/Logs/")
+    sys.stdout = open(f"{path}/Output/Logs/Log.txt", "w")
 
 
 def print_config(config: dict) -> None:
     """Neatly print given dictionary of config parameters."""
-    title = 'CONFIGURATION PARAMETERS'
+    title = "CONFIGURATION PARAMETERS"
     print(title)
-    print('-' * len(title))
-    print(json.dumps(config, indent=4) + '\n')
+    print("-" * len(title))
+    print(json.dumps(config, indent=4) + "\n")
 
 
-def import_data_file(file_path: str = 'Input_Data') -> pd.core.frame.DataFrame:
+def import_data_file(file_path: str = "Input_Data") -> pd.core.frame.DataFrame:
     """Return the data stored in given file in given folder."""
-    if file_path.endswith('.feather'):
+    if file_path.endswith(".feather"):
         data = pd.read_feather(file_path)
-    elif file_path.endswith('.csv'):
+    elif file_path.endswith(".csv"):
         data = pd.read_csv(file_path)
-    elif file_path.endswith('.csv.gz'):
+    elif file_path.endswith(".csv.gz"):
         data = pd.read_csv(file_path)
-    elif file_path.endswith(('.p', 'pkl')):
+    elif file_path.endswith((".p", "pkl")):
         data = pd.read_pickle(file_path)
-    elif file_path.endswith('.h5'):
+    elif file_path.endswith(".h5"):
         data = pd.read_hdf(file_path)
-    elif file_path.endswith('.json'):
+    elif file_path.endswith(".json"):
         data = pd.read_json(file_path)
     else:
-        raise Exception('Data file extension is invalid. See README for ' +
-                        'valid file extensions.')
+        raise Exception(
+            "Data file extension is invalid. See README for " + "valid file extensions."
+        )
     return data
 
 
 def compute_aggregation_uncertainty(
-        individual_probabilities: pd.core.frame.DataFrame,
-        percent_confidence: float = 0.95) -> pd.core.frame.DataFrame:
+    individual_probabilities: pd.core.frame.DataFrame, percent_confidence: float = 0.95
+) -> pd.core.frame.DataFrame:
     """Statistically bound number of events given each of their probabilities.
 
     Args:
@@ -80,30 +81,36 @@ def compute_aggregation_uncertainty(
         events.
     """
     if (percent_confidence <= 0) | (percent_confidence >= 1):
-        raise ValueError('Percent confidence outside (0, 1)')
+        raise ValueError("Percent confidence outside (0, 1)")
     means = individual_probabilities.transpose().to_numpy().sum(axis=1)
     cutoff = np.log((1 - percent_confidence) / 2) / means
-    upper_bounds = ((1 + ((-cutoff) + np.sqrt(np.square(cutoff) -
-                                              (8 * cutoff))) / 2) * means)
+    upper_bounds = (
+        1 + ((-cutoff) + np.sqrt(np.square(cutoff) - (8 * cutoff))) / 2
+    ) * means
     upper_bounds = np.minimum(upper_bounds, individual_probabilities.shape[0])
     lower_bounds = np.maximum((1 - np.sqrt(-2 * cutoff)) * means, 0)
     lower_bounds = np.maximum(lower_bounds, 0)
     conf = str(int(percent_confidence * 100))
     times = list(individual_probabilities)
-    output = pd.DataFrame({'Event': times,
-                           'ExpectedEventCount': means,
-                           'Lower' + conf + 'PercentBound': lower_bounds,
-                           'Upper' + conf + 'PercentBound': upper_bounds})
+    output = pd.DataFrame(
+        {
+            "Event": times,
+            "ExpectedEventCount": means,
+            "Lower" + conf + "PercentBound": lower_bounds,
+            "Upper" + conf + "PercentBound": upper_bounds,
+        }
+    )
     return output
 
 
 def plot_shap_values(
-        shap_values: dict,
-        raw_data: pd.core.frame.DataFrame,
-        processed_data: Union[None, pd.core.frame.DataFrame] = None,
-        no_summary_col: str = Union[None, str],
-        alpha: float = 0.5,
-        path: str = '') -> None:
+    shap_values: dict,
+    raw_data: pd.core.frame.DataFrame,
+    processed_data: Union[None, pd.core.frame.DataFrame] = None,
+    no_summary_col: str = Union[None, str],
+    alpha: float = 0.5,
+    path: str = "",
+) -> None:
     """Make plots of SHAP values.
 
     SHAP values quantify feature contributions to predictions.
@@ -124,70 +131,81 @@ def plot_shap_values(
         processed_data = raw_data
     for key in shap_values.keys():
         key_shap_values = shap_values[key]
-        shap.summary_plot(key_shap_values,
-                          plot_type='bar',
-                          feature_names=raw_data.columns,
-                          show=False)
-        save_plot(f'Importance_{key}', path=path)
+        shap.summary_plot(
+            key_shap_values, plot_type="bar", feature_names=raw_data.columns, show=False
+        )
+        save_plot(f"Importance_{key}", path=path)
         shap.summary_plot(key_shap_values, raw_data, alpha=alpha, show=False)
-        save_plot(f'Summary_{key}', path=path)
-        if (raw_data.columns[np.argmax(
-                np.abs(key_shap_values).mean(axis=0))] == no_summary_col):
-            shap.dependence_plot(f'rank(1)',
-                                 key_shap_values,
-                                 processed_data,
-                                 display_features=raw_data,
-                                 alpha=alpha, show=False)
+        save_plot(f"Summary_{key}", path=path)
+        if (
+            raw_data.columns[np.argmax(np.abs(key_shap_values).mean(axis=0))]
+            == no_summary_col
+        ):
+            shap.dependence_plot(
+                f"rank(1)",
+                key_shap_values,
+                processed_data,
+                display_features=raw_data,
+                alpha=alpha,
+                show=False,
+            )
         else:
-            shap.dependence_plot(f'rank(0)',
-                                 key_shap_values,
-                                 processed_data,
-                                 display_features=raw_data,
-                                 alpha=alpha, show=False)
-        save_plot(f'Dependence_{key}', path=path)
+            shap.dependence_plot(
+                f"rank(0)",
+                key_shap_values,
+                processed_data,
+                display_features=raw_data,
+                alpha=alpha,
+                show=False,
+            )
+        save_plot(f"Dependence_{key}", path=path)
 
 
-def save_maps(obj: Union[pd.core.series.Series, dict],
-              file_name: str, path: str = '') -> None:
+def save_maps(
+    obj: Union[pd.core.series.Series, dict], file_name: str, path: str = ""
+) -> None:
     """Save a map from values to other values to Intermediate folder."""
-    ensure_folder_existence(f'{path}/Intermediate/Data')
-    with open(f'{path}/Intermediate/Data/{file_name}.p', 'wb') as file:
+    ensure_folder_existence(f"{path}/Intermediate/Data")
+    with open(f"{path}/Intermediate/Data/{file_name}.p", "wb") as file:
         pickle.dump(obj, file)
 
 
-def save_intermediate_data(data: pd.core.frame.DataFrame,
-                           file_name: str,
-                           file_format: str = 'pickle',
-                           path: str = '') -> None:
+def save_intermediate_data(
+    data: pd.core.frame.DataFrame,
+    file_name: str,
+    file_format: str = "pickle",
+    path: str = "",
+) -> None:
     """Save given DataFrame in Intermediate folder in given format."""
-    ensure_folder_existence(f'{path}/Intermediate/Data')
-    if file_format == 'csv':
-        data.to_csv(f'{path}/Intermediate/Data/{file_name}.csv')
-    elif file_format == 'feather':
-        data.to_feather(f'{path}/Intermediate/Data/{file_name}.feather')
-    elif file_format == 'hdf':
-        data.to_hdf(f'{path}/Intermediate/Data/{file_name}.h5', key=file_name)
-    elif file_format == 'pickle':
-        data.to_pickle(f'{path}/Intermediate/Data/{file_name}.p')
+    ensure_folder_existence(f"{path}/Intermediate/Data")
+    if file_format == "csv":
+        data.to_csv(f"{path}/Intermediate/Data/{file_name}.csv")
+    elif file_format == "feather":
+        data.to_feather(f"{path}/Intermediate/Data/{file_name}.feather")
+    elif file_format == "hdf":
+        data.to_hdf(f"{path}/Intermediate/Data/{file_name}.h5", key=file_name)
+    elif file_format == "pickle":
+        data.to_pickle(f"{path}/Intermediate/Data/{file_name}.p")
     else:
-        raise Exception('File format invalid. Valid file formats ' +
-                        'are "csv", "feather", "hdf", and "pickle".')
+        raise Exception(
+            "File format invalid. Valid file formats "
+            + 'are "csv", "feather", "hdf", and "pickle".'
+        )
 
 
-def save_output_table(data: pd.core.frame.DataFrame,
-                      file_name: str,
-                      index: bool = True,
-                      path: str = '') -> None:
+def save_output_table(
+    data: pd.core.frame.DataFrame, file_name: str, index: bool = True, path: str = ""
+) -> None:
     """Save given DataFrame in the Output folder as a csv file."""
-    ensure_folder_existence(f'{path}/Output/Tables')
-    data.to_csv(f'{path}/Output/Tables/{file_name}.csv', index=index)
+    ensure_folder_existence(f"{path}/Output/Tables")
+    data.to_csv(f"{path}/Output/Tables/{file_name}.csv", index=index)
 
 
-def save_plot(file_name: str, path: str = '') -> None:
+def save_plot(file_name: str, path: str = "") -> None:
     """Save the most recently plotted plot in high resolution."""
-    ensure_folder_existence(f'{path}/Output/Figures')
+    ensure_folder_existence(f"{path}/Output/Figures")
     plt.tight_layout()
-    plt.savefig(f'{path}/Output/Figures/{file_name}.png', dpi=512)
+    plt.savefig(f"{path}/Output/Figures/{file_name}.png", dpi=512)
     plt.close()
 
 
@@ -201,23 +219,28 @@ def create_example_data() -> pd.core.frame.DataFrame:
     for i in np.arange(n_persons):
         period = np.random.randint(n_periods)
         x_1 = np.random.uniform()
-        x_2 = np.random.choice(['A', 'B', 'C'])
+        x_2 = np.random.choice(["A", "B", "C"])
         x_3 = np.random.uniform() + 1.0
-        x_4 = np.random.choice(['a', 'b', 'c', 1, 2, 3, np.nan])
+        x_4 = np.random.choice(["a", "b", "c", 1, 2, 3, np.nan])
         while period <= n_periods:
             values.append([i, period, x_1, x_2, x_3, x_4])
-            if x_2 == 'A':
+            if x_2 == "A":
                 x_1 += np.random.uniform(0, 0.1)
             else:
                 x_1 += np.random.uniform(0, 0.2)
             if x_1 > np.sqrt(x_3):
                 break
             period += 1
-    values = pd.DataFrame(values, columns=['individual',
-                                           'period',
-                                           'feature_1',
-                                           'feature_2',
-                                           'feature_3',
-                                           'feature_4'])
-    values['feature_5'] = values['feature_2']
+    values = pd.DataFrame(
+        values,
+        columns=[
+            "individual",
+            "period",
+            "feature_1",
+            "feature_2",
+            "feature_3",
+            "feature_4",
+        ],
+    )
+    values["feature_5"] = values["feature_2"]
     return values

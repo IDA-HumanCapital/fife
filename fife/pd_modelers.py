@@ -25,23 +25,32 @@ class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
     def train(self) -> pd.core.frame.DataFrame:
         """Compute survival rate for each combination of categorical values."""
         cell_rates = pd.DataFrame()
-        train_subset = (~self.data[self.validation_col]
-                        & ~self.data[self.test_col]
-                        & ~self.data[self.predict_col])
+        train_subset = (
+            ~self.data[self.validation_col]
+            & ~self.data[self.test_col]
+            & ~self.data[self.predict_col]
+        )
         for time_horizon in range(self.n_intervals):
-            train_data = self.data[(self.data[self.duration_col]
-                                    + self.data[self.event_col]
-                                    > time_horizon)
-                                   & train_subset]
-            train_data['survived'] = (train_data[self.duration_col] >
-                                      time_horizon)
-            cell_rates[time_horizon + 1] = \
-                train_data.groupby(
-                    self.categorical_features)['survived'].mean()
+            train_data = self.data[
+                (
+                    self.data[[self.duration_col, self.max_lead_col]].min(axis=1)
+                    + self.data[self.event_col]
+                    > time_horizon
+                )
+                & train_subset
+            ]
+            train_data["survived"] = (
+                train_data[[self.duration_col, self.max_lead_col]].min(axis=1)
+                > time_horizon
+            )
+            cell_rates[time_horizon + 1] = train_data.groupby(
+                self.categorical_features
+            )["survived"].mean()
         return cell_rates
 
-    def predict(self, subset: Union[None, pd.core.series.Series] = None,
-                cumulative: bool = True) -> np.ndarray:
+    def predict(
+        self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
+    ) -> np.ndarray:
         """Map observations to survival rates from their categorical values.
 
         Map observations with a combination of categorical values not seen in
@@ -61,8 +70,8 @@ class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
         """
         subset = survival_modeler.default_subset_to_all(subset, self.data)
         predictions = self.data[subset].merge(
-            self.model, how='left', left_on=self.categorical_features,
-            right_index=True)
+            self.model, how="left", left_on=self.categorical_features, right_index=True
+        )
         predictions = predictions[self.model.columns]
         predictions = predictions.fillna(predictions.mean())
         predictions = predictions.to_numpy()
