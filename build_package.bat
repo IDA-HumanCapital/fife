@@ -16,7 +16,8 @@ python setup.py sdist bdist_wheel
 call conda install -y -c conda-forge shap
 call conda install -y -c anaconda tensorflow
 for /F %%i in ('python setup.py --version') do set version=%%i
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl pytest
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl black pytest
+black .
 pytest
 if '!errorlevel!' == '0' (
 	python -c "from fife.utils import create_example_data; import pandas as pd; create_example_data().to_csv('Input_Data.csv', index=False)"
