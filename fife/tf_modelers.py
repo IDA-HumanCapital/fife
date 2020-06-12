@@ -150,9 +150,8 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                         (self.data[col].nunique() + 2)
                         ** self.config.get("EMBED_EXPONENT", 0)
                     ),
-                    embeddings_regularizer=l2(self.config.get("EMBED_L2_REG", 2.0)))(
-                        lyr
-                    )
+                    embeddings_regularizer=l2(self.config.get("EMBED_L2_REG", 2.0)),
+                )(lyr)
                 for (col, lyr) in zip(
                     self.categorical_features, categorical_input_layers
                 )
