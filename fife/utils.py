@@ -10,6 +10,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import shap
 
 
@@ -103,13 +104,50 @@ def compute_aggregation_uncertainty(
     return output
 
 
+def plot_binary_prediction_errors(errors: dict,
+                width: float = 8,
+                height: float = 1,
+                alpha: float = 2**-8,
+                color: str = "black",
+                center_tick_color: str = "green",
+                center_tick_height: float = 0.125,
+                path: str = "") -> None:
+    """Make a rug plot of binary prediction errors.
+
+    Args:
+        errors: A dictionary of numpy arrays, each of which contains error values
+            for the outcome given by its key.
+        width: Width of the rug plot.
+        height: Height of the rug plot.
+        alpha: The opacity of plotted ticks, from 2e-8 (nearly transparent) to
+            1 (opaque).
+        color: The color of plotted ticks.
+        center_tick_color: The color of the ticks marking the center of the plot.
+        center_tick_height: The height of the ticks marking the center of the plot.
+        path: The path preceding the Output folder in which the plots will be
+            saved.
+    """
+    sns.set(rc={'figure.figsize': (width, height)})
+    for key, arr in errors.items():
+        sns.rugplot(arr,
+                    height=height,
+                    alpha=alpha,
+                    color=color)
+        plt.xlim(-1, 1)
+        plt.axvline(ymin=0, ymax=center_tick_height, color=center_tick_color)
+        plt.axvline(ymin=height - center_tick_height, ymax=height, color=center_tick_color)
+        plt.xticks([])
+        plt.yticks([])
+        save_plot(f"Errors_{key}", path=path)
+
+
 def plot_shap_values(
     shap_values: dict,
     raw_data: pd.core.frame.DataFrame,
     processed_data: Union[None, pd.core.frame.DataFrame] = None,
     no_summary_col: str = Union[None, str],
     alpha: float = 0.5,
-    path: str = "",
+    path: str = ""
 ) -> None:
     """Make plots of SHAP values.
 
@@ -129,21 +167,20 @@ def plot_shap_values(
     shap.initjs()
     if processed_data is None:
         processed_data = raw_data
-    for key in shap_values.keys():
-        key_shap_values = shap_values[key]
+    for key, arr in shap_values.items():
         shap.summary_plot(
-            key_shap_values, plot_type="bar", feature_names=raw_data.columns, show=False
+            arr, plot_type="bar", feature_names=raw_data.columns, show=False
         )
         save_plot(f"Importance_{key}", path=path)
-        shap.summary_plot(key_shap_values, raw_data, alpha=alpha, show=False)
+        shap.summary_plot(arr, raw_data, alpha=alpha, show=False)
         save_plot(f"Summary_{key}", path=path)
         if (
-            raw_data.columns[np.argmax(np.abs(key_shap_values).mean(axis=0))]
+            raw_data.columns[np.argmax(np.abs(arr).mean(axis=0))]
             == no_summary_col
         ):
             shap.dependence_plot(
                 f"rank(1)",
-                key_shap_values,
+                arr,
                 processed_data,
                 display_features=raw_data,
                 alpha=alpha,
@@ -152,7 +189,7 @@ def plot_shap_values(
         else:
             shap.dependence_plot(
                 f"rank(0)",
-                key_shap_values,
+                arr,
                 processed_data,
                 display_features=raw_data,
                 alpha=alpha,
