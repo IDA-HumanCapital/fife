@@ -43,6 +43,7 @@ setup(
         "numpy",
         "optuna",
         "pandas",
+        "seaborn",
         "shap",
         "scikit-learn",
         "tensorflow",

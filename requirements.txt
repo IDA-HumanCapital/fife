@@ -6,26 +6,27 @@ atomicwrites==1.4.0
 attrs==19.3.0
 autograd==1.3
 autograd-gamma==0.4.2
-backcall==0.1.0
+backcall @ file:///home/conda/feedstock_root/build_artifacts/backcall_1592338393461/work
 black==19.10b0
 blinker==1.4
+brotlipy==0.7.0
 cachetools==4.1.0
-certifi==2020.4.5.1
+certifi==2020.4.5.2
 cffi==1.14.0
 chardet==3.0.4
 click==7.1.2
-cliff==3.2.0
-cloudpickle==1.4.1
-cmaes==0.5.0
-cmd2==0.8.9
+cliff==3.3.0
+cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1588164361239/work
+cmaes==0.5.1
+cmd2==1.1.0
 colorama==0.4.3
 colorlog==4.1.0
 cryptography==2.9.2
 cycler==0.10.0
 cytoolz==0.10.1
-dask==2.18.1
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1592593303100/work
 decorator==4.4.2
-fife==1.1.0
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.1.0-py3-none-any.whl
 future==0.18.2
 gast==0.2.2
 google-auth==1.14.1
@@ -34,33 +35,33 @@ google-pasta==0.2.0
 grpcio==1.27.2
 h5py==2.8.0
 idna==2.9
-imagecodecs==2020.5.30
+imagecodecs @ file:///D:/bld/imagecodecs_1591488115839/work
 imageio==2.8.0
 importlib-metadata==1.6.1
-ipython==7.15.0
+ipython @ file:///D:/bld/ipython_1590797082149/work
 ipython-genutils==0.2.0
-jedi==0.17.0
-joblib==0.15.1
-Keras==2.3.1
+jedi @ file:///D:/bld/jedi_1592619562975/work
+joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1589812474002/work
+Keras==2.4.2
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
 kiwisolver==1.2.0
-lifelines==0.24.9
+lifelines==0.24.13
 lightgbm==2.3.1
 Mako==1.1.3
 Markdown==3.1.1
 MarkupSafe==1.1.1
 matplotlib==3.2.1
 mkl-service==2.3.0
-more-itertools==8.3.0
+more-itertools==8.4.0
 networkx==2.4
-numpy==1.18.5
+numpy @ file:///D:/bld/numpy_1591485433275/work
 oauthlib==3.1.0
 olefile==0.46
 opt-einsum==3.1.0
 optuna==1.5.0
 packaging==20.4
-pandas==1.0.4
+pandas @ file:///D:/bld/pandas_1592422178599/work
 parso==0.7.0
 pathspec==0.8.0
 pbr==5.4.5
@@ -68,9 +69,9 @@ pickleshare==0.7.5
 Pillow==7.1.2
 pluggy==0.13.1
 prettytable==0.7.2
-prompt-toolkit==3.0.5
+prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1592500439797/work
 protobuf==3.12.3
-py==1.8.1
+py==1.8.2
 pyasn1==0.4.8
 pyasn1-modules==0.2.7
 pycparser==2.20
@@ -92,27 +93,28 @@ requests==2.23.0
 requests-oauthlib==1.3.0
 rsa==4.0
 scikit-image==0.17.2
-scikit-learn==0.23.1
+scikit-learn @ file:///D:/bld/scikit-learn_1589921036638/work
 scipy==1.4.1
+seaborn==0.10.1
 shap==0.35.0
-six==1.15.0
+six @ file:///home/conda/feedstock_root/build_artifacts/six_1590081179328/work
 SQLAlchemy==1.3.17
-stevedore==2.0.0
+stevedore==2.0.1
 tensorboard==2.1.1
 tensorboard-plugin-wit==1.6.0
 tensorflow==2.1.0
 tensorflow-estimator==2.1.0
 termcolor==1.1.0
-threadpoolctl==2.1.0
-tifffile==2020.6.3
+threadpoolctl @ file:///tmp/tmp79xdzxkt/threadpoolctl-2.1.0-py3-none-any.whl
+tifffile @ file:///home/conda/feedstock_root/build_artifacts/tifffile_1591655158331/work
 toml==0.10.1
 toolz==0.10.0
 tornado==6.0.4
-tqdm==4.46.1
+tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1591181521996/work
 traitlets==4.3.3
 typed-ast==1.4.1
-urllib3==1.25.8
-wcwidth==0.2.4
+urllib3==1.25.9
+wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1591600393557/work
 Werkzeug==0.16.1
 win-inet-pton==1.1.0
 wincertstore==0.2
