@@ -275,31 +275,7 @@ class PanelDataProcessor(DataProcessor):
             + numeric_features
             + [self.config["INDIVIDUAL_IDENTIFIER"]]
         ]
-        self.data["_period"] = pd.factorize(
-            self.data[self.config["TIME_IDENTIFIER"]], sort=True
-        )[0]
-        self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
-        self.data["_test"] = (
-            self.data["_period"] + self.config.get("TEST_PERIODS", 0)
-        ) > self.data["_period"].max()
-        self.data["_maximum_lead"] = (
-            self.data.groupby("_test")["_period"].transform("max")
-            - self.data["_period"]
-        )
-        gaps = (
-            self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])["_period"].shift()
-            < self.data["_period"] - 1
-        )
-        spells = gaps.groupby(self.data[self.config["INDIVIDUAL_IDENTIFIER"]]).cumsum()
-        self.data["_duration"] = spells.groupby(
-            [self.data[self.config["INDIVIDUAL_IDENTIFIER"]], spells]
-        ).cumcount(ascending=False)
-        self.data["_event_observed"] = (
-            self.data["_duration"] < self.data["_maximum_lead"]
-        )
-        self.data["_validation"] = (
-            self.flag_validation_individuals() & ~self.data["_test"]
-        )
+        self.build_reserved_cols()
         sample_size = min(
             self.config.get("SHAP_SAMPLE_SIZE", 0), self.data["_predict_obs"].sum()
         )
@@ -332,6 +308,34 @@ class PanelDataProcessor(DataProcessor):
                 "_validation",
                 "_period",
             ],
+        )
+
+    def build_reserved_cols(self):
+        """Add data split and outcome-related columns to the data."""
+        self.data["_period"] = pd.factorize(
+            self.data[self.config["TIME_IDENTIFIER"]], sort=True
+        )[0]
+        self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
+        self.data["_test"] = (
+            self.data["_period"] + self.config.get("TEST_PERIODS", 0)
+        ) > self.data["_period"].max()
+        self.data["_validation"] = (
+            self.flag_validation_individuals() & ~self.data["_test"]
+        )
+        self.data["_maximum_lead"] = (
+            self.data.groupby("_test")["_period"].transform("max")
+            - self.data["_period"]
+        )
+        gaps = (
+            self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])["_period"].shift()
+            < self.data["_period"] - 1
+        )
+        spells = gaps.groupby(self.data[self.config["INDIVIDUAL_IDENTIFIER"]]).cumsum()
+        self.data["_duration"] = spells.groupby(
+            [self.data[self.config["INDIVIDUAL_IDENTIFIER"]], spells]
+        ).cumcount(ascending=False)
+        self.data["_event_observed"] = (
+            self.data["_duration"] < self.data["_maximum_lead"]
         )
 
     def check_panel_consistency(self) -> None:
