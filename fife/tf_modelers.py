@@ -118,7 +118,10 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
     def build_model(self) -> None:
         """Train and store a neural network, freezing embeddings midway."""
         tf.random.set_seed(self.config.get("SEED", 9999))
-        self.n_intervals = self.set_n_intervals()
+        if n_intervals:
+            self.n_intervals = n_intervals
+        else:
+            self.n_intervals = self.set_n_intervals()
         self.data = self.data.fillna(self.config.get("NON_CAT_MISSING_VALUE", -1))
         self.model = self.construct_embedding_network()
         self.model = self.train()

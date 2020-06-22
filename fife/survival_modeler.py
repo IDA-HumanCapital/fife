@@ -202,9 +202,12 @@ class SurvivalModeler(ABC):
     ) -> np.ndarray:
         """Use trained model to produce observation survival probabilities."""
 
-    def build_model(self) -> None:
+    def build_model(self, n_intervals: Union[None, int] = None) -> None:
         """Configure, train, and store a model."""
-        self.n_intervals = self.set_n_intervals()
+        if n_intervals:
+            self.n_intervals = n_intervals
+        else:
+            self.n_intervals = self.set_n_intervals()
         self.model = self.train()
 
     def set_n_intervals(self) -> int:
