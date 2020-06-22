@@ -171,8 +171,12 @@ class DataProcessor:
 
     def drop_degenerate_features(self) -> pd.core.frame.DataFrame:
         """Drop constant features or those with too many missing values."""
+        max_null_share = self.config.get("MAX_NULL_SHARE", 0.999)
+        if max_null_share >= 1:
+            print("MAX_NULL_SHARE not less than one; no features dropped")
+            return data
         thresh = int(
-            (1 - self.config.get("MAX_NULL_SHARE", 0.999)) * self.data.shape[0]
+            (1 - max_null_share) * self.data.shape[0]
         )
         data = self.data.dropna(thresh=thresh, axis=1)
         for col in data.columns:
