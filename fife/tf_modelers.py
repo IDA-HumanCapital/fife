@@ -365,14 +365,14 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
 class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
     """Train a Cox Proportional Hazards model using Keras."""
 
-    def build_model(self) -> None:
+    def build_model(self, n_intervals: Union[None, int] = None) -> None:
         """Train and store a neural network with proportional hazards."""
         for col in self.categorical_features:
             binary_encodings = binary_encode_feature(self.data[col])
             del self.data[col]
             self.data[binary_encodings.columns] = binary_encodings
             del binary_encodings
-        super().build_model()
+        super().build_model(n_intervals)
 
     def format_input_data(
         self,
