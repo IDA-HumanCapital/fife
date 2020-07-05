@@ -360,16 +360,72 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
 
 
 class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
-    """Train a Cox Proportional Hazards model using Keras."""
+    """Train a proportional hazards model with embeddings for categorical features using Keras."""
+
+    def construct_embedding_network(self) -> keras.Model:
+        """Set embedding layers that feed into a single node.
+
+        Each categorical feature passes through its own embedding layer, which
+        maps whole numbers to the real line.
+
+        The embedded values and numeric features feed directly into a single node. The
+        single node feeds into a proportional hazards layer.
+
+        Returns:
+            An untrained Keras model.
+        """
+        if self.categorical_features:
+            categorical_input_layers = [
+                Input(shape=(1,), dtype="int32") for _ in self.categorical_features
+            ]
+            embed_layers = [
+                Embedding(
+                    input_dim=self.data[col].max() + 2,
+                    output_dim=int(
+                        (self.data[col].nunique() + 2)
+                        ** self.config.get("EMBED_EXPONENT", 0)
+                    ),
+                    embeddings_regularizer=l2(self.config.get("EMBED_L2_REG", 2.0)),
+                )(lyr)
+                for (col, lyr) in zip(
+                    self.categorical_features, categorical_input_layers
+                )
+            ]
+            flatten_layers = [Flatten()(lyr) for lyr in embed_layers]
+            numeric_input_layer = Input(shape=(len(self.numeric_features),))
+            concat_layer = Concatenate(axis=1)(flatten_layers + [numeric_input_layer])
+            dense_layer = Dense(1, use_bias=0, kernel_initializer="zeros")(concat_layer)
+        else:
+            categorical_input_layers = []
+            numeric_input_layer = Input(shape=(len(self.numeric_features),))
+            dense_layer = Dense(1, use_bias=0, kernel_initializer="zeros")(numeric_input_layer)
+        output_layer = PropHazards(self.n_intervals)(dense_layer)
+        model = Model(
+            inputs=categorical_input_layers + [numeric_input_layer],
+            outputs=output_layer,
+        )
+        return model
+
+
+class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
+    """Train a proportional hazards model with binary-encoded categorical features using Keras."""
 
     def build_model(self, n_intervals: Union[None, int] = None) -> None:
-        """Train and store a neural network with proportional hazards."""
+        """Train and store a neural network with a proportional hazards restriction."""
+        tf.random.set_seed(self.config.get("SEED", 9999))
+        if n_intervals:
+            self.n_intervals = n_intervals
+        else:
+            self.n_intervals = self.set_n_intervals()
         for col in self.categorical_features:
             binary_encodings = binary_encode_feature(self.data[col])
             del self.data[col]
             self.data[binary_encodings.columns] = binary_encodings
             del binary_encodings
-        super().build_model(n_intervals)
+        self.data = self.data.fillna(self.config.get("NON_CAT_MISSING_VALUE", -1))
+        self.model = self.construct_network()
+        self.model = self.train()
+        self.model = make_predictions_cumulative(self.model)
 
     def format_input_data(
         self,
@@ -382,14 +438,10 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         subset = survival_modeler.default_subset_to_all(subset, data)
         return data.drop(self.reserved_cols, axis=1)[subset]
 
-    def construct_embedding_network(self) -> keras.Model:
-        """Set embedding layers followed by alternating dropout/dense layers.
-
-        Each categorical feature passes through its own embedding layer, which
-        maps whole numbers to the real line.
-
-        Each dense layer has a sigmoid activation function. The output layer
-        has one node for each lead length.
+    def construct_network(self) -> keras.Model:
+        """Set all features to feed directly into a single node.
+        
+        The single node feeds into a proportional hazards layer.
 
         Returns:
             An untrained Keras model.
