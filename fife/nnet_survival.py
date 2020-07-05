@@ -106,3 +106,8 @@ class PropHazards(Layer):
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], self.output_dim)
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config["output_dim"] = self.output_dim
+        return config
