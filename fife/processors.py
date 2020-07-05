@@ -320,10 +320,13 @@ class PanelDataProcessor(DataProcessor):
         self.data["_validation"] = (
             self.flag_validation_individuals() & ~self.data["_test"]
         )
+        observation_max_period = self.data.groupby("_test")["_period"].transform("max")
         self.data["_maximum_lead"] = (
-            self.data.groupby("_test")["_period"].transform("max")
+            observation_max_period
             - self.data["_period"]
+            + (observation_max_period < self.data["_period"].max())
         )
+        del observation_max_period
         gaps = (
             self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])["_period"].shift()
             < self.data["_period"] - 1
