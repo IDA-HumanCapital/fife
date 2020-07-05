@@ -112,9 +112,6 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         model (keras.Model): A trained neural network.
     """
 
-    def init(self):
-        super().__init__(config, data)
-
     def build_model(self, n_intervals: Union[None, int] = None) -> None:
         """Train and store a neural network, freezing embeddings midway."""
         tf.random.set_seed(self.config.get("SEED", 9999))
