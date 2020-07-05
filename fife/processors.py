@@ -60,11 +60,11 @@ def normalize_numeric_feature(
           observations.
     """
     if excluded_obs is None:
-        minimum = np.nanmin(col)
-        maximum = np.nanmax(col)
+        minimum = np.nanmin(col[col.notnull()])
+        maximum = np.nanmax(col[col.notnull()])
     else:
-        minimum = np.nanmin(col[~excluded_obs])
-        maximum = np.nanmax(col[~excluded_obs])
+        minimum = np.nanmin(col[(~excluded_obs) & (col.notnull())])
+        maximum = np.nanmax(col[(~excluded_obs) & (col.notnull())])
     normalized_col = process_numeric_feature(col, minimum, maximum)
     numeric_range = [minimum, maximum]
     return normalized_col, numeric_range
