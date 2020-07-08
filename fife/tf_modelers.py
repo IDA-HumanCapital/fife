@@ -398,7 +398,9 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         else:
             categorical_input_layers = []
             numeric_input_layer = Input(shape=(len(self.numeric_features),))
-            dense_layer = Dense(1, use_bias=0, kernel_initializer="zeros")(numeric_input_layer)
+            dense_layer = Dense(1, use_bias=0, kernel_initializer="zeros")(
+                numeric_input_layer
+            )
         output_layer = PropHazards(self.n_intervals)(dense_layer)
         model = Model(
             inputs=categorical_input_layers + [numeric_input_layer],

@@ -294,19 +294,6 @@ class PanelDataProcessor(DataProcessor):
         self.numeric_ranges = pd.DataFrame.from_dict(
             numeric_ranges, orient="index", columns=["Minimum", "Maximum"]
         )
-        self.data = deduplicate_column_values(
-            self.data,
-            [
-                self.config["INDIVIDUAL_IDENTIFIER"],
-                self.config["TIME_IDENTIFIER"],
-                "_duration",
-                "_event_observed",
-                "_predict_obs",
-                "_test",
-                "_validation",
-                "_period",
-            ],
-        )
 
     def build_reserved_cols(self):
         """Add data split and outcome-related columns to the data."""
