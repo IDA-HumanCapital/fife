@@ -116,7 +116,6 @@ class SurvivalModeler(ABC):
         self,
         config: Union[None, dict] = {},
         data: Union[None, pd.core.frame.DataFrame] = None,
-        categorical_features: Union[None, List[str]] = None,
         duration_col: str = "_duration",
         event_col: str = "_event_observed",
         predict_col: str = "_predict_obs",
@@ -133,7 +132,6 @@ class SurvivalModeler(ABC):
         Args:
             config: User-provided configuration parameters.
             data: User-provided panel data.
-            categorical_features: Column names of categorical features.
             duration_col: Name of the column representing the number of future
                 periods observed for the given individual.
             event_col: Name of the column indicating whether the individual is
@@ -182,14 +180,14 @@ class SurvivalModeler(ABC):
                 self.max_lead_col,
                 self.config["INDIVIDUAL_IDENTIFIER"],
             ]
-            if self.data is not None and categorical_features is not None:
+            if self.data is not None:
                 self.categorical_features = [
-                    col for col in categorical_features if col in self.data
+                    col for col in self.data.select_dtypes("category")
                 ]
                 self.numeric_features = [
                     feature
                     for feature in self.data
-                    if feature not in (categorical_features + self.reserved_cols)
+                    if feature not in (self.categorical_features + self.reserved_cols)
                 ]
 
     @abstractmethod

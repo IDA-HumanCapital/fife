@@ -168,6 +168,8 @@ def plot_shap_values(
     shap.initjs()
     if processed_data is None:
         processed_data = raw_data
+    for col in processed_data.select_dtypes("category"):
+        processed_data[col] = processed_data[col].cat.codes
     for key, arr in shap_values.items():
         shap.summary_plot(
             arr, plot_type="bar", feature_names=raw_data.columns, show=False

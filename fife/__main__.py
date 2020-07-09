@@ -99,9 +99,6 @@ def main():
 
     # Save intermediate files
     utils.save_maps(
-        data_processor.categorical_maps, "Categorical_Maps", path=config["RESULTS_PATH"]
-    )
-    utils.save_maps(
         data_processor.numeric_ranges, "Numeric_Ranges", path=config["RESULTS_PATH"]
     )
     utils.save_intermediate_data(
@@ -113,12 +110,9 @@ def main():
 
     # Train and save model
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
-    categorical_features = list(data_processor.categorical_maps.keys())
     if config["TREE_MODELS"]:
         modeler = lgb_modelers.GradientBoostedTreesModeler(
-            config=config,
-            data=data_processor.data,
-            categorical_features=categorical_features,
+            config=config, data=data_processor.data,
         )
         modeler.build_model()
         for i, lead_specific_model in enumerate(modeler.model):
@@ -130,17 +124,13 @@ def main():
                 json.dump(lead_specific_model.dump_model(), file, indent=4)
     elif config.get("PROPORTIONAL_HAZARDS"):
         modeler = tf_modelers.ProportionalHazardsModeler(
-            config=config,
-            data=data_processor.data,
-            categorical_features=categorical_features,
+            config=config, data=data_processor.data,
         )
         modeler.build_model()
         modeler.model.save(f'{config["RESULTS_PATH"]}/Intermediate/Models/PH_Model.h5')
     else:
         modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-            config=config,
-            data=data_processor.data,
-            categorical_features=categorical_features,
+            config=config, data=data_processor.data,
         )
         modeler.build_model()
         modeler.model.save(
@@ -215,9 +205,7 @@ def main():
     # Save metrics for interacted fixed effects model
     if set() < set(config["FIXED_EFFECT_FEATURES"]) <= set(data_processor.data):
         ife_modeler = pd_modelers.InteractedFixedEffectsModeler(
-            config=config,
-            data=data_processor.data,
-            categorical_features=categorical_features,
+            config=config, data=data_processor.data,
         )
         ife_modeler.build_model()
         with open(

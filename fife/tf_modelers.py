@@ -119,7 +119,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             self.n_intervals = n_intervals
         else:
             self.n_intervals = self.set_n_intervals()
-        self.data = self.data.fillna(self.config.get("NON_CAT_MISSING_VALUE", -1))
+        self.data[self.numeric_features] = self.data[self.numeric_features].fillna(
+            self.config.get("NON_CAT_MISSING_VALUE", -1)
+        )
         self.model = self.construct_embedding_network()
         self.model = self.train()
         if self.categorical_features:
@@ -145,7 +147,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             ]
             embed_layers = [
                 Embedding(
-                    input_dim=self.data[col].max() + 2,
+                    input_dim=self.data[col].nunique() + 2,
                     output_dim=int(
                         (self.data[col].nunique() + 2)
                         ** self.config.get("EMBED_EXPONENT", 0)

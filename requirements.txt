@@ -46,7 +46,7 @@ Keras==2.4.3
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
 kiwisolver==1.2.0
-lifelines==0.24.15
+lifelines==0.24.16
 lightgbm==2.3.1
 Mako==1.1.3
 Markdown==3.1.1
@@ -94,7 +94,7 @@ requests-oauthlib==1.3.0
 rsa==4.0
 scikit-image==0.17.2
 scikit-learn @ file:///D:/bld/scikit-learn_1589921036638/work
-scipy==1.4.1
+scipy @ file:///C:/ci/scipy_1592916958183/work
 seaborn==0.10.1
 shap==0.35.0
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1590081179328/work

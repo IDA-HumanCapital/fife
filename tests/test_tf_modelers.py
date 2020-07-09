@@ -139,9 +139,7 @@ def test_ffnnm_init(setup_ffnnm_dataframe, setup_config):
             config["INDIVIDUAL_IDENTIFIER"] = data.columns[0]
         if config["TIME_IDENTIFIER"] == "":
             config["TIME_IDENTIFIER"] = data.columns[1]
-        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-            config=config, data=data, categorical_features=[]
-        )
+        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(config=config, data=data)
         assertions.append(
             isinstance(modeler, tf_modelers.FeedforwardNeuralNetworkModeler)
         )
@@ -170,15 +168,15 @@ def test_ffnnm_construct_embedding_network(setup_ffnnm_dataframe, setup_config):
         "nonmixed_categorical_var",
         "consistent_mixed_categorical_var",
     ]
+    for col in categorical_features:
+        data[col] = data[col].astype("category")
     data["FILE_DATE"], _ = pd.factorize(data["FILE_DATE"])
     try:
         if config["INDIVIDUAL_IDENTIFIER"] == "":
             config["INDIVIDUAL_IDENTIFIER"] = data.columns[0]
         if config["TIME_IDENTIFIER"] == "":
             config["TIME_IDENTIFIER"] = data.columns[1]
-        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-            config=config, data=data, categorical_features=categorical_features
-        )
+        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(config=config, data=data)
         modeler.n_intervals = n_intervals
         modeler.model = modeler.construct_embedding_network()
         assertions.append(isinstance(modeler.model, Model))
@@ -207,13 +205,15 @@ def test_ffnnm_train(setup_ffnnm_dataframe, setup_config):
         "nonmixed_categorical_var",
         "consistent_mixed_categorical_var",
     ]
+    for col in categorical_features:
+        data[col] = data[col].astype("category")
     data["FILE_DATE"], _ = pd.factorize(data["FILE_DATE"])
     try:
-        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-            config=config, data=data, categorical_features=categorical_features
-        )
+        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(config=config, data=data)
         modeler.n_intervals = n_intervals
-        modeler.data = modeler.data.fillna(modeler.config["NON_CAT_MISSING_VALUE"])
+        modeler.data[modeler.numeric_features] = modeler.data[
+            modeler.numeric_features
+        ].fillna(modeler.config["NON_CAT_MISSING_VALUE"])
         modeler.model = modeler.construct_embedding_network()
         weights_pretrain = modeler.model.get_weights()
         modeler.model = modeler.train()

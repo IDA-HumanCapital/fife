@@ -169,53 +169,41 @@ class DataProcessor:
         self.config = config
         self.data = data
 
-    def drop_degenerate_features(self) -> pd.core.frame.DataFrame:
-        """Drop constant features or those with too many missing values."""
-        max_null_share = self.config.get("MAX_NULL_SHARE", 0.999)
-        if max_null_share >= 1:
-            print("MAX_NULL_SHARE not less than one; no features dropped")
-            return self.data
-        thresh = int((1 - max_null_share) * self.data.shape[0])
-        data = self.data.dropna(thresh=thresh, axis=1)
-        for col in data.columns:
-            if all(data[col][1:].values == data[col][:-1].values):
-                del data[col]
-                print(f"Feature {col} dropped for having zero variance")
-        return data
+    def is_degenerate(self, col: pd.Series) -> bool:
+        """Determine if a feature is constant or has too many missing values."""
+        if self.data[col].isnull().mean() >= 1 - self.config.get(
+            "MAX_NULL_SHARE", 0.999
+        ):
+            return True
+        if self.data[col].nunique(dropna=False) < 2:
+            return True
+        return False
 
-    def identify_categorical_features(self) -> Tuple[List[str], List[str]]:
-        """Split the list of features into categorical and numeric."""
-        categorical_cols = []
-        numeric_cols = []
-        for col in self.data:
-            if col == self.config.get("INDIVIDUAL_IDENTIFIER"):
-                pass
-            elif col.endswith(tuple(self.config.get("CATEGORICAL_SUFFIXES", []))):
-                categorical_cols.append(col)
-                if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
-                    print(
-                        f"{col} matches categorical and numeric suffixes; "
-                        "identified as categorical"
-                    )
-            elif col in self.data.select_dtypes(
-                include=["datetime"]
-            ) or col == self.config.get("TIME_IDENTIFIER"):
-                numeric_cols.append(col)
-            elif col in self.data.select_dtypes(exclude=["number"]):
-                categorical_cols.append(col)
-                if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
-                    print(
-                        f"{col} matches numeric suffix but is non-numeric; "
-                        "identified as categorical"
-                    )
-            elif col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))) or (
-                self.data[col].nunique()
-                > self.config.get("MAX_UNIQUE_NUMERIC_CATS", 1024)
-            ):
-                numeric_cols.append(col)
-            else:
-                categorical_cols.append(col)
-        return categorical_cols, numeric_cols
+    def is_categorical(self, col: str) -> bool:
+        """Determine if the given feature should be processed as categorical, as opposed to numeric."""
+        if col.endswith(tuple(self.config.get("CATEGORICAL_SUFFIXES", []))):
+            if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
+                print(
+                    f"{col} matches categorical and numeric suffixes; "
+                    "identified as categorical"
+                )
+            return True
+        if col in self.data.select_dtypes(
+            include=["datetime"]
+        ) or col == self.config.get("TIME_IDENTIFIER"):
+            return False
+        if col in self.data.select_dtypes(exclude=["number"]):
+            if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
+                print(
+                    f"{col} matches numeric suffix but is non-numeric; "
+                    "identified as categorical"
+                )
+            return True
+        if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))) or (
+            self.data[col].nunique() > self.config.get("MAX_UNIQUE_NUMERIC_CATS", 1024)
+        ):
+            return False
+        return True
 
 
 class PanelDataProcessor(DataProcessor):
@@ -262,37 +250,32 @@ class PanelDataProcessor(DataProcessor):
         - Store a subset of the raw input data from the final period.
         - Map categorical features to unsigned integers.
         - Scale numeric features.
-        - Drop duplicated features.
         """
         self.check_panel_consistency()
         self.data = self.sort_panel_data()
-        self.data = self.drop_degenerate_features()
-        categorical_features, numeric_features = self.identify_categorical_features()
-        self.data = self.data[
-            categorical_features
-            + numeric_features
-            + [self.config["INDIVIDUAL_IDENTIFIER"]]
-        ]
+        numeric_ranges = {}
+        for col in self.data:
+            if col == self.config["INDIVIDUAL_IDENTIFIER"]:
+                continue
+            elif self.is_degenerate(col):
+                del self.data[col]
+            elif self.is_categorical(col):
+                self.data[col] = self.data[col].astype("category")
+            else:
+                self.data[col], numeric_ranges[col] = normalize_numeric_feature(
+                    self.data[col]
+                )
+        self.numeric_ranges = pd.DataFrame.from_dict(
+            numeric_ranges, orient="index", columns=["Minimum", "Maximum"]
+        )
         self.build_reserved_cols()
-        sample_size = min(
+        raw_subset_sample_size = min(
             self.config.get("SHAP_SAMPLE_SIZE", 0), self.data["_predict_obs"].sum()
         )
         self.raw_subset = (
-            self.data[self.data["_predict_obs"]].sample(n=sample_size).sort_index()
-        )
-        held_out_obs = self.data["_test"] | self.data["_predict_obs"]
-        self.categorical_maps = {}
-        for col in categorical_features:
-            self.data[col], self.categorical_maps[col] = factorize_categorical_feature(
-                self.data[col], held_out_obs
-            )
-        numeric_ranges = {}
-        for col in numeric_features:
-            self.data[col], numeric_ranges[col] = normalize_numeric_feature(
-                self.data[col], held_out_obs
-            )
-        self.numeric_ranges = pd.DataFrame.from_dict(
-            numeric_ranges, orient="index", columns=["Minimum", "Maximum"]
+            self.data[self.data["_predict_obs"]]
+            .sample(n=raw_subset_sample_size)
+            .sort_index()
         )
 
     def build_reserved_cols(self):

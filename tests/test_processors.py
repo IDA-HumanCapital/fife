@@ -163,16 +163,15 @@ def test_DataProcessor(setup_config, setup_dataframe):
     )
 
 
-def test_drop_degenerate_features(setup_config, setup_dataframe):
-    """Test that drop_degenerate_features drops an invariant feature."""
+def test_is_degenerate(setup_config, setup_dataframe):
+    """Test that is_degenerate identifies an invariant feature as degenerate."""
     data_processor = processors.DataProcessor(config=setup_config, data=setup_dataframe)
-    data = data_processor.drop_degenerate_features()
-    assert "constant_var" not in data.columns
+    assert data_processor.is_degenerate("constant_categorical_var")
 
 
-def test_identify_categorical_features(setup_config, setup_dataframe):
-    """Test that identify_categorical_features correctly identifies
-    categorical and numeric sets of features.
+def test_is_categorical(setup_config, setup_dataframe):
+    """Test that is_categorical correctly identifies
+    categorical and numeric features.
     """
     reserved_cat_cols = [
         "_duration",
@@ -205,9 +204,10 @@ def test_identify_categorical_features(setup_config, setup_dataframe):
         x for x in setup_num_cols if x not in num_vars_treated_as_cat_vars
     ] + reserved_num_cols
     data_processor = processors.DataProcessor(config=setup_config, data=setup_dataframe)
-    cat_cols, numeric_cols = data_processor.identify_categorical_features()
-    assert set(setup_cat_cols) == set(cat_cols)
-    assert set(setup_num_cols) == set(numeric_cols)
+    for col in setup_cat_cols:
+        assert data_processor.is_categorical(col)
+    for col in setup_num_cols:
+        assert ~data_processor.is_categorical(col)
 
 
 def test_PanelDataProcessor(setup_config, setup_dataframe):
