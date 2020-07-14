@@ -117,7 +117,10 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
     """
 
     def hyperoptimize(
-        self, n_trials: int = 64, subset: Union[None, pd.core.series.Series] = None, max_epochs: int = 128
+        self,
+        n_trials: int = 64,
+        subset: Union[None, pd.core.series.Series] = None,
+        max_epochs: int = 128,
     ) -> dict:
         """Search for hyperparameters with greater out-of-sample performance.
 
@@ -138,7 +141,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             y_train: np.array,
             x_valid: List[np.array],
             y_valid: np.array,
-            max_epochs: int
+            max_epochs: int,
         ) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
@@ -218,7 +221,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
         )
         study.optimize(
-            lambda trial: evaluate_params(trial, x_train, y_train, x_valid, y_valid, max_epochs),
+            lambda trial: evaluate_params(
+                trial, x_train, y_train, x_valid, y_valid, max_epochs
+            ),
             n_trials=n_trials,
         )
         params = study.best_params
@@ -271,7 +276,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         construction_args = getfullargspec(self.construct_embedding_network).args
         self.model = self.construct_embedding_network(
-            **{k.lower(): v for k, v in self.config if k in construction_args}
+            **{k.lower(): v for k, v in self.config.items() if k in construction_args}
         )
         self.model = self.train()
         if self.categorical_features:
