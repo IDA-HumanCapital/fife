@@ -65,7 +65,9 @@ def split_categorical_features(
         A list where each element but the last is a Series and the last element
         is a DataFrame of the given numeric features.
     """
-    return [data[col] for col in categorical_features] + [data[numeric_features]]
+    return [data[col] for col in categorical_features] + [
+        data[numeric_features]
+    ]
 
 
 def freeze_embedding_layers(model: keras.Model) -> keras.Model:
@@ -263,6 +265,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         self.data[self.numeric_features] = self.data[self.numeric_features].fillna(
             self.config.get("NON_CAT_MISSING_VALUE", -1)
         )
+        construction_args = getfullargspec(self.construct_embedding_network).args
         self.model = self.construct_embedding_network(
             **{k.lower(): v for k, v in self.config if k in construction_args}
         )

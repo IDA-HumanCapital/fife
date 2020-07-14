@@ -38,6 +38,10 @@ def test_split_categorical_features(setup_dataframe):
     categorical_features = setup_dataframe.select_dtypes(
         exclude=["number"]
     ).columns.tolist()
+    for cat_feature in categorical_features:
+        setup_ffnnm_dataframe[cat_feature] = setup_ffnnm_dataframe[cat_feature].astype(
+            "category"
+        )
     numeric_features = [
         x for x in setup_dataframe.columns if x not in categorical_features
     ]
