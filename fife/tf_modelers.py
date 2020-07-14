@@ -185,6 +185,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                 if trial.should_prune():
                     raise optuna.exceptions.TrialPruned()
             model = freeze_embedding_layers(model)
+            model.compile(
+                loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
+            )
             for step in range(params["POST_FREEZE_EPOCHS"]):
                 model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1)
                 validation_loss = model.evaluate(x_valid, y_valid)
