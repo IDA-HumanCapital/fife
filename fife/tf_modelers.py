@@ -117,7 +117,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
     """
 
     def hyperoptimize(
-        self, n_trials: int = 64, subset: Union[None, pd.core.series.Series] = None,
+        self, n_trials: int = 64, subset: Union[None, pd.core.series.Series] = None, max_epochs: int = 128
     ) -> dict:
         """Search for hyperparameters with greater out-of-sample performance.
 
@@ -138,6 +138,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             y_train: np.array,
             x_valid: List[np.array],
             y_valid: np.array,
+            max_epochs: int
         ) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
@@ -150,13 +151,13 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             params["EMBED_L2_REG"] = trial.suggest_uniform("EMBED_L2_REG", 0, 16.0)
             if self.categorical_features:
                 params["POST_FREEZE_EPOCHS"] = trial.suggest_int(
-                    "POST_FREEZE_EPOCHS", 4, 256
+                    "POST_FREEZE_EPOCHS", 4, max_epochs
                 )
             else:
                 params["POST_FREEZE_EPOCHS"] = 0
-            max_pre_freeze_epochs = 256
+            max_pre_freeze_epochs = max_epochs
             params["PRE_FREEZE_EPOCHS"] = trial.suggest_int(
-                "PRE_FREEZE_EPOCHS", 4, max_pre_freeze_epochs
+                "PRE_FREEZE_EPOCHS", 4, max_epochs
             )
             params["NODES_PER_DENSE_LAYER"] = trial.suggest_int(
                 "NODES_PER_DENSE_LAYER", 16, 1024
@@ -217,7 +218,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
         )
         study.optimize(
-            lambda trial: evaluate_params(trial, x_train, y_train, x_valid, y_valid),
+            lambda trial: evaluate_params(trial, x_train, y_train, x_valid, y_valid, max_epochs),
             n_trials=n_trials,
         )
         params = study.best_params
