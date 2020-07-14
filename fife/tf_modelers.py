@@ -170,7 +170,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(
                 numeric_input_layer
             )
-        for _ in range(self.config["DENSE_LAYERS"]):
+        for _ in range(self.config.get("DENSE_LAYERS", 2)):
             dense_layer = Dense(
                 self.config.get("NODES_PER_DENSE_LAYER", 512), activation="sigmoid"
             )(dropout_layer)
