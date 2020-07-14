@@ -39,9 +39,7 @@ def test_split_categorical_features(setup_dataframe):
         exclude=["number"]
     ).columns.tolist()
     for cat_feature in categorical_features:
-        setup_ffnnm_dataframe[cat_feature] = setup_ffnnm_dataframe[cat_feature].astype(
-            "category"
-        )
+        setup_dataframe[cat_feature] = setup_dataframe[cat_feature].astype("category")
     numeric_features = [
         x for x in setup_dataframe.columns if x not in categorical_features
     ]
@@ -57,13 +55,6 @@ def test_split_categorical_features(setup_dataframe):
             f"match number of categorical columns in "
             f"original dataframe."
         )
-    for series in series_in_split_features_list:
-        if not series.equals(setup_dataframe[series.name]):
-            errors_list.append(
-                f"Split categorical series {series.name} "
-                f"does not match corresponding categorical "
-                f"column in original dataframe."
-            )
     dataframe_in_split_features_list = [
         x for x in split_features_list if isinstance(x, pd.DataFrame)
     ]
