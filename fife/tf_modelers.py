@@ -65,7 +65,7 @@ def split_categorical_features(
         A list where each element but the last is a Series and the last element
         is a DataFrame of the given numeric features.
     """
-    return [data[col] for col in categorical_features] + [
+    return [data[col].cat.codes for col in categorical_features] + [
         data[numeric_features]
     ]
 
@@ -593,7 +593,10 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         if data is None:
             data = self.data
         subset = survival_modeler.default_subset_to_all(subset, data)
-        return data.drop(self.reserved_cols, axis=1)[subset]
+        formatted_data = data.drop(self.reserved_cols, axis=1)[subset]
+        for col in self.categorical_features:
+            formatted_data[col] = formatted_data[col].cat.codes
+        return formatted_data
 
     def construct_network(self) -> keras.Model:
         """Set all features to feed directly into a single node.
