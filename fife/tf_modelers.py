@@ -264,9 +264,13 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             params = default_params
         return params
 
-    def build_model(self, n_intervals: Union[None, int] = None) -> None:
+    def build_model(
+        self, n_intervals: Union[None, int] = None, params: dict = None
+    ) -> None:
         """Train and store a neural network, freezing embeddings midway."""
         tf.random.set_seed(self.config.get("SEED", 9999))
+        if params is None:
+            params = self.config
         if n_intervals:
             self.n_intervals = n_intervals
         else:
@@ -276,12 +280,23 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         construction_args = getfullargspec(self.construct_embedding_network).args
         self.model = self.construct_embedding_network(
-            **{k.lower(): v for k, v in self.config.items() if k in construction_args}
+            **{k.lower(): v for k, v in params.items() if k in construction_args}
         )
-        self.model = self.train()
+        pre_freeze_early_stopping = "PRE_FREEZE_EPOCHS" in params.keys()
+        post_freeze_early_stopping = "POST_FREEZE_EPOCHS" in params.keys()
+        if pre_freeze_early_stopping:
+            if not post_freeze_early_stopping:
+                params["POST_FREEZE_EPOCHS"] = params.get("MAX_EPOCHS", 256)
+            params["MAX_EPOCHS"] = params["PRE_FREEZE_EPOCHS"]
+        self.model = self.train(
+            params, validation_early_stopping=pre_freeze_early_stopping
+        )
         if self.categorical_features:
             self.model = freeze_embedding_layers(self.model)
-            self.model = self.train()
+            params["MAX_EPOCHS"] = params["POST_FREEZE_EPOCHS"]
+            self.model = self.train(
+                params, validation_early_stopping=post_freeze_early_stopping
+            )
         self.model = make_predictions_cumulative(self.model)
 
     def construct_embedding_network(
@@ -359,7 +374,12 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             data[subset], self.categorical_features, self.numeric_features
         )
 
-    def train(self) -> keras.Model:
+    def train(
+        self,
+        params: Union[None, dict] = None,
+        subset: Union[None, pd.core.series.Series] = None,
+        validation_early_stopping: bool = True,
+    ) -> keras.Model:
         """Train with survival loss function of Gensheimer, Narasimhan (2019).
 
         See https://peerj.com/articles/6257/.
@@ -373,16 +393,12 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         Returns:
             A trained Keras model.
         """
-        train_subset = (
-            ~self.data[self.validation_col]
-            & ~self.data[self.test_col]
-            & ~self.data[self.predict_col]
-        )
-        valid_subset = (
-            self.data[self.validation_col]
-            & ~self.data[self.test_col]
-            & ~self.data[self.predict_col]
-        )
+        if params is None:
+            params = {}
+        if subset is None:
+            subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
+        train_subset = subset & ~self.data[self.validation_col]
+        valid_subset = subset & self.data[self.validation_col]
         x_train = self.format_input_data(subset=train_subset)
         x_valid = self.format_input_data(subset=valid_subset)
         y_surv = make_surv_array(
@@ -394,14 +410,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         model.compile(
             loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
         )
-        model.fit(
-            x_train,
-            y_surv[train_subset],
-            batch_size=min(self.config.get("BATCH_SIZE", 512), train_subset.sum()),
-            epochs=self.config.get("MAX_EPOCHS", 256),
-            validation_data=(x_valid, y_surv[valid_subset]),
-            verbose=2,
-            callbacks=[
+        callbacks = []
+        if validation_early_stopping:
+            callbacks.append(
                 EarlyStopping(
                     monitor="val_loss",
                     mode="min",
@@ -409,7 +420,18 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                     patience=self.config.get("PATIENCE", 4),
                     restore_best_weights=True,
                 )
-            ],
+            )
+        model.fit(
+            x_train,
+            y_surv[train_subset],
+            batch_size=min(
+                params.get("BATCH_SIZE", self.config.get("BATCH_SIZE", 512)),
+                train_subset.sum(),
+            ),
+            epochs=params.get("MAX_EPOCHS", self.config.get("MAX_EPOCHS", 256)),
+            validation_data=(x_valid, y_surv[valid_subset]),
+            verbose=2,
+            callbacks=callbacks,
         )
         return model
 
