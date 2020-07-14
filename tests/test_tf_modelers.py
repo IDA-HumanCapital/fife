@@ -152,6 +152,42 @@ def test_ffnnm_init(setup_ffnnm_dataframe, setup_config):
     assert assertion, "Errors occurred: \n{}".format("\n".join(errors_list))
 
 
+def test_ffnnm_hyperoptimize(setup_ffnnm_dataframe, setup_config):
+    """Test that FeedforwardNeuralNetworkModeler.hyperoptimize() returns a
+    dictionary of parameters.
+    """
+    errors_list = []
+    cat_features_list = setup_ffnnm_dataframe.select_dtypes(
+        include=["object"]
+    ).columns.tolist()
+    for cat_feature in cat_features_list:
+        setup_ffnnm_dataframe[cat_feature] = setup_ffnnm_dataframe[cat_feature].astype(
+            "category"
+        )
+    setup_ffnnm_dataframe["FILE_DATE"] = pd.Series(
+        pd.factorize(setup_ffnnm_dataframe["FILE_DATE"])[0]
+    )
+    subset_training_obs = (
+        ~setup_ffnnm_dataframe["_validation"]
+        & ~setup_ffnnm_dataframe["_test"]
+        & ~setup_ffnnm_dataframe["_predict_obs"]
+    )
+    training_obs_lead_lengths = setup_ffnnm_dataframe[subset_training_obs][
+        "_duration"
+    ].value_counts()
+    n_intervals = training_obs_lead_lengths[
+        training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
+    ].index.max()
+    modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
+        config=setup_config, data=setup_ffnnm_dataframe,
+    )
+    modeler.n_intervals = n_intervals
+    params = modeler.hyperoptimize(2)
+    if not isinstance(params, dict):
+        errors_list.append(f"Parameter set is not a dict.")
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
+
 def test_ffnnm_construct_embedding_network(setup_ffnnm_dataframe, setup_config):
     """Test that FeedforwardNeuralNetworkModeler.construct_embedding_network()
     returns a Keras training model."""

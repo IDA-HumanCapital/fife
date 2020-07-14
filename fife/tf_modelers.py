@@ -1,10 +1,12 @@
 """FIFE modelers based on TensorFlow, which trains neural networks."""
 
+from inspect import getfullargspec
 from typing import List, Union
 
 from fife import survival_modeler
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
+import optuna
 import pandas as pd
 import shap
 import tensorflow as tf
@@ -112,6 +114,145 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         model (keras.Model): A trained neural network.
     """
 
+    def hyperoptimize(
+        self, n_trials: int = 64, subset: Union[None, pd.core.series.Series] = None,
+    ) -> dict:
+        """Search for hyperparameters with greater out-of-sample performance.
+
+        Args:
+            n_trials: The number of hyperparameter sets to evaluate for each
+                time horizon. Return None if non-positive.
+            subset:  A Boolean Series that is True for observations on which
+                to train and validate. If None, default to all observations not
+                flagged by self.test_col or self.predict_col.
+
+        Returns:
+            A dictionary containing the best-performing parameters.
+        """
+
+        def evaluate_params(
+            trial: optuna.trial.Trial,
+            x_train: List[np.array],
+            y_train: np.array,
+            x_valid: List[np.array],
+            y_valid: np.array,
+        ) -> Union[None, dict]:
+            """Compute out-of-sample performance for a parameter set."""
+            params = {}
+            params["BATCH_SIZE"] = trial.suggest_int(
+                "BATCH_SIZE", min(32, x_train[0].shape[0]), x_train[0].shape[0]
+            )
+            params["DENSE_LAYERS"] = trial.suggest_int("DENSE_LAYERS", 0, 3)
+            params["DROPOUT_SHARE"] = trial.suggest_uniform("DROPOUT_SHARE", 0, 0.5)
+            params["EMBED_EXPONENT"] = trial.suggest_uniform("EMBED_EXPONENT", 0, 0.25)
+            params["EMBED_L2_REG"] = trial.suggest_uniform("EMBED_L2_REG", 0, 16.0)
+            if self.categorical_features:
+                params["POST_FREEZE_EPOCHS"] = trial.suggest_int(
+                    "POST_FREEZE_EPOCHS", 4, 256
+                )
+            else:
+                params["POST_FREEZE_EPOCHS"] = 0
+            max_pre_freeze_epochs = 256
+            params["PRE_FREEZE_EPOCHS"] = trial.suggest_int(
+                "PRE_FREEZE_EPOCHS", 4, max_pre_freeze_epochs
+            )
+            params["NODES_PER_DENSE_LAYER"] = trial.suggest_int(
+                "NODES_PER_DENSE_LAYER", 16, 1024
+            )
+            construction_args = getfullargspec(self.construct_embedding_network).args
+            self.model = self.construct_embedding_network(
+                **{k.lower(): v for k, v in params.items() if k in construction_args}
+            )
+            self.data[self.numeric_features] = self.data[self.numeric_features].fillna(
+                self.config.get("NON_CAT_MISSING_VALUE", -1)
+            )
+            model = self.construct_embedding_network(
+                **{
+                    k.lower(): v
+                    for k, v in self.config.items()
+                    if k in construction_args
+                }
+            )
+            model.compile(
+                loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
+            )
+            for step in range(params["PRE_FREEZE_EPOCHS"]):
+                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1)
+                validation_loss = model.evaluate(x_valid, y_valid)
+                trial.report(validation_loss, step)
+                if trial.should_prune():
+                    raise optuna.exceptions.TrialPruned()
+            model = freeze_embedding_layers(model)
+            for step in range(params["POST_FREEZE_EPOCHS"]):
+                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1)
+                validation_loss = model.evaluate(x_valid, y_valid)
+                trial.report(validation_loss, step + max_pre_freeze_epochs)
+                if trial.should_prune():
+                    raise optuna.exceptions.TrialPruned()
+            return validation_loss
+
+        if n_trials <= 0:
+            return None
+        params = {}
+        if subset is None:
+            subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
+        x_train = self.format_input_data(
+            subset=subset & ~self.data[self.validation_col]
+        )
+        x_valid = self.format_input_data(subset=subset & self.data[self.validation_col])
+        y_surv = make_surv_array(
+            self.data[[self.duration_col, self.max_lead_col]].min(axis=1),
+            self.data[self.event_col],
+            np.arange(self.n_intervals + 1),
+        )
+        y_train = y_surv[[subset & ~self.data[self.validation_col]]]
+        y_valid = y_surv[[subset & self.data[self.validation_col]]]
+        study = optuna.create_study(
+            pruner=optuna.pruners.MedianPruner(),
+            sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
+        )
+        study.optimize(
+            lambda trial: evaluate_params(trial, x_train, y_train, x_valid, y_valid),
+            n_trials=n_trials,
+        )
+        params = study.best_params
+        default_params = {"BATCH_SIZE": 512, "PRE_FREEZE_EPOCHS": 16}
+        if self.categorical_features:
+            default_params["POST_FREEZE_EPOCHS"] = 16
+        else:
+            default_params["POST_FREEZE_EPOCHS"] = 0
+        construction_args = getfullargspec(self.construct_embedding_network).args
+        default_model = self.construct_embedding_network(
+            **{
+                k.lower(): v
+                for k, v in default_params.items()
+                if k in construction_args
+            }
+        )
+        default_model.compile(
+            loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
+        )
+        default_model.fit(
+            x_train,
+            y_train,
+            batch_size=default_params["BATCH_SIZE"],
+            epochs=default_params["PRE_FREEZE_EPOCHS"],
+        )
+        default_model = freeze_embedding_layers(default_model)
+        default_model.compile(
+            loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
+        )
+        default_model.fit(
+            x_train,
+            y_train,
+            batch_size=default_params["BATCH_SIZE"],
+            epochs=default_params["POST_FREEZE_EPOCHS"],
+        )
+        default_validation_loss = default_model.evaluate(x_valid, y_valid)
+        if default_validation_loss <= study.best_value:
+            params = default_params
+        return params
+
     def build_model(self, n_intervals: Union[None, int] = None) -> None:
         """Train and store a neural network, freezing embeddings midway."""
         tf.random.set_seed(self.config.get("SEED", 9999))
@@ -122,14 +263,23 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         self.data[self.numeric_features] = self.data[self.numeric_features].fillna(
             self.config.get("NON_CAT_MISSING_VALUE", -1)
         )
-        self.model = self.construct_embedding_network()
+        self.model = self.construct_embedding_network(
+            **{k.lower(): v for k, v in self.config if k in construction_args}
+        )
         self.model = self.train()
         if self.categorical_features:
             self.model = freeze_embedding_layers(self.model)
             self.model = self.train()
         self.model = make_predictions_cumulative(self.model)
 
-    def construct_embedding_network(self) -> keras.Model:
+    def construct_embedding_network(
+        self,
+        dense_layers: int = 2,
+        nodes_per_dense_layer: int = 512,
+        dropout_share: float = 0.25,
+        embed_exponent: float = 0,
+        embed_L2_reg: float = 2.0,
+    ) -> keras.Model:
         """Set embedding layers followed by alternating dropout/dense layers.
 
         Each categorical feature passes through its own embedding layer, which
@@ -137,6 +287,13 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
 
         Each dense layer has a sigmoid activation function. The output layer
         has one node for each lead length.
+
+        Args:
+            dense_layers: The number of dense layers in the neural network.
+            nodes_per_dense_layer: The number of nodes per dense layer in the neural network.
+            dropout_share: The probability of a densely connected node of the neural network being set to zero weight during training.
+            embed_exponent: The ratio of the natural logarithm of the number of embedded values to the natural logarithm of the number of unique categories for each categorical feature.
+            embed_L2_reg: The L2 regularization coefficient for each embedding layer.
 
         Returns:
             An untrained Keras model.
@@ -148,11 +305,8 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             embed_layers = [
                 Embedding(
                     input_dim=self.data[col].nunique() + 2,
-                    output_dim=int(
-                        (self.data[col].nunique() + 2)
-                        ** self.config.get("EMBED_EXPONENT", 0)
-                    ),
-                    embeddings_regularizer=l2(self.config.get("EMBED_L2_REG", 2.0)),
+                    output_dim=int((self.data[col].nunique() + 2) ** embed_exponent),
+                    embeddings_regularizer=l2(embed_L2_reg),
                 )(lyr)
                 for (col, lyr) in zip(
                     self.categorical_features, categorical_input_layers
@@ -161,20 +315,16 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             flatten_layers = [Flatten()(lyr) for lyr in embed_layers]
             numeric_input_layer = Input(shape=(len(self.numeric_features),))
             concat_layer = Concatenate(axis=1)(flatten_layers + [numeric_input_layer])
-            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(
-                concat_layer
-            )
+            dropout_layer = Dropout(dropout_share)(concat_layer)
         else:
             categorical_input_layers = []
             numeric_input_layer = Input(shape=(len(self.numeric_features),))
-            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(
-                numeric_input_layer
+            dropout_layer = Dropout(dropout_share)(numeric_input_layer)
+        for _ in range(dense_layers):
+            dense_layer = Dense(nodes_per_dense_layer, activation="sigmoid")(
+                dropout_layer
             )
-        for _ in range(self.config["DENSE_LAYERS"]):
-            dense_layer = Dense(
-                self.config.get("NODES_PER_DENSE_LAYER", 512), activation="sigmoid"
-            )(dropout_layer)
-            dropout_layer = Dropout(self.config.get("DROPOUT_SHARE", 0.25))(dense_layer)
+            dropout_layer = Dropout(dropout_share)(dense_layer)
         output_layer = Dense(self.n_intervals, activation="sigmoid", name="output")(
             dropout_layer
         )

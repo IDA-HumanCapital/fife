@@ -171,9 +171,7 @@ class DataProcessor:
 
     def is_degenerate(self, col: pd.Series) -> bool:
         """Determine if a feature is constant or has too many missing values."""
-        if self.data[col].isnull().mean() >= self.config.get(
-            "MAX_NULL_SHARE", 0.999
-        ):
+        if self.data[col].isnull().mean() >= self.config.get("MAX_NULL_SHARE", 0.999):
             return True
         if self.data[col].nunique(dropna=False) < 2:
             return True
