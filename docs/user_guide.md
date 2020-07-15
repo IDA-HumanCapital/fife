@@ -223,7 +223,7 @@ TIME_IDENTIFIER; default: `""` (empty string); type: String
 CATEGORICAL_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as categorical. Useful for flagging categorical columns that have a numeric data type and more than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
 DATETIME_AS_DATE; default: `true`; type: Boolean
-	How datetime features will be represented. If True, datetime features will be converted to integers in YYYYMMDD format. Otherwise, datetime features will be converted to nanoseconds.
+	How datetime features will be represented. If True, datetime features will be converted to integers in YYYYMMDD format for gradient-boosted trees modeler and days since first period for neural network modeler. Otherwise, datetime features will be converted to nanoseconds.
 MAX_NULL_SHARE; default: 0.999; type: Decimal
 	The maximum share of observations that may have a null value for a feature to be kept for training. Larger values may increase run time, risk of memory error, and/or model performance
 MAX_UNIQUE_NUMERIC_CATS; default: 1024; type: Integer

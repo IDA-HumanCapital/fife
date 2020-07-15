@@ -285,7 +285,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 data[col] = (
                     data[col].dt.year * 10000
                     + data[col].dt.month * 100
-                    + data[col].dt.days
+                    + data[col].dt.day
                 )
         else:
             data[data.select_dtypes("datetime")] = pd.to_numeric(

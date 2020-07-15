@@ -438,18 +438,16 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
     def transform_features(self):
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
-        numeric_data = data[data.select_dtypes("number")]
+        numeric_data = data.drop(self.reserved_cols, axis=1).select_dtypes("number")
         minima = np.nanmin(numeric_data, axis=0)
         maxima = np.nanmax(numeric_data, axis=0)
-        data[data.select_dtypes("number")] = (numeric_data - minima) / (
-            maxima - minima
-        ) - 0.5
+        data[numeric_data.columns] = (numeric_data - minima) / (maxima - minima) - 0.5
         if self.config.get("DATETIME_AS_DATE", True):
             for col in data.select_dtypes("datetime"):
                 data[col] = (
                     data[col].dt.year * 10000
                     + data[col].dt.month * 100
-                    + data[col].dt.days
+                    + data[col].dt.day
                 )
         else:
             data[data.select_dtypes("datetime")] = pd.to_numeric(

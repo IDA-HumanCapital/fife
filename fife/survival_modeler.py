@@ -189,7 +189,7 @@ class SurvivalModeler(ABC):
                 for feature in self.data
                 if feature not in (self.categorical_features + self.reserved_cols)
             ]
-            self.data = self.transform_datetime_features()
+            self.data = self.transform_features()
 
     @abstractmethod
     def train(self) -> Any:
@@ -201,7 +201,7 @@ class SurvivalModeler(ABC):
     ) -> np.ndarray:
         """Use trained model to produce observation survival probabilities."""
 
-    def transform_datetime_features(self):
+    def transform_features(self):
         """Transform datetime features to suit model training."""
         return self.data
 
