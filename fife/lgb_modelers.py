@@ -179,7 +179,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             self.n_intervals = n_intervals
         else:
             self.n_intervals = self.set_n_intervals()
-        early_stopping = (params is None) or ("num_iterations" not in params.keys())
+        early_stopping = (params is None) or (
+            any(["num_iterations" not in d for d in params.values()])
+        )
         self.model = self.train(params=params, validation_early_stopping=early_stopping)
 
     def train(
