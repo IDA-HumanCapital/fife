@@ -171,6 +171,17 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 params[time_horizon] = default_params
         return params
 
+    def build_model(
+        self, n_intervals: Union[None, int] = None, params: dict = None
+    ) -> None:
+        """Train and store a sequence of gradient-boosted tree models."""
+        if n_intervals:
+            self.n_intervals = n_intervals
+        else:
+            self.n_intervals = self.set_n_intervals()
+        early_stopping = (params is not None) and ("num_iterations" in params)
+        self.model = self.train(params=params, validation_early_stopping=early_stopping)
+
     def train(
         self,
         params: Union[None, dict] = None,
@@ -187,7 +198,6 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 }
                 for time_horizon in range(self.n_intervals)
             }
-
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
         for time_horizon in range(self.n_intervals):
