@@ -218,9 +218,12 @@ INDIVIDUAL_IDENTIFIER; default: `""` (empty string); type: String
 	The name of the feature that identifies individuals that persist over multiple time periods in the data. If an empty string, defaults to the leftmost column in the data.
 TIME_IDENTIFIER; default: `""` (empty string); type: String
 	The name of the feature that identifies time periods in the data. If an empty string, defaults to the second-leftmost column in the data.
+
 ##### Feature types
 CATEGORICAL_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as categorical. Useful for flagging categorical columns that have a numeric data type and more than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
+DATETIME_AS_DATE; default: `true`; type: Boolean
+	How datetime features will be represented. If True, datetime features will be converted to integers in YYYYMMDD format. Otherwise, datetime features will be converted to nanoseconds.
 MAX_NULL_SHARE; default: 0.999; type: Decimal
 	The maximum share of observations that may have a null value for a feature to be kept for training. Larger values may increase run time, risk of memory error, and/or model performance
 MAX_UNIQUE_NUMERIC_CATS; default: 1024; type: Integer
@@ -235,16 +238,19 @@ TEST_PERIODS; default: 0; type: Integer
 	The number of most recent periods excluded from training and used to evaluate model performance in periods after those in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
 VALIDATION_SHARE; default: 0.25; type: Decimal
 	The share of individuals excluded from training and used to decide when to stop training and to evaluate the model in the same periods as in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
+
 ##### Modeler types
 TREE_MODELS; default: `true`; type: Boolean
 	Whether FIFE will train gradient-boosted trees, as opposed to a neural network.
 FIXED_EFFECT_FEATURES; default: `[]` (empty list); type: List of strings
 	Optional list of column names of features to be used to train an interacted fixed effects (IFE) model in addition to tree models or a neural network. An IFE model will not be trained if list is empty.
+
 ##### General hyperparameters
 MAX_EPOCHS; default: 256; type: Integer
 	The maximum number of passes through the training set. Larger values may increase run time and/or model performance.
 PATIENCE; default: 4; type: Integer
 	The number of passes through the training dataset without improvement in validation set performance before training is stopped early. Larger values may increase run time and/or model performance.
+
 ##### Neural network hyperparameters
 BATCH_SIZE; default: 512; type: Integer
 	The number of observations per batch of data fed to the machine learning model for training. Larger values may decrease model performance and/or run time.
@@ -312,12 +318,11 @@ data_processor = PanelDataProcessor(config={'VALIDATION_SHARE': 0.2},
 data_processor.build_processed_data()
 ```
 
-We can access the processed data as `data_processor.data` for input to a modeler. Let's use a gradient-boosted trees modeler. Any modeler needs data and to know which features should be treated as categorical, as opposed to numeric. We can also specify modeling parameters in the config argument. Perhaps we prefer a patience value of 8rather than the default value of 4.
+We can access the processed data as `data_processor.data` for input to a modeler. Let's use a gradient-boosted trees modeler. We can specify modeling parameters in the config argument. Perhaps we prefer a patience value of 8 rather than the default value of 4.
 
 ```python
 gbt_modeler = GradientBoostedTreesModeler(config={'PATIENCE': 8},
-                                          data=data_processor.data,
-                                          categorical_maps=list(data_processor.categorical_maps.keys()))
+                                          data=data_processor.data)
 gbt_modeler.build_model()
 ```
 

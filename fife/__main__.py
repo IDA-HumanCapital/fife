@@ -97,10 +97,7 @@ def main():
     print(f"Data processing time: {time() - checkpoint_time} seconds")
     checkpoint_time = time()
 
-    # Save intermediate files
-    utils.save_maps(
-        data_processor.numeric_ranges, "Numeric_Ranges", path=config["RESULTS_PATH"]
-    )
+    # Save intermediate data
     utils.save_intermediate_data(
         data_processor.data,
         "Processed_Data",
@@ -169,9 +166,9 @@ def main():
     )
     axes = retention_rates.plot()
     axes.set_ylabel(f"{lead_periods}-period Retention Rate")
-    earliest_period = data_processor.numeric_ranges.loc[
-        data_processor.config["TIME_IDENTIFIER"], "Minimum"
-    ]
+    earliest_period = data_processor.data[
+        data_processor.config["TIME_IDENTIFIER"]
+    ].min()
     axes.set_xlabel(f"Periods Since {earliest_period}")
     utils.save_plot("Retention_Rates", path=config["RESULTS_PATH"])
 
@@ -187,14 +184,21 @@ def main():
     )
 
     # Plot SHAP values for a subset of observations in the final period
-    if isinstance(modeler, (lgb_modelers.GradientBoostedTreesModeler)):
-        subset = modeler.data.index.isin(data_processor.raw_subset.index)
+    sample_size = config.get("SHAP_SAMPLE_SIZE", 0)
+    if (
+        isinstance(modeler, (lgb_modelers.GradientBoostedTreesModeler))
+        and sample_size > 0
+    ):
+        shap_observations = (
+            modeler.data[modeler.data["_predict_obs"]]
+            .sample(n=sample_size)
+            .sort_index()
+        )
+        subset = modeler.data.index.isin(shap_observations.index)
         shap_values = modeler.compute_shap_values(subset=subset)
         utils.plot_shap_values(
             shap_values,
-            data_processor.raw_subset[
-                modeler.categorical_features + modeler.numeric_features
-            ],
+            shap_observations[modeler.categorical_features + modeler.numeric_features],
             modeler.data[subset][
                 modeler.categorical_features + modeler.numeric_features
             ],

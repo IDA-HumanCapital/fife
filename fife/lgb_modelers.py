@@ -277,6 +277,22 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             predictions = np.cumprod(predictions, axis=1)
         return predictions
 
+    def transform_features(self):
+        """Transform features to suit model training."""
+        data = self.data.copy(deep=True)
+        if self.config.get("DATETIME_AS_DATE", True):
+            for col in data.select_dtypes("datetime"):
+                data[col] = (
+                    data[col].dt.year * 10000
+                    + data[col].dt.month * 100
+                    + data[col].dt.days
+                )
+        else:
+            data[data.select_dtypes("datetime")] = pd.to_numeric(
+                data[data.select_dtypes("datetime")]
+            )
+        return data
+
     def compute_shap_values(
         self, subset: Union[None, pd.core.series.Series] = None
     ) -> dict:

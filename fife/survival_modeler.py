@@ -169,26 +169,27 @@ class SurvivalModeler(ABC):
         self.validation_col = validation_col
         self.period_col = period_col
         self.max_lead_col = max_lead_col
-        if config:
-            self.reserved_cols = [
-                self.duration_col,
-                self.event_col,
-                self.predict_col,
-                self.test_col,
-                self.validation_col,
-                self.period_col,
-                self.max_lead_col,
-                self.config["INDIVIDUAL_IDENTIFIER"],
+        self.reserved_cols = [
+            self.duration_col,
+            self.event_col,
+            self.predict_col,
+            self.test_col,
+            self.validation_col,
+            self.period_col,
+            self.max_lead_col,
+        ]
+        if self.config:
+            self.reserved_cols.append(self.config["INDIVIDUAL_IDENTIFIER"])
+        if self.data is not None:
+            self.categorical_features = [
+                col for col in self.data.select_dtypes("category")
             ]
-            if self.data is not None:
-                self.categorical_features = [
-                    col for col in self.data.select_dtypes("category")
-                ]
-                self.numeric_features = [
-                    feature
-                    for feature in self.data
-                    if feature not in (self.categorical_features + self.reserved_cols)
-                ]
+            self.numeric_features = [
+                feature
+                for feature in self.data
+                if feature not in (self.categorical_features + self.reserved_cols)
+            ]
+            self.data = self.transform_datetime_features()
 
     @abstractmethod
     def train(self) -> Any:
@@ -199,6 +200,10 @@ class SurvivalModeler(ABC):
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
     ) -> np.ndarray:
         """Use trained model to produce observation survival probabilities."""
+
+    def transform_datetime_features(self):
+        """Transform datetime features to suit model training."""
+        return self.data
 
     def build_model(self, n_intervals: Union[None, int] = None) -> None:
         """Configure, train, and store a model."""
