@@ -284,10 +284,10 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         pre_freeze_early_stopping = "PRE_FREEZE_EPOCHS" not in params.keys()
         post_freeze_early_stopping = "POST_FREEZE_EPOCHS" not in params.keys()
+        if post_freeze_early_stopping:
+            params["POST_FREEZE_EPOCHS"] = params.get("MAX_EPOCHS", 256)
         if not pre_freeze_early_stopping:
             params["MAX_EPOCHS"] = params["PRE_FREEZE_EPOCHS"]
-            if post_freeze_early_stopping:
-                params["POST_FREEZE_EPOCHS"] = params.get("MAX_EPOCHS", 256)
         self.model = self.train(
             params, validation_early_stopping=pre_freeze_early_stopping
         )
