@@ -259,14 +259,6 @@ class PanelDataProcessor(DataProcessor):
             elif self.is_categorical(col):
                 self.data[col] = self.data[col].astype("category")
         self.build_reserved_cols()
-        raw_subset_sample_size = min(
-            self.config.get("SHAP_SAMPLE_SIZE", 0), self.data["_predict_obs"].sum()
-        )
-        self.raw_subset = (
-            self.data[self.data["_predict_obs"]]
-            .sample(n=raw_subset_sample_size)
-            .sort_index()
-        )
 
     def build_reserved_cols(self):
         """Add data split and outcome-related columns to the data."""
