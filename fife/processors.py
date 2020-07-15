@@ -251,7 +251,6 @@ class PanelDataProcessor(DataProcessor):
         """
         self.check_panel_consistency()
         self.data = self.sort_panel_data()
-        numeric_ranges = {}
         for col in self.data:
             if col == self.config["INDIVIDUAL_IDENTIFIER"]:
                 continue
@@ -259,13 +258,6 @@ class PanelDataProcessor(DataProcessor):
                 del self.data[col]
             elif self.is_categorical(col):
                 self.data[col] = self.data[col].astype("category")
-            else:
-                self.data[col], numeric_ranges[col] = normalize_numeric_feature(
-                    self.data[col]
-                )
-        self.numeric_ranges = pd.DataFrame.from_dict(
-            numeric_ranges, orient="index", columns=["Minimum", "Maximum"]
-        )
         self.build_reserved_cols()
         raw_subset_sample_size = min(
             self.config.get("SHAP_SAMPLE_SIZE", 0), self.data["_predict_obs"].sum()
