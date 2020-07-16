@@ -183,7 +183,7 @@ All files produced by FIFE will overwrite files of the same name in the director
 - First column: The number of time periods since the earliest period in the data.
 - Second column: The share of individuals observed a given number of periods prior who survived to the corresponding period. The number of periods prior is given by the `RETENTION_INTERVAL` configuration parameter.
 - Third column: The model prediction of the corresponding actual retention rate in the second column for periods in the data on which the model was trained.
-- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` configuration parameter and periods beyond those in the data.
+- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` or `TEST_INTERVALS` configuration parameter and periods beyond those in the data.
 
 ##### Figures
 
@@ -234,8 +234,10 @@ NUMERIC_SUFFIXES; default: `[]` (empty list); type: List of strings
 ##### Training set
 MIN_SURVIVORS_IN_TRAIN; default: 64; type: Integer
 	The minimum number of training set observations surviving a given time horizon for the model to be trained to make predictions for that time horizon.
+TEST_INTERVALS; default: -1; type: Integer
+	The number of most recent periods to treat as absent from the data during training for the purpose of model evaluation. Larger values may decrease model performance and run time and/or increase evaluation time frame.
 TEST_PERIODS; default: 0; type: Integer
-	The number of most recent periods excluded from training and used to evaluate model performance in periods after those in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
+	One plus the value represented by TEST_INTERVALS. Deprecated and overriden by TEST_INTERVALS.
 VALIDATION_SHARE; default: 0.25; type: Decimal
 	The share of individuals excluded from training and used to decide when to stop training and to evaluate the model in the same periods as in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
 

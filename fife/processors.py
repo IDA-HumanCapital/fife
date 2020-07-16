@@ -267,8 +267,9 @@ class PanelDataProcessor(DataProcessor):
         )[0]
         self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
         self.data["_test"] = (
-            self.data["_period"] + self.config.get("TEST_PERIODS", 0)
-        ) > self.data["_period"].max()
+            self.data["_period"]
+            + self.config.get("TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1)
+        ) >= self.data["_period"].max()
         self.data["_validation"] = (
             self.flag_validation_individuals() & ~self.data["_test"]
         )
