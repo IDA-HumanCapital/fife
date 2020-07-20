@@ -92,7 +92,11 @@ def main():
         modeler = lgb_modelers.GradientBoostedTreesModeler(
             config=config, data=data_processor.data,
         )
-        modeler.build_model()
+        if config.get("HYPER_TRIALS", 0) > 0:
+            params = modeler.hyperoptimize(config["HYPER_TRIALS"])
+        else:
+            params = None
+        modeler.build_model(params=params)
         for i, lead_specific_model in enumerate(modeler.model):
             lead_path = (
                 f'{config["RESULTS_PATH"]}/Intermediate/Models/'
@@ -110,7 +114,11 @@ def main():
         modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
             config=config, data=data_processor.data,
         )
-        modeler.build_model()
+        if config.get("HYPER_TRIALS", 0) > 0:
+            params = modeler.hyperoptimize(config["HYPER_TRIALS"])
+        else:
+            params = None
+        modeler.build_model(params=params)
         modeler.model.save(
             f'{config["RESULTS_PATH"]}/Intermediate/Models/FFNN_Model.h5'
         )

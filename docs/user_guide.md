@@ -245,11 +245,13 @@ VALIDATION_SHARE; default: 0.25; type: Decimal
 TREE_MODELS; default: `true`; type: Boolean
 	Whether FIFE will train gradient-boosted trees, as opposed to a neural network.
 
-##### General hyperparameters
+##### Hyperoptimization
+HYPER_TRIALS; default: 0; type: Integer
+	The number of hyperparameter sets to trial. If zero, validation early stopping will be used to decide the number of epochs. Larger values may increase run time and/or model performance.
 MAX_EPOCHS; default: 256; type: Integer
-	The maximum number of passes through the training set. Larger values may increase run time and/or model performance.
+	If HYPER_TRIALS is zero, the maximum number of passes through the training set. Larger values may increase run time and/or model performance.
 PATIENCE; default: 4; type: Integer
-	The number of passes through the training dataset without improvement in validation set performance before training is stopped early. Larger values may increase run time and/or model performance.
+	If HYPER_TRIALS is zero, the number of passes through the training dataset without improvement in validation set performance before training is stopped early. Larger values may increase run time and/or model performance.
 
 ##### Neural network hyperparameters
 BATCH_SIZE; default: 512; type: Integer
