@@ -24,31 +24,8 @@ def main():
     """Execute default FIFE pipeline from data to forecasts and metrics."""
     checkpoint_time = time()
 
-    # Read config file, if any
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], "r") as file:
-            config = json.load(file)
-    else:
-        print("No configuration file specified.")
-        candidate_configs = [file for file in os.listdir() if file.endswith(".json")]
-        if len(candidate_configs) == 0:
-            print(
-                "No json files found in current directory. "
-                "Will proceed with default configuration. "
-            )
-            config = {}
-        else:
-            assert len(candidate_configs) <= 1, (
-                "Multiple json files found in current directory. "
-                "Please specify a configuration file in your command, "
-                'e.g., "fife example_config.json".'
-            )
-            print(f"Using {candidate_configs[0]} as configuration file.")
-            with open(candidate_configs[0], "r") as file:
-                config = json.load(file)
-
-    # Use default values of config parameters not specified
-    DEFAULT_CONFIG = {
+    # Populate configuration
+    config = {
         "SEED": 9999,
         "RESULTS_PATH": "FIFE_results",
         "TREE_MODELS": True,
@@ -57,8 +34,12 @@ def main():
         "SHAP_SAMPLE_SIZE": 128,
         "FIXED_EFFECT_FEATURES": [],
     }
-    for k, v in DEFAULT_CONFIG.items():
-        if k not in config.keys():
+    for arg in sys.argv[1:]:
+        if arg.endswith(".json"):
+            with open(sys.argv[1], "r") as file:
+                config.update(json.load(file))
+        else:
+            k, v = arg.split("=")
             config[k] = v
 
     # Ensure reproducibility

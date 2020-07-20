@@ -82,7 +82,7 @@ FIFE takes as input:
 -	An unbalanced panel dataset
 -	(Optional) A set of configuration parameters described in the table at the bottom of this document
 
-Configuration parameters may be provided in the JSON file format. If you execute FIFE from a directory with a single file with extension _.json_, FIFE will use configuration parameters from that file. If you execute FIFE from a directory with multiple such files, you will need to specify which file contains your configuration parameters by appending a space and the file name to your command. For example, you will need to execute `fife example_config.json`.
+Configuration parameters may be provided in the JSON file format and/or individually with the parameter name and value separated by `=`. For any parameter provided multiple values, FIFE will assign the last value provided. For example, `fife config.json TEST_INTERVALS=4` will assign a value of 4 to TEST_INTERVALS, and otherwise use the parameter values provided in the config.json file in the current directory.
 
 Input data may be provided in any of the following file formats with the corresponding file extension:
 
@@ -91,7 +91,7 @@ Input data may be provided in any of the following file formats with the corresp
 | Feather                      | .feather   |
 | Comma-separated values (CSV) | .csv       |
 | CSV with gzip compression    | .csv.gz    |
-| Pickle 	               | .p or .pkl |
+| Pickled Pandas DataFrame | .p or .pkl |
 | HDF5 		               | .h5 	    |
 | JSON 		               | .json      |
 
@@ -406,4 +406,4 @@ BibTex:
 }
 ```
 
-This document was most recently updated 12 June 2020.
+This document was most recently updated 20 July 2020.
