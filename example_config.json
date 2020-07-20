@@ -19,7 +19,6 @@
     "VALIDATION_SHARE": 0.25,
 
     "TREE_MODELS": true,
-    "FIXED_EFFECT_FEATURES": [],
 
     "MAX_EPOCHS": 256,
     "PATIENCE": 4,

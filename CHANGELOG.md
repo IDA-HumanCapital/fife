@@ -1,4 +1,4 @@
-## 1.1.0 - 2020-07-15
+## 1.1.0 - 2020-07-20
 
 ### Added
 
@@ -25,12 +25,6 @@
 - Defaults for all configuration parameters
 - Categorical feature conversion to pandas Categorical type
 
-<u>PanelDataProcessor</u>
-
-- "\_period" and "\_maximum_lead" columns, which replace computation of "factorized time ids" in various methods
-- Defaults for all configuration parameters
-- Categorical feature conversion to pandas Categorical type
-
 ### Removed
 
 <u>PanelDataProcessor</u>
@@ -39,6 +33,12 @@
 - Homebrewed categorical feature integer mapping
 - Raw subsetting
 
+<u>Command-line Interface</u>
+
+- Interacted fixed effects modeling
+- Metrics-related output when no test set specified
+- Forecast-related output when test set specified
+
 ### Fixed
 
 - Validation and test sets no longer overlap
@@ -46,4 +46,5 @@
 - First period of test set now considered observed for computing training set outcomes
 - ProportionalHazards models are can now be saved to files
 - Code now formatted using _Black_
+- Command-line interface now evaluates on earliest period of test set instead of validation set
 

@@ -113,8 +113,6 @@ FIFE produces as intermediate files:
 -	*Intermediate/Data/Categorical_Maps.p*: Crosswalks from whole numbers to original values for each categorical feature
 -	*Intermediate/Data/Numeric_Ranges.p*: Maximum and minimum values in the training set for each numeric feature
 -	*Intermediate/Data/Processed_Data.p*: The provided data after removing uninformative features, sorting, assigning train and test sets, normalizing numeric features, and factorizing categorical features
--	If the `FIXED_EFFECT_FEATURES` configuration parameter contains a list of one or more column names:
-	-	*Intermediate/Models/IFE_Model.p*: An interacted fixed effects model for all time horizons
 -	One of the following:
 	-	*Intermediate/Models/[horizon]-lead_GBT_Model.json*: A gradient-boosted tree model for each time horizon
 	-	*Intermediate/Models/FFNN_Model.h5*: A feedforward neural network model for all time horizons
@@ -123,20 +121,22 @@ Intermediate files are not intended to be read by humans.
 
 ### Outputs
 
-FIFE produces as output:
+If `TEST_INTERVALS` is greater than zero, or if `TEST_PERIODS` is greater than one and `TEST_INTERVALS` is unspecified, FIFE produces:
+
 -	*Output/Tables/Survival_Curves.csv*: Predicted survival curves for each individual observed in the final period of the dataset
 -	*Output/Tables/Aggregate_Survival_Bounds.csv*: Expected number of individuals retained for each time horizon with corresponding uncertainty bounds
+-	In *Output/Figures/*, the following plots of relationships between features and the probabilities of exit for each time horizon conditional on survival to the final period of that time horizon:
+  -   *Dependence_[horizon]_lead.png* and *Dependence_RMST.png*
+  -   *Importance_[horizon]_lead.png* and *Importance_RMST.png*
+  -   *Summary_[horizon]_lead.png* and *Summary_RMST.png*
+
+Otherwise, FIFE produces:
+
 -	*Output/Tables/Metrics.csv*: Model performance metrics
 -	*Output/Tables/Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability
--	If the `FIXED_EFFECT_FEATURES` configuration parameter contains a list of one or more column names:
-	-	*Output/Tables/IFE_Metrics.csv*: Performance metrics for an interacted fixed effects model
-	-	*Output/Tables/IFE_Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability from an interacted fixed effects model
 -	*Output/Tables/Retention_Rates.csv* and *Output/Figures/Retention_Rates.png*: Actual and predicted share of individuals who survived a given number of periods for each period in the dataset
--   In *Output/Figures/*, the following plots of relationships between features and the probabilities of exit for each time horizon conditional on survival to the final period of that time horizon:
-	-   *Dependence_[horizon]_lead.png* and *Dependence_RMST.png*
-	-   *Importance_[horizon]_lead.png* and *Importance_RMST.png*
-	-   *Summary_[horizon]_lead.png* and *Summary_RMST.png*
--	*Output/Logs/Log.txt*: A log of script execution
+
+In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
 All files produced by FIFE will overwrite files of the same name in the directory designated by the `RESULTS_PATH` configuration parameter.
 
@@ -151,10 +151,23 @@ All files produced by FIFE will overwrite files of the same name in the director
 - Second column: Expected number of individuals retained for each time horizon.
 - Third and fourth columns: Lower and upper two-sided [Chernoff bounds](https://en.wikipedia.org/wiki/Chernoff_bound) to quantify the aggregation uncertainty around the expected number of retained individuals.
 
-##### Metrics.csv
-- First column: Durations of forecast time horizons, given in terms of the number of periods observed in the data. Each of the metrics in the subsequent columns (except the overall ["C-index"](https://www.statisticshowto.datasciencecentral.com/c-statistic/)) are calculated over all test set observations for which the given horizon could be observed. For example, if the periods in the data are Jan, Feb, Mar, and Apr, the first column will have values 1, 2, and 3 (more generally, if there are N periods, the values in the first column will be 1 through N-1). Metrics in the row with a 1 in the first column will be based on observations in Jan, Feb, and Mar (or periods 1 through N-1). Metrics in the row with a 2 in the first column will be based on observations in Jan and Feb (or periods 1 through N-2). Metrics in the row with a 3 in the first column will be based on observations in Jan (or periods 1 through N-3).
+##### Figures
 
-- Second column: Area Under the Receiver Operating Characteristic (AUROC). The AUROC is, over all pairs of observations where exactly one of the observations survived in the given horizon, the share of those pairs for which the model predicts the survivor was more likely to survive. A totally uninformed model would be expected to produce an AUROC of 0.5 and a perfect model would produce an AUROC of 1.0. A blank value indicates that either all or no test set observations survived the given horizon, so an AUROC could not be calculated.
+*Retention_Rates.png* plots the contents of *Retention_Rates.csv*.
+
+For gradient-boosted tree modelers there will be other plots in *Output/Figures/* which depict aggregations and subsets of Shapley Additive Explanations (SHAP) values for individuals in the final period of the dataset. A [SHAP value](https://github.com/slundberg/shap/blob/master/README.md) is a measure of how much a specific feature value contributes (positively or negatively) to a specific predicted value. For files with names ending in `_lead`, the predicted value is the probability of surviving the number of additional periods specified in the file name. For files with names ending in `RMST`, the predicted value is the RMST.
+
+Plots with names beginning with `Importance_`: Mean absolute SHAP values for up to 20 features with the highest such means. The greater its mean absolute SHAP value, the more a feature contributes to the survival probability (positively or negatively) in the given period (or RMST), on average. Thus the features at the top of the plot are the most important features.
+
+Plots with names beginning with `Summary_`: SHAP values associated with each of the most important features against the values of those features. A pattern in such a plot indicates an association between the plotted feature and the predicted outcome. For example, points shifting from blue to red from left to right for a given feature indicates that the feature is positively correlated with the predicted outcome.
+
+Plots with names beginning with `Dependence_`: SHAP values associated with the most important feature against the values of that feature and the values of an automatically selected other feature. Different patterns for differently-colored points indicate that the association between the most important feature and the predicted outcome depends on the value of the other feature. For example, if blue points form an upward-sloping line but red points form a downward-sloping line then a low value of the other feature is associated with a negative correlation between the most important feature and the predicted outcome, but a high value of the other feature is associated with a positive correlation.
+
+##### Metrics.csv
+
+- First column: Durations of forecast time horizons, given in terms of the number of periods observed in the data. Each of the metrics in the subsequent columns are calculated over the observations from the earliest period in the test set.
+
+- Second column: Area Under the Receiver Operating Characteristic (AUROC). The AUROC is, over all pairs of observations where exactly one of the observations survived in the given horizon, the share of those pairs for which the model predicts the survivor was more likely to survive. A totally uninformed model would be expected to produce an AUROC of 0.5 and a perfect model would produce an AUROC of 1.0. A blank value indicates that either all or no observations survived the given horizon, so an AUROC could not be calculated.
 
 - Third column: Mean of each individual's predicted probability of surviving through the given horizon, which gives the predicted share of individuals that will survive the horizon.
 
@@ -168,7 +181,7 @@ All files produced by FIFE will overwrite files of the same name in the director
 
 - Eighth column: Number of observations with a predicted survival probability less than 0.5 that did not survive. All else equal, a better model will have larger values in the fifth and eighth columns and smaller values in the sixth and seventh columns.
 
-- Ninth column: Concordance index (or "C-index") over the entire test set, and is therefore a single value. The concordance index is, over all pairs of observations where one observation is known to have survived longer, the share of those pairs for which the model predicts a greater restricted mean survival time (RMST) for the observation that survived longer. An individual's RMST is the number of periods the model expects the individual to survive over the greatest horizon for which the model produced a prediction. Like AUROC, a totally uninformed model would be expected to produce a concordance index of 0.5 and a perfect model would produce a concordance index of 1.0.
+- Ninth column: Concordance index (or "C-index"), a single value to evaluate the model over all time horizons in the test set. The concordance index is, over all pairs of observations where one observation is known to have survived longer, the share of those pairs for which the model predicts a greater restricted mean survival time (RMST) for the observation that survived longer. An individual's RMST is the number of periods the model expects the individual to survive over the greatest horizon for which the model produced a prediction. Like AUROC, a totally uninformed model would be expected to produce a concordance index of 0.5 and a perfect model would produce a concordance index of 1.0.
 
 - *IFE_Metrics.csv* follows the same format as *Metrics.csv*.
 
@@ -177,25 +190,12 @@ All files produced by FIFE will overwrite files of the same name in the director
 - Second column: The quantile based on predicted probability of survival. For example, if the number of quantiles is given to be 5, quantile 1 represents the 20% (perhaps roughly) of observations predicted least likely to survive the given time horizon among those for which the given horizon could be observed. The number of quantiles is given by the `QUANTILES` configuration parameter.
 - Third column: The number of observations for which the individuals in the given quantile survived the given horizon.
 - Fourth column: The number of observations in the given quantile. Ties in predicted probability among observations may cause the number of observations to vary across quantile for a given time horizon.
-- *IFE_Counts_by_Quantile.csv* follows the same format as *Counts_by_Quantile.csv*.
 
 ##### Retention_Rates.csv
 - First column: The number of time periods since the earliest period in the data.
 - Second column: The share of individuals observed a given number of periods prior who survived to the corresponding period. The number of periods prior is given by the `RETENTION_INTERVAL` configuration parameter.
 - Third column: The model prediction of the corresponding actual retention rate in the second column for periods in the data on which the model was trained.
 - Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` or `TEST_INTERVALS` configuration parameter and periods beyond those in the data.
-
-##### Figures
-
-*Retention_Rates.png* plots the contents of *Retention_Rates.csv*.
-
-For gradient-boosted tree modelers there will be other plots in *Output/Figures/* which depict aggregations and subsets of Shapley Additive Explanations (SHAP) values for individuals in the final period of the dataset. A [SHAP value](https://github.com/slundberg/shap/blob/master/README.md) is a measure of how much a specific feature value contributes (positively or negatively) to a specific predicted value. For files with names ending in `_lead`, the predicted value is the probability of surviving the number of additional periods specified in the file name. For files with names ending in `RMST`, the predicted value is the RMST.
-
-Plots with names beginning with `Importance_`: Mean absolute SHAP values for up to 20 features with the highest such means. The greater its mean absolute SHAP value, the more a feature contributes to the survival probability (positively or negatively) in the given period (or RMST), on average. Thus the features at the top of the plot are the most important features.
-
-Plots with names beginning with `Summary_`: SHAP values associated with each of the most important features against the values of those features. A pattern in such a plot indicates an association between the plotted feature and the predicted outcome. For example, points shifting from blue to red from left to right for a given feature indicates that the feature is positively correlated with the predicted outcome.
-
-Plots with names beginning with `Dependence_`: SHAP values associated with the most important feature against the values of that feature and the values of an automatically selected other feature. Different patterns for differently-colored points indicate that the association between the most important feature and the predicted outcome depends on the value of the other feature. For example, if blue points form an upward-sloping line but red points form a downward-sloping line then a low value of the other feature is associated with a negative correlation between the most important feature and the predicted outcome, but a high value of the other feature is associated with a positive correlation.
 
 ### Configuration Parameters
 
@@ -244,8 +244,6 @@ VALIDATION_SHARE; default: 0.25; type: Decimal
 ##### Modeler types
 TREE_MODELS; default: `true`; type: Boolean
 	Whether FIFE will train gradient-boosted trees, as opposed to a neural network.
-FIXED_EFFECT_FEATURES; default: `[]` (empty list); type: List of strings
-	Optional list of column names of features to be used to train an interacted fixed effects (IFE) model in addition to tree models or a neural network. An IFE model will not be trained if list is empty.
 
 ##### General hyperparameters
 MAX_EPOCHS; default: 256; type: Integer
