@@ -118,22 +118,23 @@ def main():
     checkpoint_time = time()
 
     # Save metrics or forecasts
-    test_intervals = modeler.config.get("TEST_INTERVALS", modeler.config.get("TEST_PERIODS", 0) - 1)
+    test_intervals = modeler.config.get(
+        "TEST_INTERVALS", modeler.config.get("TEST_PERIODS", 0) - 1
+    )
     if test_intervals > 0:
 
         # Save metrics
-        evaluation_subset = modeler.data["_period"] = modeler.data["_period"].max() - test_intervals
+        evaluation_subset = modeler.data["_period"] = (
+            modeler.data["_period"].max() - test_intervals
+        )
         utils.save_output_table(
-            modeler.evaluate(evaluation_subset),
-            "Metrics",
-            path=config["RESULTS_PATH"],
+            modeler.evaluate(evaluation_subset), "Metrics", path=config["RESULTS_PATH"],
         )
 
         # Save counts by quantile
         utils.save_output_table(
             modeler.tabulate_survival_by_quantile(
-                n_quantiles=config["QUANTILES"],
-                subset=evaluation_subset,
+                n_quantiles=config["QUANTILES"], subset=evaluation_subset,
             ),
             "Counts_by_Quantile",
             index=False,
@@ -142,9 +143,9 @@ def main():
 
         # Save and plot actual, fitted, and forecasted retention rates
         lead_periods = config["RETENTION_INTERVAL"]
-        time_ids = pd.factorize(modeler.data[modeler.config["TIME_IDENTIFIER"]], sort=True)[
-            0
-        ]
+        time_ids = pd.factorize(
+            modeler.data[modeler.config["TIME_IDENTIFIER"]], sort=True
+        )[0]
         retention_rates = modeler.tabulate_retention_rates(
             lead_periods=lead_periods, time_ids=time_ids
         )
@@ -178,22 +179,24 @@ def main():
         # Plot SHAP values for a subset of observations in the final period
         sample_size = config.get("SHAP_SAMPLE_SIZE", 0)
         if (
-                isinstance(modeler, (lgb_modelers.GradientBoostedTreesModeler))
-                and sample_size > 0
+            isinstance(modeler, (lgb_modelers.GradientBoostedTreesModeler))
+            and sample_size > 0
         ):
             shap_observations = (
                 modeler.data[modeler.data["_predict_obs"]]
-                    .sample(n=sample_size)
-                    .sort_index()
+                .sample(n=sample_size)
+                .sort_index()
             )
             subset = modeler.data.index.isin(shap_observations.index)
             shap_values = modeler.compute_shap_values(subset=subset)
             utils.plot_shap_values(
                 shap_values,
-                shap_observations[modeler.categorical_features + modeler.numeric_features],
+                shap_observations[
+                    modeler.categorical_features + modeler.numeric_features
+                ],
                 modeler.data[subset][
                     modeler.categorical_features + modeler.numeric_features
-                    ],
+                ],
                 config["TIME_IDENTIFIER"],
                 path=config["RESULTS_PATH"],
             )

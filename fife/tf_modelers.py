@@ -200,8 +200,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
+        default_params = {"BATCH_SIZE": 512, "PRE_FREEZE_EPOCHS": 16}
         if n_trials <= 0:
-            return None
+            return {time_horizon: default_params for time_horizon in range(self.n_intervals)}
         params = {}
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
@@ -227,7 +228,6 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             n_trials=n_trials,
         )
         params = study.best_params
-        default_params = {"BATCH_SIZE": 512, "PRE_FREEZE_EPOCHS": 16}
         if self.categorical_features:
             default_params["POST_FREEZE_EPOCHS"] = 16
         else:

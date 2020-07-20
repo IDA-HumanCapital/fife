@@ -97,8 +97,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
+        default_params = {"objective": "binary", "num_iterations": 100}
         if n_trials <= 0:
-            return None
+            return {time_horizon: default_params for time_horizon in range(self.n_intervals)}
         params = {}
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
@@ -161,7 +162,6 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             )
             params[time_horizon] = study.best_params
             params[time_horizon]["objective"] = "binary"
-            default_params = {"objective": "binary", "num_iterations": 100}
             default_booster = lgb.Booster(params=default_params, train_set=train_data)
             default_booster.add_valid(validation_data, "validation_set")
             for _ in range(default_params["num_iterations"]):
