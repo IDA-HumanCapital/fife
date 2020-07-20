@@ -349,18 +349,48 @@ In general we are most interested in forecasts for individuals that are still in
 gbt_modeler.forecast()
 ```
 
-The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [*Metrics.csv*](#metrics.csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only on the validation set. If we specified one or more test periods in our processor configuration we could have used `gbt_modeler.data['_test']` instead.
+Because our forecasts are for the final period of data, we can't measure their performance in future periods. However, we can train a new model where we pretend an earlier period is the final period, then measure performance through the actual final period. In other words, we can reserve some of the most recent periods for testing.
 
 ```python
-gbt_modeler.evaluate(gbt_modeler.data['_validation'])
+test_intervals = 4
+data_processor = PanelDataProcessor(config={'VALIDATION_SHARE': 0.2,
+                                            'TEST_INTERVALS': test_intervals},
+                                    data=data)
+data_processor.build_processed_data()
+gbt_modeler = GradientBoostedTreesModeler(config={'PATIENCE': 8},
+                                          data=data_processor.data)
+gbt_modeler.build_model()
 ```
 
-In each time period, what share of the observations two periods past would we expect to still be around? See the description of [_Retention_Rates.csv_](#retention_rates.csv) for more details.
+The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [*Metrics.csv*](#metrics.csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period.
+
+```python
+evaluation_subset = gbt_modeler.data["_period"] == (
+            gbt_modeler.data["_period"].max() - test_intervals
+        )
+gbt_modeler.evaluate(evaluation_subset)
+```
+
+The model we train depends on hyperparameters such as the maximum number of leaves per tree and the minimum number of observations per leaf. The `hyperoptimize` method searches for better hyperparameter values than the LightGBM defaults. We need only specify the number of hyperparameter sets to trial. `hyperoptimize` will return the set that performs best on the validation set for each time horizon.
+
+```python
+params = gbt_modeler.hyperoptimize(16)
+```
+
+Now we can train and evaluate a new model with our curated hyperparameters.
+
+```python
+gbt_modeler.build_model(params=params)
+gbt_modeler.evaluate(evaluation_subset)
+```
+
+`evaluate` offers just one of many ways to examine a model. For example, we can answer "In each time period, what share of the observations two periods past would we expect to still be around?"" See the description of [_Retention_Rates.csv_](#retention_rates.csv) for more details.
+
 ```python
 gbt_modeler.tabulate_retention_rates(2)
 ```
 
-Other modelers define different ways of using data to create forecasts, but they all support the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
+Other modelers define different ways of using data to create forecasts and metrics, but they all support the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
 
 ### Acknowledgement
 
