@@ -20,6 +20,7 @@
 
     "TREE_MODELS": true,
 
+	"HYPER_TRIALS": 0,
     "MAX_EPOCHS": 256,
     "PATIENCE": 4,
 

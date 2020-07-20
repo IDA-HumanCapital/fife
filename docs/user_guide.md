@@ -82,7 +82,7 @@ FIFE takes as input:
 -	An unbalanced panel dataset
 -	(Optional) A set of configuration parameters described in the table at the bottom of this document
 
-Configuration parameters may be provided in the JSON file format and/or individually with the parameter name and value separated by `=`. For any parameter provided multiple values, FIFE will assign the last value provided. For example, `fife config.json TEST_INTERVALS=4` will assign a value of 4 to TEST_INTERVALS, and otherwise use the parameter values provided in the config.json file in the current directory.
+Configuration parameters may be provided in the JSON file format and/or individually with the parameter name prepended by `--`. Individually provided parameter values will override values in a JSON file. For example, `fife config.json --TEST_INTERVALS 4 --HYPER_TRIALS 16 ` will assign a value of 4 to TEST_INTERVALS and a value of 16 to HYPER_TRIALS, and otherwise use the parameter values provided in the config.json file in the current directory.
 
 Input data may be provided in any of the following file formats with the corresponding file extension:
 
@@ -239,7 +239,7 @@ TEST_INTERVALS; default: -1; type: Integer
 TEST_PERIODS; default: 0; type: Integer
 	One plus the value represented by TEST_INTERVALS. Deprecated and overriden by TEST_INTERVALS.
 VALIDATION_SHARE; default: 0.25; type: Decimal
-	The share of individuals excluded from training and used to decide when to stop training and to evaluate the model in the same periods as in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
+	The share of observations used for evaluation instead of training for hyperoptimization or early stopping. Larger values may increase or decrease model performance and/or run time.
 
 ##### Modeler types
 TREE_MODELS; default: `true`; type: Boolean
@@ -269,7 +269,7 @@ NODES_PER_DENSE_LAYER; default: 512; type: Integer
 NON_CAT_MISSING_VALUE; default: -1; type: Decimal
 	The value used to replace missing values of numeric features. Outside the [-0.5, 0.5] domain of normalized values as recommended by Chollet (2018) "Deep Learning with Python" p. 102
 PROPORTIONAL_HAZARDS; default: `false`; type: Boolean
-	Whether the capability will restrict the neural network to a proportional hazards model.
+	Whether FIFE will restrict the neural network to a proportional hazards model.
 
 ##### Metrics
 QUANTILES; default: 5; type: Integer

@@ -5,6 +5,7 @@
 <u>Execution</u>
 
 - Option to execute from command line without configuration file
+- Option to specify individual parameter values
 - Default configuration for processors and modelers
 - Command-line execution now uses data file in current directory if there is only one file with a matching extension
 

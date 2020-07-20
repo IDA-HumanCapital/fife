@@ -24,23 +24,14 @@ def main():
     """Execute default FIFE pipeline from data to forecasts and metrics."""
     checkpoint_time = time()
 
-    # Populate configuration
-    config = {
-        "SEED": 9999,
-        "RESULTS_PATH": "FIFE_results",
-        "TREE_MODELS": True,
-        "RETENTION_INTERVAL": 1,
-        "QUANTILES": 5,
-        "SHAP_SAMPLE_SIZE": 128,
-        "FIXED_EFFECT_FEATURES": [],
-    }
-    for arg in sys.argv[1:]:
-        if arg.endswith(".json"):
-            with open(sys.argv[1], "r") as file:
-                config.update(json.load(file))
-        else:
-            k, v = arg.split("=")
-            config[k] = v
+    # Read configuration parameters
+    parser = utils.FIFEArgParser()
+    args = parser.parse_args()
+    config = {}
+    if args.CONFIG_PATH:
+        with open(args.CONFIG_PATH, "r") as file:
+            config.update(json.load(file))
+    config.update({k: v for k, v in vars(args).items() if v is not None})
 
     # Ensure reproducibility
     utils.make_results_reproducible(config["SEED"])
@@ -60,11 +51,11 @@ def main():
             "No data files found in current directory. "
             f"Valid data file suffixes are {valid_suffixes}. "
             "If you want to use data in another directory, "
-            "please specify the DATA_FILE_PATH in a config file."
+            "please specify the DATA_FILE_PATH."
         )
         assert len(candidate_data_files) <= 1, (
             "Multiple data files found in current directory. "
-            "please specify the DATA_FILE_PATH in a config file."
+            "please specify the DATA_FILE_PATH."
         )
         print(f"Using {candidate_data_files[0]} as data file.")
         config["DATA_FILE_PATH"] = candidate_data_files[0]
@@ -92,11 +83,12 @@ def main():
         modeler = lgb_modelers.GradientBoostedTreesModeler(
             config=config, data=data_processor.data,
         )
+        modeler.n_intervals = modeler.set_n_intervals()
         if config.get("HYPER_TRIALS", 0) > 0:
             params = modeler.hyperoptimize(config["HYPER_TRIALS"])
         else:
             params = None
-        modeler.build_model(params=params)
+        modeler.build_model(n_intervals=modeler.n_intervals, params=params)
         for i, lead_specific_model in enumerate(modeler.model):
             lead_path = (
                 f'{config["RESULTS_PATH"]}/Intermediate/Models/'
@@ -114,11 +106,12 @@ def main():
         modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
             config=config, data=data_processor.data,
         )
+        modeler.n_intervals = modeler.set_n_intervals()
         if config.get("HYPER_TRIALS", 0) > 0:
             params = modeler.hyperoptimize(config["HYPER_TRIALS"])
         else:
             params = None
-        modeler.build_model(params=params)
+        modeler.build_model(n_intervals=modeler.n_intervals, params=params)
         modeler.model.save(
             f'{config["RESULTS_PATH"]}/Intermediate/Models/FFNN_Model.h5'
         )
@@ -132,7 +125,7 @@ def main():
     if test_intervals > 0:
 
         # Save metrics
-        evaluation_subset = modeler.data["_period"] = (
+        evaluation_subset = modeler.data["_period"] == (
             modeler.data["_period"].max() - test_intervals
         )
         utils.save_output_table(

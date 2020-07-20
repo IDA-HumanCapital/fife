@@ -202,7 +202,9 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
 
         default_params = {"BATCH_SIZE": 512, "PRE_FREEZE_EPOCHS": 16}
         if n_trials <= 0:
-            return {time_horizon: default_params for time_horizon in range(self.n_intervals)}
+            return {
+                time_horizon: default_params for time_horizon in range(self.n_intervals)
+            }
         params = {}
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]

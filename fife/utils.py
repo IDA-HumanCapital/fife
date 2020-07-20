@@ -1,5 +1,6 @@
-"""These are I/O, logging, calculation, and plotting functions for FIFE."""
+"""I/O, logging, calculation, and plotting functions for FIFE."""
 
+import argparse
 import json
 import os
 import pickle
@@ -281,3 +282,178 @@ def create_example_data() -> pd.core.frame.DataFrame:
     )
     values["feature_5"] = values["feature_2"]
     return values
+
+
+class FIFEArgParser(argparse.ArgumentParser):
+    """Argument parser for the FIFE command-line interface."""
+
+    def __init__(self):
+        super().__init__()
+        self.add_argument(
+            "CONFIG_PATH",
+            type=str,
+            nargs="?",
+            default=None,
+            help="A relative or absolute path to a configuration file.",
+        )
+        self.add_argument(
+            "--DATA_FILE_PATH",
+            type=str,
+            help="A relative or absolute path to the input data file.",
+        )
+        self.add_argument(
+            "--NOTES_FOR_LOG",
+            type=str,
+            help="Custom text that will be printed in the log produced during execution.",
+        )
+        self.add_argument(
+            "--RESULTS_PATH",
+            type=str,
+            default="FIFE_results",
+            help="The relative or absolute path on which Intermediate and Output folders will be stored.",
+        )
+        self.add_argument(
+            "--SEED",
+            type=int,
+            default=9999,
+            help="The initializing value for all random number generators.",
+        )
+        self.add_argument(
+            "--INDIVIDUAL_IDENTIFIER",
+            type=str,
+            help="The name of the feature that identifies individuals that persist over multiple time periods in the data.",
+        )
+        self.add_argument(
+            "--TIME_IDENTIFIER",
+            type=str,
+            help="The name of the feature that identifies time periods in the data.",
+        )
+        self.add_argument(
+            "--CATEGORICAL_SUFFIXES",
+            type=str,
+            nargs="+",
+            help="Optional list of suffixes denoting that columns ending with such a suffix should be treated as categorical.",
+        )
+        self.add_argument(
+            "--DATETIME_AS_DATE",
+            type=bool,
+            help="How datetime features will be represented for the gradient-boosted trees modeler.",
+        )
+        self.add_argument(
+            "--MAX_NULL_SHARE",
+            type=float,
+            help="The maximum share of observations that may have a null value for a feature to be kept for training.",
+        )
+        self.add_argument(
+            "--MAX_UNIQUE_NUMERIC_CATS",
+            type=int,
+            help="The maximum number of unique values for a feature of a numeric type to be considered categorical.",
+        )
+        self.add_argument(
+            "--NUMERIC_SUFFIXES",
+            type=str,
+            nargs="+",
+            help="Optional list of suffixes denoting that columns ending with such a suffix should be treated as numeric.",
+        )
+        self.add_argument(
+            "--MIN_SURVIVORS_IN_TRAIN",
+            type=int,
+            help="The minimum number of training set observations surviving a given time horizon for the model to be trained to make predictions for that time horizon.",
+        )
+        self.add_argument(
+            "--TEST_INTERVALS",
+            type=int,
+            help="The number of most recent periods to treat as absent from the data during training for the purpose of model evaluation.",
+        )
+        self.add_argument(
+            "--TEST_PERIODS",
+            type=int,
+            help="One plus the value represented by TEST_INTERVALS. Deprecated and overriden by TEST_INTERVALS.",
+        )
+        self.add_argument(
+            "--VALIDATION_SHARE",
+            type=float,
+            help="The share of observations used for evaluation instead of training for hyperoptimization or early stopping.",
+        )
+        self.add_argument(
+            "--TREE_MODELS",
+            type=bool,
+            default=True,
+            help="Whether FIFE will train gradient-boosted trees, as opposed to a neural network.",
+        )
+        self.add_argument(
+            "--HYPER_TRIALS", type=int, help="The number of hyperparameter sets to trial."
+        )
+        self.add_argument(
+            "--MAX_EPOCHS",
+            type=int,
+            help="If HYPER_TRIALS is zero, the maximum number of passes through the training set.",
+        )
+        self.add_argument(
+            "--PATIENCE",
+            type=int,
+            help="If HYPER_TRIALS is zero, the number of passes through the training dataset without improvement in validation set performance before training is stopped early.",
+        )
+        self.add_argument(
+            "--BATCH_SIZE",
+            type=int,
+            help="The number of observations per batch of data fed to the machine learning model for training. ",
+        )
+        self.add_argument(
+            "--DENSE_LAYERS",
+            type=int,
+            help="The number of dense layers in the neural network.",
+        )
+        self.add_argument(
+            "--DROPOUT_SHARE",
+            type=float,
+            help="The probability of a densely connected node of the neural network being set to zero weight during training.",
+        )
+        self.add_argument(
+            "--EMBED_EXPONENT",
+            type=float,
+            help="	The ratio of the natural logarithm of the number of embedded values to the natural logarithm of the number of unique categories for each categorical feature.",
+        )
+        self.add_argument(
+            "--EMBED_L2_REG",
+            type=float,
+            help="The L2 regularization coefficient for each embedding layer.",
+        )
+        self.add_argument(
+            "--NODES_PER_DENSE_LAYER",
+            type=int,
+            help="The number of nodes per dense layer in the neural network.",
+        )
+        self.add_argument(
+            "--NON_CAT_MISSING_VALUE",
+            type=float,
+            help="The value used to replace missing values of numeric features.",
+        )
+        self.add_argument(
+            "--PROPORTIONAL_HAZARDS",
+            type=bool,
+            help="Whether FIFE will restrict the neural network to a proportional hazards model.",
+        )
+        self.add_argument(
+            "--QUANTILES",
+            type=int,
+            default=5,
+            help="The number of similarly-sized bins for which survival and total counts will be reported for each time horizon.",
+        )
+        self.add_argument(
+            "--RETENTION_INTERVAL",
+            type=int,
+            default=1,
+            help="The number of periods over which retention rates are computed.",
+        )
+        self.add_argument(
+            "--SHAP_PLOT_ALPHA",
+            type=float,
+            help="The transparency of points in SHAP plots.",
+        )
+        self.add_argument(
+            "--SHAP_SAMPLE_SIZE",
+            type=int,
+            default=128,
+            help="The number of observations randomly sampled for SHAP value calculation and plotting.",
+        )
