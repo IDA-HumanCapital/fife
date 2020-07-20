@@ -142,6 +142,22 @@ def main():
             path=config["RESULTS_PATH"],
         )
 
+    else:
+
+        # Save forecasts
+        individual_predictions = modeler.forecast()
+        utils.save_output_table(
+            individual_predictions, "Survival_Curves", path=config["RESULTS_PATH"]
+        )
+
+        # Save aggregated forecasts with uncertainty intervals
+        utils.save_output_table(
+            utils.compute_aggregation_uncertainty(individual_predictions),
+            "Aggregate_Survival_Bounds",
+            index=False,
+            path=config["RESULTS_PATH"],
+        )
+
         # Save and plot actual, fitted, and forecasted retention rates
         lead_periods = config["RETENTION_INTERVAL"]
         time_ids = pd.factorize(
@@ -160,22 +176,6 @@ def main():
         ].min()
         axes.set_xlabel(f"Periods Since {earliest_period}")
         utils.save_plot("Retention_Rates", path=config["RESULTS_PATH"])
-
-    else:
-
-        # Save forecasts
-        individual_predictions = modeler.forecast()
-        utils.save_output_table(
-            individual_predictions, "Survival_Curves", path=config["RESULTS_PATH"]
-        )
-
-        # Save aggregated forecasts with uncertainty intervals
-        utils.save_output_table(
-            utils.compute_aggregation_uncertainty(individual_predictions),
-            "Aggregate_Survival_Bounds",
-            index=False,
-            path=config["RESULTS_PATH"],
-        )
 
         # Plot SHAP values for a subset of observations in the final period
         sample_size = config.get("SHAP_SAMPLE_SIZE", 0)

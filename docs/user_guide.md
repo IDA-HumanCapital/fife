@@ -129,12 +129,12 @@ If `TEST_INTERVALS` is greater than zero, or if `TEST_PERIODS` is greater than o
   -   *Dependence_[horizon]_lead.png* and *Dependence_RMST.png*
   -   *Importance_[horizon]_lead.png* and *Importance_RMST.png*
   -   *Summary_[horizon]_lead.png* and *Summary_RMST.png*
+-   *Output/Tables/Retention_Rates.csv* and *Output/Figures/Retention_Rates.png*: Actual and predicted share of individuals who survived a given number of periods for each period in the dataset
 
 Otherwise, FIFE produces:
 
 -	*Output/Tables/Metrics.csv*: Model performance metrics
 -	*Output/Tables/Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability
--	*Output/Tables/Retention_Rates.csv* and *Output/Figures/Retention_Rates.png*: Actual and predicted share of individuals who survived a given number of periods for each period in the dataset
 
 In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
