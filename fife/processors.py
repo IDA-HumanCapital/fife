@@ -314,18 +314,3 @@ class PanelDataProcessor(DataProcessor):
         size = int(self.config.get("VALIDATION_SHARE", 0.25) * unique_ids.shape[0])
         validation_ids = np.random.choice(unique_ids, size=size, replace=False)
         return self.data[self.config["INDIVIDUAL_IDENTIFIER"]].isin(validation_ids)
-
-    def process_new_data(
-        self, new_data: pd.core.frame.DataFrame
-    ) -> pd.core.frame.DataFrame:
-        """Apply existing categorical maps and numeric ranges to new data."""
-        data = new_data.copy(deep=True)
-        for col, categorical_map in self.categorical_maps:
-            if col in data:
-                data[col] = process_categorical_feature(data[col], categorical_map)
-        for col in self.numeric_ranges.index:
-            if col in data:
-                minimum = self.numeric_ranges.loc[col]["Minimum"]
-                maximum = self.numeric_ranges.loc[col]["Maximum"]
-                data[col] = process_numeric_feature(data[col], minimum, maximum)
-        return data
