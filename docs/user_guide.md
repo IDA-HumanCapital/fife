@@ -199,7 +199,7 @@ Plots with names beginning with `Dependence_`: SHAP values associated with the m
 
 ### Configuration Parameters
 
-You may customize many parameters such as the maximum share of a feature that may be missing and the share of individuals to reserve for model evaluation. You can find an example configuration file, readable with any text editor, in the [FIFE GitHub repository](https://github.com/IDA-HumanCapital/fife). FIFE accepts the following parameters:
+You may customize many parameters such as the maximum share of a feature that may be missing and the share of individuals to reserve for model evaluation. You can find an example configuration file, readable with any text editor, in the [FIFE GitHub repository](https://github.com/IDA-HumanCapital/fife). You can also view a list of parameters and descriptions by executing `fife --h` or `fife --help` in an Anaconda prompt. FIFE accepts the following parameters:
 
 ##### Input/output
 DATA_FILE_PATH; default: `"Input_Data.csv"`; type: String
