@@ -2,13 +2,6 @@
 
 ### Added
 
-<u>Execution</u>
-
-- Option to execute from command line without configuration file
-- Option to specify individual parameter values
-- Default configuration for processors and modelers
-- Command-line execution now uses data file in current directory if there is only one file with a matching extension
-
 <u>GradientBoostedTreesModeler and FeedforwardNeuralNetworkModeler</u>
 
 - Support for hyperoptimization with modeler.hyperoptimize()
@@ -25,6 +18,13 @@
 - "\_period" and "\_maximum_lead" columns, which replace computation of "factorized time ids" in various methods
 - Defaults for all configuration parameters
 - Categorical feature conversion to pandas Categorical type
+
+<u>Command-line Interface</u>
+
+- Option to execute from command line without configuration file
+- Option to specify individual parameter values
+- Default configuration for processors and modelers
+- Command-line execution now uses data file in current directory if there is only one file with a matching extension
 
 ### Removed
 
