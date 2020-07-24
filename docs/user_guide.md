@@ -183,8 +183,6 @@ Plots with names beginning with `Dependence_`: SHAP values associated with the m
 
 - Ninth column: Concordance index (or "C-index"), a single value to evaluate the model over all time horizons in the test set. The concordance index is, over all pairs of observations where one observation is known to have survived longer, the share of those pairs for which the model predicts a greater restricted mean survival time (RMST) for the observation that survived longer. An individual's RMST is the number of periods the model expects the individual to survive over the greatest horizon for which the model produced a prediction. Like AUROC, a totally uninformed model would be expected to produce a concordance index of 0.5 and a perfect model would produce a concordance index of 1.0.
 
-- *IFE_Metrics.csv* follows the same format as *Metrics.csv*.
-
 ##### Counts_by_Quantile.csv
 - First column: Time horizon.
 - Second column: The quantile based on predicted probability of survival. For example, if the number of quantiles is given to be 5, quantile 1 represents the 20% (perhaps roughly) of observations predicted least likely to survive the given time horizon among those for which the given horizon could be observed. The number of quantiles is given by the `QUANTILES` configuration parameter.
@@ -343,7 +341,7 @@ dict(zip(gbt_modeler.model[0].feature_name(),
          gbt_modeler.model[0].feature_importance()))
 ```
 
-In general we are most interested in forecasts for individuals that are still in the population in the final period of the data. The `forecast` method gives us exactly those forecasts. The survival probabilities in the forecasts are cumulative - they are not conditional on survival through any prior future period. See the description of [*Survival_Curves.csv*](#survival_curves.csv) for more details.
+In general we are most interested in forecasts for individuals that are still in the population in the final period of the data. The `forecast` method gives us exactly those forecasts. The survival probabilities in the forecasts are cumulative - they are not conditional on survival through any prior future period. See the description of [Survival_Curves.csv](#survival-curves-csv) for more details.
 
 ```python
 gbt_modeler.forecast()
@@ -362,7 +360,7 @@ gbt_modeler = GradientBoostedTreesModeler(config={'PATIENCE': 8},
 gbt_modeler.build_model()
 ```
 
-The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [*Metrics.csv*](#metrics.csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period.
+The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv](#metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period.
 
 ```python
 evaluation_subset = gbt_modeler.data["_period"] == (
@@ -384,7 +382,7 @@ gbt_modeler.build_model(params=params)
 gbt_modeler.evaluate(evaluation_subset)
 ```
 
-`evaluate` offers just one of many ways to examine a model. For example, we can answer "In each time period, what share of the observations two periods past would we expect to still be around?"" See the description of [_Retention_Rates.csv_](#retention_rates.csv) for more details.
+`evaluate` offers just one of many ways to examine a model. For example, we can answer "In each time period, what share of the observations two periods past would we expect to still be around?" See the description of [Retention_Rates.csv](#retention-rates-csv) for more details.
 
 ```python
 gbt_modeler.tabulate_retention_rates(2)
@@ -436,4 +434,4 @@ BibTex:
 }
 ```
 
-This document was most recently updated 20 July 2020.
+This document was most recently updated 24 July 2020.

@@ -382,7 +382,9 @@ class FIFEArgParser(argparse.ArgumentParser):
             help="Whether FIFE will train gradient-boosted trees, as opposed to a neural network.",
         )
         self.add_argument(
-            "--HYPER_TRIALS", type=int, help="The number of hyperparameter sets to trial."
+            "--HYPER_TRIALS",
+            type=int,
+            help="The number of hyperparameter sets to trial.",
         )
         self.add_argument(
             "--MAX_EPOCHS",
