@@ -79,12 +79,16 @@ def main():
 
     # Train and save model
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
-    test_intervals = self.config.get("TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1)
+    test_intervals = config.get(
+        "TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1
+    )
     if config["TREE_MODELS"]:
         modeler = lgb_modelers.GradientBoostedTreesModeler(
             config=config, data=data_processor.data,
         )
-        modeler.n_intervals = test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        modeler.n_intervals = (
+            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        )
         if config.get("HYPER_TRIALS", 0) > 0:
             params = modeler.hyperoptimize(config["HYPER_TRIALS"])
         else:
@@ -101,14 +105,18 @@ def main():
         modeler = tf_modelers.ProportionalHazardsModeler(
             config=config, data=data_processor.data,
         )
-        n_intervals = test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        n_intervals = (
+            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        )
         modeler.build_model(n_intervals)
         modeler.model.save(f'{config["RESULTS_PATH"]}/Intermediate/Models/PH_Model.h5')
     else:
         modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
             config=config, data=data_processor.data,
         )
-        modeler.n_intervals = test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        modeler.n_intervals = (
+            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
+        )
         if config.get("HYPER_TRIALS", 0) > 0:
             params = modeler.hyperoptimize(config["HYPER_TRIALS"])
         else:
