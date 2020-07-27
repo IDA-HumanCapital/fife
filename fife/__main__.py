@@ -18,6 +18,7 @@ from time import time
 
 from fife import lgb_modelers, pd_modelers, processors, tf_modelers, utils
 import pandas as pd
+from sklearn.calibration import calibration_curve
 
 
 def main():
@@ -79,9 +80,7 @@ def main():
 
     # Train and save model
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
-    test_intervals = config.get(
-        "TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1
-    )
+    test_intervals = config.get("TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1)
     if config["TREE_MODELS"]:
         modeler = lgb_modelers.GradientBoostedTreesModeler(
             config=config, data=data_processor.data,
@@ -149,6 +148,27 @@ def main():
             ),
             "Counts_by_Quantile",
             index=False,
+            path=config["RESULTS_PATH"],
+        )
+
+        # Save forecast errors
+        actuals = np.array([modeler.data[evaluation_subset]["_duration"]
+                            > time_horizon for time_horizon in test_intervals]).T
+        predictions = modeler.predict(evaluation_subset)
+        utils.save_output_table(
+            pd.DataFrame(predictions - actuals),
+            "Forecast_Errors",
+            index=False,
+            path=config["RESULTS_PATH"],
+        )
+
+        # Save calibration errors
+        actual_means, forecast_means = calibration_curve(actuals, predictions, n_bins=8, strategy="quantile")
+        calibration_errors = pd.DataFrame([actual_means, actual_means - forecast_means])
+        calibration_errors.index.name = "Quantile"
+        utils.save_output_table(
+            calibration_errors,
+            "Calibration_Errors",
             path=config["RESULTS_PATH"],
         )
 
