@@ -23,12 +23,18 @@ if '!errorlevel!' == '0' (
 	python -c "from fife.utils import create_example_data; import pandas as pd; create_example_data().to_csv('Input_Data.csv', index=False)"
 	fife example_config.json
 	if '!errorlevel!' == '0' (
-		pip freeze > requirements.txt
-		color 0A
-		echo "Tests passed."
+		fife --TEST_INTERVALS 4
+		if '!errorlevel!' == '0' (
+			pip freeze > requirements.txt
+			color 0A
+			echo "Tests passed."
+		) else (
+			color 0c
+			echo "Evaluation functional test failed."
+		)
 	) else (
 		color 0c
-		echo "Functional test failed."
+		echo "Forecasting functional test failed."
 	)
 ) else (
 	echo "Unit test failed."

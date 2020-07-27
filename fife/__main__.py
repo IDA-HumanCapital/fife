@@ -17,6 +17,7 @@ import sys
 from time import time
 
 from fife import lgb_modelers, pd_modelers, processors, tf_modelers, utils
+import numpy as np
 import pandas as pd
 from sklearn.calibration import calibration_curve
 
@@ -152,24 +153,42 @@ def main():
         )
 
         # Save forecast errors
-        actuals = np.array([modeler.data[evaluation_subset]["_duration"]
-                            > time_horizon for time_horizon in test_intervals]).T
+        actuals = np.array(
+            [
+                modeler.data[evaluation_subset]["_duration"] > time_horizon
+                for time_horizon in range(test_intervals)
+            ]
+        ).T
         predictions = modeler.predict(evaluation_subset)
         utils.save_output_table(
-            pd.DataFrame(predictions - actuals),
+            pd.DataFrame(
+                predictions - actuals,
+                columns=[
+                    f"{time_horizon + 1}-period Forecast Error"
+                    for time_horizon in range(test_intervals)
+                ],
+            ),
             "Forecast_Errors",
             index=False,
             path=config["RESULTS_PATH"],
         )
 
         # Save calibration errors
-        actual_means, forecast_means = calibration_curve(actuals, predictions, n_bins=8, strategy="quantile")
-        calibration_errors = pd.DataFrame([actual_means, actual_means - forecast_means])
+        predicted_share, actual_share = calibration_curve(
+            actuals.flatten(), predictions.flatten(), n_bins=8, strategy="quantile"
+        )
+        calibration_errors = pd.DataFrame(
+            [predicted_share, actual_share, actual_share - predicted_share]
+        ).T
+        calibration_errors.columns = [
+            "Predicted Share",
+            "Actual Share",
+            "Calibration Error",
+        ]
         calibration_errors.index.name = "Quantile"
+        calibration_errors.index = calibration_errors.index + 1
         utils.save_output_table(
-            calibration_errors,
-            "Calibration_Errors",
-            path=config["RESULTS_PATH"],
+            calibration_errors, "Calibration_Errors", path=config["RESULTS_PATH"],
         )
 
     else:
