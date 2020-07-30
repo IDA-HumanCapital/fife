@@ -247,15 +247,14 @@ def save_plot(file_name: str, path: str = "") -> None:
     plt.close()
 
 
-def create_example_data() -> pd.core.frame.DataFrame:
+def create_example_data(n_persons: int = 8192, n_periods: int = 12
+) -> pd.core.frame.DataFrame:
     """Fabricate an unbalanced panel dataset suitable as FIFE input."""
-    n_persons = 8192
-    n_periods = 12
     seed = 9999
     np.random.seed(seed)
     values = []
     for i in np.arange(n_persons):
-        period = np.random.randint(n_periods)
+        period = np.random.randint(n_periods) + 1
         x_1 = np.random.uniform()
         x_2 = np.random.choice(["A", "B", "C"])
         x_3 = np.random.uniform() + 1.0
