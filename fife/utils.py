@@ -1,6 +1,7 @@
 """I/O, logging, calculation, and plotting functions for FIFE."""
 
 import argparse
+from distutils.util import strtobool
 import json
 import os
 import pickle
@@ -377,7 +378,7 @@ class FIFEArgParser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--TREE_MODELS",
-            type=bool,
+            type=strtobool,
             default=True,
             help="Whether FIFE will train gradient-boosted trees, as opposed to a neural network.",
         )
