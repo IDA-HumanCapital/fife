@@ -45,7 +45,7 @@ def main():
 
     # Read data file
     if "DATA_FILE_PATH" not in config.keys():
-        valid_suffixes = (".csv", ".csv.gz", ".p", "pkl", ".h5")
+        valid_suffixes = (".csv", ".csv.gz", ".p", ".pkl", ".h5")
         candidate_data_files = [
             file for file in os.listdir() if file.endswith(valid_suffixes)
         ]
