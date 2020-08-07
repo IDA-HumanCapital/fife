@@ -170,7 +170,7 @@ class DataProcessor:
         self.config = config
         self.data = data
 
-    def is_degenerate(self, col: pd.Series) -> bool:
+    def is_degenerate(self, col: str) -> bool:
         """Determine if a feature is constant or has too many missing values."""
         if self.data[col].isnull().mean() >= self.config.get("MAX_NULL_SHARE", 0.999):
             return True
@@ -259,29 +259,29 @@ class PanelDataProcessor(DataProcessor):
         """Split, process, and merge all data columns."""
         data_dict = {}
         if parallelize:
-            for col in self.data:
-                data_dict[col] = dask.delayed(self.process_single_column)(col)
+            for colname in self.data:
+                data_dict[colname] = dask.delayed(self.process_single_column)(colname)
             data_dict = dask.compute(data_dict)[0]
         else:
-            for col in self.data:
-                data_dict[col] = self.process_single_column(col)
+            for colname in self.data:
+                data_dict[colname] = self.process_single_column(colname)
         data_dict = {key:val for key, val in data_dict.items() if val is not None}
         self.data = pd.DataFrame.from_dict(data_dict)
 
-    def process_single_column(self, col: Union[None, pd.core.series.Series] = None
+    def process_single_column(self, colname: Union[None, str] = None
     ) -> Union[None, pd.core.series.Series]:
         """Apply data cleaning functions to an individual data column."""
-        if col is None:
+        if colname is None:
             return None
-        elif col == self.config["INDIVIDUAL_IDENTIFIER"]:
-            return self.data[col]
-        elif self.is_degenerate(col):
-            print(f'Column "{col}" is degenerate and will be dropped.')
+        elif colname == self.config["INDIVIDUAL_IDENTIFIER"]:
+            return self.data[colname]
+        elif self.is_degenerate(colname):
+            print(f'Column "{colname}" is degenerate and will be dropped.')
             return None
-        elif self.is_categorical(col):
-            return self.data[col].astype("category")
+        elif self.is_categorical(colname):
+            return self.data[colname].astype("category")
         else:
-            return self.data[col]
+            return self.data[colname]
 
     def build_reserved_cols(self):
         """Add data split and outcome-related columns to the data."""
