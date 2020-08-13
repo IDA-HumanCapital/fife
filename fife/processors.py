@@ -261,7 +261,7 @@ class PanelDataProcessor(DataProcessor):
             elif self.is_degenerate(col):
                 del self.data[col]
             elif self.is_categorical(col):
-                self.data[col] = self.data[col].astype("category")
+                self.data[col] = self.data[col].astype("category").cat.add_categories("NaN").fillna("NaN")
         self.build_reserved_cols()
 
     def build_reserved_cols(self):
