@@ -434,4 +434,4 @@ BibTex:
 }
 ```
 
-This document was most recently updated 24 July 2020.
+This document was most recently updated 13 August 2020.
