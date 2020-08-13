@@ -35,7 +35,7 @@ setup(
     ],
     packages=["fife"],
     install_requires=[
-        "dask",
+        "dask[complete]",
         "ipython",
         "keras",
         "lifelines",
