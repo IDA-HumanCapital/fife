@@ -60,7 +60,7 @@ def normalize_numeric_feature(
     if excluded_obs is None:
         col_subset = col[col.notnull()]
     else:
-        col_subset = col[col[(~excluded_obs) & (col.notnull())]]
+        col_subset = col[(~excluded_obs) & col.notnull()]
     if len(col_subset) > 0:
         minimum = np.nanmin(col_subset)
         maximum = np.nanmax(col_subset)
