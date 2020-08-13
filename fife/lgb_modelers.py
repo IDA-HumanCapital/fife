@@ -175,8 +175,10 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         return params
 
     def build_model(
-        self, n_intervals: Union[None, int] = None, params: dict = None,
-        parallelize: bool = True
+        self,
+        n_intervals: Union[None, int] = None,
+        params: dict = None,
+        parallelize: bool = True,
     ) -> None:
         """Train and store a sequence of gradient-boosted tree models."""
         if n_intervals:
@@ -231,9 +233,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
     ) -> lgb.basic.Booster:
         """Train a LightGBM model for a single lead length."""
         if time_horizon is None:
-            print(
-                "Time horizon not provided. Defaulting to 1-period survival."
-            )
+            print("Time horizon not provided. Defaulting to 1-period survival.")
             time_horizon = 1
         if params is None:
             params = {
@@ -261,8 +261,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[data[self.validation_col]][self.duration_col]
-                > time_horizon,
+                label=data[data[self.validation_col]][self.duration_col] > time_horizon,
             )
             model = lgb.train(
                 params[time_horizon],

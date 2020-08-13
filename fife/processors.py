@@ -265,10 +265,11 @@ class PanelDataProcessor(DataProcessor):
         else:
             for colname in self.data:
                 data_dict[colname] = self.process_single_column(colname)
-        data_dict = {key:val for key, val in data_dict.items() if val is not None}
+        data_dict = {key: val for key, val in data_dict.items() if val is not None}
         self.data = pd.DataFrame.from_dict(data_dict)
 
-    def process_single_column(self, colname: Union[None, str] = None
+    def process_single_column(
+        self, colname: Union[None, str] = None
     ) -> Union[None, pd.core.series.Series]:
         """Apply data cleaning functions to an individual data column."""
         if colname is None:

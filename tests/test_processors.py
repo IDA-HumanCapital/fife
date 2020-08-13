@@ -242,21 +242,23 @@ def test_process_single_column(setup_config, setup_dataframe):
     columns, correctly casts categorical columns, and does not modify individual
     identifier column."""
     errors_list = []
-    indiv_id_col = setup_config['INDIVIDUAL_IDENTIFIER']
-    degenerate_cols = [col for col in setup_dataframe if 
-        (setup_dataframe[col].isnull().all()) | (setup_dataframe[col].nunique() < 2)
+    indiv_id_col = setup_config["INDIVIDUAL_IDENTIFIER"]
+    degenerate_cols = [
+        col
+        for col in setup_dataframe
+        if (setup_dataframe[col].isnull().all()) | (setup_dataframe[col].nunique() < 2)
     ]
-    categorical_cols = [col for col in setup_dataframe if 
-        ('categorical_var' in col) & (col not in degenerate_cols)
+    categorical_cols = [
+        col
+        for col in setup_dataframe
+        if ("categorical_var" in col) & (col not in degenerate_cols)
     ]
     data_processor = processors.PanelDataProcessor(
         config=setup_config, data=setup_dataframe
     )
     processed_col = data_processor.process_single_column(indiv_id_col)
     if not processed_col.equals(setup_dataframe[indiv_id_col]):
-        errors_list.append(
-            "Individual identifier column {indiv_id_col} modified."
-        )
+        errors_list.append("Individual identifier column {indiv_id_col} modified.")
     for degenerate_col in degenerate_cols:
         processed_col = data_processor.process_single_column(degenerate_col)
         if processed_col is not None:

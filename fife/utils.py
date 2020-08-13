@@ -248,7 +248,8 @@ def save_plot(file_name: str, path: str = "") -> None:
     plt.close()
 
 
-def create_example_data(n_persons: int = 8192, n_periods: int = 12
+def create_example_data(
+    n_persons: int = 8192, n_periods: int = 12
 ) -> pd.core.frame.DataFrame:
     """Fabricate an unbalanced panel dataset suitable as FIFE input."""
     seed = 9999

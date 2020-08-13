@@ -159,9 +159,10 @@ def test_gbtm_train_single_model(setup_config, setup_dataframe):
             errors_list.append(
                 f"Model for time horizon {time_horizon} "
                 f"does not have any training parameters."
-            )    
+            )
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
-    
+
+
 def test_gbtm_predict(setup_config, setup_dataframe):
     """Test that GradientBoostedTreesModeler.predict() returns
     survival probabilities for all observations and time intervals.
