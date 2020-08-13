@@ -392,7 +392,7 @@ Other modelers define different ways of using data to create forecasts and metri
 
 ### Acknowledgement
 
-FIFE uses the `nnet_survival` module of Gensheimer, M.F., and Narasimhan, B., "A scalable discrete-time survival model for neural networks," *PeerJ* 7 (2019): e6257. The `nnet_survival` version packaged with FIFE is GitHub commit d5a8f26 on Nov 18, 2018 posted to https://github.com/MGensheimer/nnet-survival/blob/master/nnet_survival.py. `nnet_survival` is licensed under the MIT License. The FIFE development team modified lines 12 and 13 of nnet_survival for compatibility with TensorFlow 2.0.
+FIFE uses the `nnet_survival` module of Gensheimer, M.F., and Narasimhan, B., "A scalable discrete-time survival model for neural networks," *PeerJ* 7 (2019): e6257. The `nnet_survival` version packaged with FIFE is GitHub commit d5a8f26 on Nov 18, 2018 posted to https://github.com/MGensheimer/nnet-survival/blob/master/nnet_survival.py. `nnet_survival` is licensed under the MIT License. The FIFE development team modified lines 12 and 13 of nnet_survival for compatibility with TensorFlow 2.0 and added lines 110 through 114 to allow users to save a model with a PropHazards layer.
 
 ### Project Information
 
