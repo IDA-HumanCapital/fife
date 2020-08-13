@@ -34,50 +34,55 @@ FIFE modules offer further customization for Python programmers. See [Advanced U
 
 ##### Installation
 
+`pip install fife`
+
+<u>Details</u>
+
 * Install an [Anaconda distribution](https://www.anaconda.com/distribution/) of Python version 3.7.6 or later
 * From pip (with no firewall):
 	* Open Anaconda Prompt
 	* Execute `pip install fife`
-	* If that results in an error for installing the SHAP dependency, try `conda install -c conda-forge shap`, followed by `pip install fife`
+	* If that results in an error for installing the SHAP dependency, try `conda install -c conda-forge shap` before `pip install fife`
+	* If that results in an error for installing the TensorFlow dependency, try `conda install -c anaconda tensorflow` before `pip install fife`
+
+<u>Alternatives</u>
+
 * From pypi.org (https://pypi.org/project/fife/):
 	* Download the `.whl` or `.tar.gz` file
 	* Open Anaconda Prompt
 	* Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.<br/>
 		Example: `cd C:\Users\insert-user-name\Downloads`
 	* Pip install the name of the `.whl` or `.tar.gz` file.<br/>
-		Example: `pip install fife-1.0.0-py3-none-any.whl`
+		Example: `pip install fife-1.1.0-py3-none-any.whl`
 * From GitHub (https://github.com/IDA-HumanCapital/fife):
 	*	Clone the FIFE repository
 	* Open Anaconda Prompt
 	* Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
 	* Execute `python setup.py sdist bdist_wheel`
-	* Execute `pip install dist/fife-1.0.0-py3-none-any.whl`
+	* Execute `pip install dist/fife-1.1.0-py3-none-any.whl`
 
 ##### Configuration
 
-* Download *example_config.json* from the [FIFE GitHub repo](https://github.com/IDA-HumanCapital/fife) to the directory where you'd like to store your results
-* Change `DATA_FILE_PATH` in *example_config.json* to the path to your data file (including the file name and extension)
-* Ensure that
-	* `INDIVIDUAL_IDENTIFIER` and `TIME_IDENTIFIER` in *example_config.json* match the corresponding identifiers in your data OR
-	* The individual and time identifiers are the leftmost and second-leftmost columns in your data, respectively
-
+* Copy your data the directory where you'd like to store your results
+* Ensure there are no other data files in the directory
+* Ensure that the individual and time identifiers are the leftmost and second-leftmost columns in your data, respectively
 * Don't have a data file ready but want to see what FIFE can do?
-	* Change the directory of your Anaconda prompt to the location of *example_config.json*
+	* Change the directory of your Anaconda prompt to your chosen directory
 	* Execute `python -c "import fife.utils; fife.utils.create_example_data().to_csv('Input_Data.csv', index=False)"`
 
 ##### Execution
 
-* Change the directory of your Anaconda prompt to the location of *example_config.json*
+* Change the directory of your Anaconda prompt to the directory containing your data
 * Execute `fife`
 * Observe the contents of the FIFE_results folder
 
 ### Inputs
 
 FIFE takes as input:
--	A set of configuration parameters described in the table at the bottom of this document
--	An unbalanced panel dataset at the location given by the `DATA_FILE_PATH` configuration parameter
+-	An unbalanced panel dataset
+-	(Optional) A set of configuration parameters described in the table at the bottom of this document
 
-Configuration parameters may be provided in the JSON file format. If you execute FIFE from a directory with a single file with extension _.json_, FIFE will use configuration parameters from that file. If you execute FIFE from a directory with multiple such files, you will need to specify which file contains your configuration parameters by appending a space and the file name to your command. For example, you will need to execute `fife example_config.json`.
+Configuration parameters may be provided in the JSON file format and/or individually with the parameter name prepended by `--`. Individually provided parameter values will override values in a JSON file. For example, `fife config.json --TEST_INTERVALS 4 --HYPER_TRIALS 16 ` will assign a value of 4 to TEST_INTERVALS and a value of 16 to HYPER_TRIALS, and otherwise use the parameter values provided in the config.json file in the current directory.
 
 Input data may be provided in any of the following file formats with the corresponding file extension:
 
@@ -86,13 +91,18 @@ Input data may be provided in any of the following file formats with the corresp
 | Feather                      | .feather   |
 | Comma-separated values (CSV) | .csv       |
 | CSV with gzip compression    | .csv.gz    |
-| Pickle 	               | .p or .pkl |
+| Pickled Pandas DataFrame | .p or .pkl |
 | HDF5 		               | .h5 	    |
 | JSON 		               | .json      |
 
+If you execute FIFE from a directory with a single file with any of these extensions except .json, FIFE will use the data from that file. If you execute FIFE from a directory with multiple such files, or if you wish to use a data file in a different directory than the directory where you want to store your results, you will need use the `DATA_FILE_PATH` configuration parameter to specify the path to your data file.
+
 Input data may not contain any of the following feature names:
+
 -	`_duration`
 -	`_event_observed`
+-	`_maximum_lead`
+-	`_period`
 -	`_predict_obs`
 -	`_test`
 -   `_validation`
@@ -103,8 +113,6 @@ FIFE produces as intermediate files:
 -	*Intermediate/Data/Categorical_Maps.p*: Crosswalks from whole numbers to original values for each categorical feature
 -	*Intermediate/Data/Numeric_Ranges.p*: Maximum and minimum values in the training set for each numeric feature
 -	*Intermediate/Data/Processed_Data.p*: The provided data after removing uninformative features, sorting, assigning train and test sets, normalizing numeric features, and factorizing categorical features
--	If the `FIXED_EFFECT_FEATURES` configuration parameter contains a list of one or more column names:
-	-	*Intermediate/Models/IFE_Model.p*: An interacted fixed effects model for all time horizons
 -	One of the following:
 	-	*Intermediate/Models/[horizon]-lead_GBT_Model.json*: A gradient-boosted tree model for each time horizon
 	-	*Intermediate/Models/FFNN_Model.h5*: A feedforward neural network model for all time horizons
@@ -113,20 +121,22 @@ Intermediate files are not intended to be read by humans.
 
 ### Outputs
 
-FIFE produces as output:
+If `TEST_INTERVALS` is greater than zero, or if `TEST_PERIODS` is greater than one and `TEST_INTERVALS` is unspecified, FIFE produces:
+
 -	*Output/Tables/Survival_Curves.csv*: Predicted survival curves for each individual observed in the final period of the dataset
 -	*Output/Tables/Aggregate_Survival_Bounds.csv*: Expected number of individuals retained for each time horizon with corresponding uncertainty bounds
+-	In *Output/Figures/*, the following plots of relationships between features and the probabilities of exit for each time horizon conditional on survival to the final period of that time horizon:
+  -   *Dependence_[horizon]_lead.png* and *Dependence_RMST.png*
+  -   *Importance_[horizon]_lead.png* and *Importance_RMST.png*
+  -   *Summary_[horizon]_lead.png* and *Summary_RMST.png*
+-   *Output/Tables/Retention_Rates.csv* and *Output/Figures/Retention_Rates.png*: Actual and predicted share of individuals who survived a given number of periods for each period in the dataset
+
+Otherwise, FIFE produces:
+
 -	*Output/Tables/Metrics.csv*: Model performance metrics
 -	*Output/Tables/Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability
--	If the `FIXED_EFFECT_FEATURES` configuration parameter contains a list of one or more column names:
-	-	*Output/Tables/IFE_Metrics.csv*: Performance metrics for an interacted fixed effects model
-	-	*Output/Tables/IFE_Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability from an interacted fixed effects model
--	*Output/Tables/Retention_Rates.csv* and *Output/Figures/Retention_Rates.png*: Actual and predicted share of individuals who survived a given number of periods for each period in the dataset
--   In *Output/Figures/*, the following plots of relationships between features and the probabilities of exit for each time horizon conditional on survival to the final period of that time horizon:
-	-   *Dependence_[horizon]_lead.png* and *Dependence_RMST.png*
-	-   *Importance_[horizon]_lead.png* and *Importance_RMST.png*
-	-   *Summary_[horizon]_lead.png* and *Summary_RMST.png*
--	*Output/Logs/Log.txt*: A log of script execution
+
+In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
 All files produced by FIFE will overwrite files of the same name in the directory designated by the `RESULTS_PATH` configuration parameter.
 
@@ -141,10 +151,23 @@ All files produced by FIFE will overwrite files of the same name in the director
 - Second column: Expected number of individuals retained for each time horizon.
 - Third and fourth columns: Lower and upper two-sided [Chernoff bounds](https://en.wikipedia.org/wiki/Chernoff_bound) to quantify the aggregation uncertainty around the expected number of retained individuals.
 
-##### Metrics.csv
-- First column: Durations of forecast time horizons, given in terms of the number of periods observed in the data. Each of the metrics in the subsequent columns (except the overall ["C-index"](https://www.statisticshowto.datasciencecentral.com/c-statistic/)) are calculated over all test set observations for which the given horizon could be observed. For example, if the periods in the data are Jan, Feb, Mar, and Apr, the first column will have values 1, 2, and 3 (more generally, if there are N periods, the values in the first column will be 1 through N-1). Metrics in the row with a 1 in the first column will be based on observations in Jan, Feb, and Mar (or periods 1 through N-1). Metrics in the row with a 2 in the first column will be based on observations in Jan and Feb (or periods 1 through N-2). Metrics in the row with a 3 in the first column will be based on observations in Jan (or periods 1 through N-3).
+##### Figures
 
-- Second column: Area Under the Receiver Operating Characteristic (AUROC). The AUROC is, over all pairs of observations where exactly one of the observations survived in the given horizon, the share of those pairs for which the model predicts the survivor was more likely to survive. A totally uninformed model would be expected to produce an AUROC of 0.5 and a perfect model would produce an AUROC of 1.0. A blank value indicates that either all or no test set observations survived the given horizon, so an AUROC could not be calculated.
+*Retention_Rates.png* plots the contents of *Retention_Rates.csv*.
+
+For gradient-boosted tree modelers there will be other plots in *Output/Figures/* which depict aggregations and subsets of Shapley Additive Explanations (SHAP) values for individuals in the final period of the dataset. A [SHAP value](https://github.com/slundberg/shap/blob/master/README.md) is a measure of how much a specific feature value contributes (positively or negatively) to a specific predicted value. For files with names ending in `_lead`, the predicted value is the probability of surviving the number of additional periods specified in the file name. For files with names ending in `RMST`, the predicted value is the RMST.
+
+Plots with names beginning with `Importance_`: Mean absolute SHAP values for up to 20 features with the highest such means. The greater its mean absolute SHAP value, the more a feature contributes to the survival probability (positively or negatively) in the given period (or RMST), on average. Thus the features at the top of the plot are the most important features.
+
+Plots with names beginning with `Summary_`: SHAP values associated with each of the most important features against the values of those features. A pattern in such a plot indicates an association between the plotted feature and the predicted outcome. For example, points shifting from blue to red from left to right for a given feature indicates that the feature is positively correlated with the predicted outcome.
+
+Plots with names beginning with `Dependence_`: SHAP values associated with the most important feature against the values of that feature and the values of an automatically selected other feature. Different patterns for differently-colored points indicate that the association between the most important feature and the predicted outcome depends on the value of the other feature. For example, if blue points form an upward-sloping line but red points form a downward-sloping line then a low value of the other feature is associated with a negative correlation between the most important feature and the predicted outcome, but a high value of the other feature is associated with a positive correlation.
+
+##### Metrics.csv
+
+- First column: Durations of forecast time horizons, given in terms of the number of periods observed in the data. Each of the metrics in the subsequent columns are calculated over the observations from the earliest period in the test set.
+
+- Second column: Area Under the Receiver Operating Characteristic (AUROC). The AUROC is, over all pairs of observations where exactly one of the observations survived in the given horizon, the share of those pairs for which the model predicts the survivor was more likely to survive. A totally uninformed model would be expected to produce an AUROC of 0.5 and a perfect model would produce an AUROC of 1.0. A blank value indicates that either all or no observations survived the given horizon, so an AUROC could not be calculated.
 
 - Third column: Mean of each individual's predicted probability of surviving through the given horizon, which gives the predicted share of individuals that will survive the horizon.
 
@@ -158,106 +181,102 @@ All files produced by FIFE will overwrite files of the same name in the director
 
 - Eighth column: Number of observations with a predicted survival probability less than 0.5 that did not survive. All else equal, a better model will have larger values in the fifth and eighth columns and smaller values in the sixth and seventh columns.
 
-- Ninth column: Concordance index (or "C-index") over the entire test set, and is therefore a single value. The concordance index is, over all pairs of observations where one observation is known to have survived longer, the share of those pairs for which the model predicts a greater restricted mean survival time (RMST) for the observation that survived longer. An individual's RMST is the number of periods the model expects the individual to survive over the greatest horizon for which the model produced a prediction. Like AUROC, a totally uninformed model would be expected to produce a concordance index of 0.5 and a perfect model would produce a concordance index of 1.0.
-
-- *IFE_Metrics.csv* follows the same format as *Metrics.csv*.
+- Ninth column: Concordance index (or "C-index"), a single value to evaluate the model over all time horizons in the test set. The concordance index is, over all pairs of observations where one observation is known to have survived longer, the share of those pairs for which the model predicts a greater restricted mean survival time (RMST) for the observation that survived longer. An individual's RMST is the number of periods the model expects the individual to survive over the greatest horizon for which the model produced a prediction. Like AUROC, a totally uninformed model would be expected to produce a concordance index of 0.5 and a perfect model would produce a concordance index of 1.0.
 
 ##### Counts_by_Quantile.csv
 - First column: Time horizon.
 - Second column: The quantile based on predicted probability of survival. For example, if the number of quantiles is given to be 5, quantile 1 represents the 20% (perhaps roughly) of observations predicted least likely to survive the given time horizon among those for which the given horizon could be observed. The number of quantiles is given by the `QUANTILES` configuration parameter.
 - Third column: The number of observations for which the individuals in the given quantile survived the given horizon.
 - Fourth column: The number of observations in the given quantile. Ties in predicted probability among observations may cause the number of observations to vary across quantile for a given time horizon.
-- *IFE_Counts_by_Quantile.csv* follows the same format as *Counts_by_Quantile.csv*.
 
 ##### Retention_Rates.csv
 - First column: The number of time periods since the earliest period in the data.
 - Second column: The share of individuals observed a given number of periods prior who survived to the corresponding period. The number of periods prior is given by the `RETENTION_INTERVAL` configuration parameter.
 - Third column: The model prediction of the corresponding actual retention rate in the second column for periods in the data on which the model was trained.
-- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` configuration parameter and periods beyond those in the data.
-
-##### Figures
-
-*Retention_Rates.png* plots the contents of *Retention_Rates.csv*.
-
-For gradient-boosted tree modelers there will be other plots in *Output/Figures/* which depict aggregations and subsets of Shapley Additive Explanations (SHAP) values for individuals in the final period of the dataset. A [SHAP value](https://github.com/slundberg/shap/blob/master/README.md) is a measure of how much a specific feature value contributes (positively or negatively) to a specific predicted value. For files with names ending in `_lead`, the predicted value is the probability of surviving the number of additional periods specified in the file name. For files with names ending in `RMST`, the predicted value is the RMST.
-
-Plots with names beginning with `Importance_`: Mean absolute SHAP values for up to 20 features with the highest such means. The greater its mean absolute SHAP value, the more a feature contributes to the survival probability (positively or negatively) in the given period (or RMST), on average. Thus the features at the top of the plot are the most important features.
-
-Plots with names beginning with `Summary_`: SHAP values associated with each of the most important features against the values of those features. A pattern in such a plot indicates an association between the plotted feature and the predicted outcome. For example, points shifting from blue to red from left to right for a given feature indicates that the feature is positively correlated with the predicted outcome.
-
-Plots with names beginning with `Dependence_`: SHAP values associated with the most important feature against the values of that feature and the values of an automatically selected other feature. Different patterns for differently-colored points indicate that the association between the most important feature and the predicted outcome depends on the value of the other feature. For example, if blue points form an upward-sloping line but red points form a downward-sloping line then a low value of the other feature is associated with a negative correlation between the most important feature and the predicted outcome, but a high value of the other feature is associated with a positive correlation.
+- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` or `TEST_INTERVALS` configuration parameter and periods beyond those in the data.
 
 ### Configuration Parameters
 
-You may customize many parameters such as the maximum share of a feature that may be missing and the share of individuals to reserve for model evaluation. The configuration file is readable with any text editor. It contains the following parameters:
+You may customize many parameters such as the maximum share of a feature that may be missing and the share of individuals to reserve for model evaluation. You can find an example configuration file, readable with any text editor, in the [FIFE GitHub repository](https://github.com/IDA-HumanCapital/fife). You can also view a list of parameters and descriptions by executing `fife --h` or `fife --help` in an Anaconda prompt. FIFE accepts the following parameters:
 
 ##### Input/output
-DATA_FILE_PATH; suggested: `"Input_Data.csv"`; type: String
+DATA_FILE_PATH; default: `"Input_Data.csv"`; type: String
 	A relative or absolute path to the input data file.
-NOTES_FOR_LOG; suggested: `"No config notes specified"`; type: String
+NOTES_FOR_LOG; default: `"No config notes specified"`; type: String
 	Custom text that will be printed in the log produced during execution.
-RESULTS_PATH; suggested: `"FIFE_results"`; type: String
+RESULTS_PATH; default: `"FIFE_results"`; type: String
 	The relative or absolute path on which Intermediate and Output folders will be stored. The path will be created if it does not exist.
 
 ##### Reproducibility
-SEED; suggested: 9999; type: Integer
+SEED; default: 9999; type: Integer
 	The initializing value for all random number generators. Strongly recommend not changing; changes will not produce generalizable changes in performance.
+
 ##### Identifiers
-INDIVIDUAL_IDENTIFIER; suggested: `""` (empty string); type: String
+INDIVIDUAL_IDENTIFIER; default: `""` (empty string); type: String
 	The name of the feature that identifies individuals that persist over multiple time periods in the data. If an empty string, defaults to the leftmost column in the data.
-TIME_IDENTIFIER; suggested: `""` (empty string); type: String
+TIME_IDENTIFIER; default: `""` (empty string); type: String
 	The name of the feature that identifies time periods in the data. If an empty string, defaults to the second-leftmost column in the data.
+
 ##### Feature types
-CATEGORICAL_SUFFIXES; suggested: `[]` (empty list); type: List of strings
+CATEGORICAL_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as categorical. Useful for flagging categorical columns that have a numeric data type and more than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
-MAX_NULL_SHARE; suggested: 0.999; type: Decimal
+DATETIME_AS_DATE; default: `true`; type: Boolean
+	How datetime features will be represented for the gradient-boosted trees modeler. If True, datetime features will be converted to integers in YYYYMMDD format for gradient-boosted trees modeler. Otherwise, datetime features will be converted to nanoseconds.
+MAX_NULL_SHARE; default: 0.999; type: Decimal
 	The maximum share of observations that may have a null value for a feature to be kept for training. Larger values may increase run time, risk of memory error, and/or model performance
-MAX_UNIQUE_NUMERIC_CATS; suggested: 1024; type: Integer
+MAX_UNIQUE_NUMERIC_CATS; default: 1024; type: Integer
 	The maximum number of unique values for a feature of a numeric type to be considered categorical. Larger values may increase or decrease performance and/or increase run time.
-NUMERIC_SUFFIXES; suggested: `[]` (empty list); type: List of strings
+NUMERIC_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as numeric. Useful for flagging columns that have a numeric data type and fewer than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
+
 ##### Training set
-MIN_SURVIVORS_IN_TRAIN; suggested: 64; type: Integer
+MIN_SURVIVORS_IN_TRAIN; default: 64; type: Integer
 	The minimum number of training set observations surviving a given time horizon for the model to be trained to make predictions for that time horizon.
-TEST_PERIODS; suggested: 0; type: Integer
-	The number of most recent periods excluded from training and used to evaluate model performance in periods after those in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
-VALIDATION_SHARE; suggested: 0.25; type: Decimal
-	The share of individuals excluded from training and used to decide when to stop training and to evaluate the model in the same periods as in the training set. Larger values may decrease model performance and run time and/or increase evaluation precision.
+TEST_INTERVALS; default: -1; type: Integer
+	The number of most recent periods to treat as absent from the data during training for the purpose of model evaluation. Larger values may decrease model performance and run time and/or increase evaluation time frame.
+TEST_PERIODS; default: 0; type: Integer
+	One plus the value represented by TEST_INTERVALS. Deprecated and overriden by TEST_INTERVALS.
+VALIDATION_SHARE; default: 0.25; type: Decimal
+	The share of observations used for evaluation instead of training for hyperoptimization or early stopping. Larger values may increase or decrease model performance and/or run time.
+
 ##### Modeler types
-TREE_MODELS; suggested: `true`; type: Boolean
+TREE_MODELS; default: `true`; type: Boolean
 	Whether FIFE will train gradient-boosted trees, as opposed to a neural network.
-FIXED_EFFECT_FEATURES; suggested: `[]` (empty list); type: List of strings
-	Optional list of column names of features to be used to train an interacted fixed effects (IFE) model in addition to tree models or a neural network. An IFE model will not be trained if list is empty.
-##### General hyperparameters
-MAX_EPOCHS; suggested: 256; type: Integer
-	The maximum number of passes through the training set. Larger values may increase run time and/or model performance.
-PATIENCE; suggested: 4; type: Integer
-	The number of passes through the training dataset without improvement in validation set performance before training is stopped early. Larger values may increase run time and/or model performance.
+
+##### Hyperoptimization
+HYPER_TRIALS; default: 0; type: Integer
+	The number of hyperparameter sets to trial. If zero, validation early stopping will be used to decide the number of epochs. Larger values may increase run time and/or model performance.
+MAX_EPOCHS; default: 256; type: Integer
+	If HYPER_TRIALS is zero, the maximum number of passes through the training set. Larger values may increase run time and/or model performance.
+PATIENCE; default: 4; type: Integer
+	If HYPER_TRIALS is zero, the number of passes through the training dataset without improvement in validation set performance before training is stopped early. Larger values may increase run time and/or model performance.
+
 ##### Neural network hyperparameters
-BATCH_SIZE; suggested: 512; type: Integer
+BATCH_SIZE; default: 512; type: Integer
 	The number of observations per batch of data fed to the machine learning model for training. Larger values may decrease model performance and/or run time.
-DENSE_LAYERS; suggested: 2; type: Integer
+DENSE_LAYERS; default: 2; type: Integer
 	The number of dense layers in the neural network. Larger values may increase model performance and/or run time.
-DROPOUT_SHARE; suggested: 0.25; type: Decimal
+DROPOUT_SHARE; default: 0.25; type: Decimal
 	The probability of a densely connected node of the neural network being set to zero weight during training. Larger values may increase or decrease model performance.
-EMBED_EXPONENT; suggested: 0; type: Decimal
+EMBED_EXPONENT; default: 0; type: Decimal
 	The ratio of the natural logarithm of the number of embedded values to the natural logarithm of the number of unique categories for each categorical feature. Larger values may increase run time, risk of memory error, and/or model performance.
-EMBED_L2_REG; suggested: 2.0; type: Decimal
+EMBED_L2_REG; default: 2.0; type: Decimal
 	The L2 regularization coefficient for each embedding layer. Larger values may increase or decrease model performance.
-NODES_PER_DENSE_LAYER; suggested: 512; type: Integer
+NODES_PER_DENSE_LAYER; default: 512; type: Integer
 	The number of nodes per dense layer in the neural network. Larger values may increase model performance and/or run time.
-NON_CAT_MISSING_VALUE; suggested: -1; type: Decimal
+NON_CAT_MISSING_VALUE; default: -1; type: Decimal
 	The value used to replace missing values of numeric features. Outside the [-0.5, 0.5] domain of normalized values as recommended by Chollet (2018) "Deep Learning with Python" p. 102
-PROPORTIONAL_HAZARDS; suggested: `false`; type: Boolean
-	Whether the capability will restrict the neural network to a proportional hazards model.
+PROPORTIONAL_HAZARDS; default: `false`; type: Boolean
+	Whether FIFE will restrict the neural network to a proportional hazards model.
+
 ##### Metrics
-QUANTILES; suggested: 5; type: Integer
+QUANTILES; default: 5; type: Integer
 	The number of similarly-sized bins for which survival and total counts will be reported for each time horizon. Larger values may increase run time and/or evaluation precision.
-RETENTION_INTERVAL; suggested: 1; type: Integer
+RETENTION_INTERVAL; default: 1; type: Integer
 	The number of periods over which retention rates are computed.
-SHAP_PLOT_ALPHA; suggested: 0.5; type: Decimal
+SHAP_PLOT_ALPHA; default: 0.5; type: Decimal
 	The transparency of points in SHAP plots. Larger values may increase visibility of non-overlapped points and/or decrease visibility of overlapped points.
-SHAP_SAMPLE_SIZE; suggested: 128; type: Integer
+SHAP_SAMPLE_SIZE; default: 128; type: Integer
 	The number of observations randomly sampled for SHAP value calculation and plotting. Larger values may increase SHAP plot representativeness and/or run time.
 
 ### Advanced Usage
@@ -277,49 +296,39 @@ from fife.processors import PanelDataProcessor
 from fife.lgb_modelers import GradientBoostedTreesModeler
 ```
 
-We'll need to supply a data file and configure some parameters. See the [Configuration Parameters](#configuration-parameters) section for more details.
+We'll need to supply a data file.
 
 ```python
 from fife.utils import create_example_data
 data = create_example_data()
-config = {'INDIVIDUAL_IDENTIFIER': 'individual',
-          'TIME_IDENTIFIER': 'period',
-          'MAX_NULL_SHARE': 0.999,
-          'MAX_UNIQUE_NUMERIC_CATS': 1024,
-          'MIN_SURVIVORS_IN_TRAIN': 64,
-          'TEST_PERIODS': 0,
-          'VALIDATION_SHARE': 0.25,
-          'MAX_EPOCHS': 256,
-          'PATIENCE': 4
-          }
 ```
 
 Let's ensure the reproducibility of our results.
 
 ```python
-import numpy as np
-np.random.seed(9999)
+from fife.utils import make_results_reproducible
+make_results_reproducible()
 ```
 
-The Panel Data Processor will make our dataset ready for modeling, to include sorting by individual and time, dropping degenerate and duplicated features, and computing survival durations and censorship status. We can access the processed data as `data_processor.data`.
+The Panel Data Processor will make our dataset ready for modeling, to include sorting by individual and time, dropping degenerate and duplicated features, and computing survival durations and censorship status. We can specify processing parameters in the `config` argument. Perhaps we'd rather have an 80/20 validation split than the default 75/25. See the [Configuration Parameters](#configuration-parameters) section for more details.
 
 ```python
-data_processor = PanelDataProcessor(config, data)
+data_processor = PanelDataProcessor(config={'VALIDATION_SHARE': 0.2},
+                                    data=data)
 data_processor.build_processed_data()
 ```
 
-Let's use a gradient-boosted trees modeler. Any modeler needs configuration parameters, data, and to know which features should be treated as categorical, as opposed to numeric.
+We can access the processed data as `data_processor.data` for input to a modeler. Let's use a gradient-boosted trees modeler. We can specify modeling parameters in the config argument. Perhaps we prefer a patience value of 8 rather than the default value of 4.
 
 ```python
-gbt_modeler = GradientBoostedTreesModeler(config,
-                                          data_processor.data,
-                                          list(data_processor.categorical_maps.keys()))
+gbt_modeler = GradientBoostedTreesModeler(config={'PATIENCE': 8},
+                                          data=data_processor.data)
 gbt_modeler.build_model()
 ```
 
 In the case of gradient-boosted trees, our discrete-time survival "model" is actually a list of models, one for each time horizon. The first model produces a probability of survival through the first future period, the second model produces a probability of survival through the second future period conditional on survival through the first future period, and so on.
 
-We can access the list of models as an attribute of our modeler. For example, we can see how many trees are in each model. Our `PATIENCE` parameter value of 4 configured each model to train until model performance on the validation set does not improve for four consecutive trees. That means the number of trees can vary across models.
+We can access the list of models as an attribute of our modeler. For example, we can see how many trees are in each model. Our `PATIENCE` parameter value of 8 configured each model to train until model performance on the validation set does not improve for eight consecutive trees (or no more splits can improve fit). That means the number of trees can vary across models.
 
 ```python
 [i.num_trees() for i in gbt_modeler.model]
@@ -338,18 +347,48 @@ In general we are most interested in forecasts for individuals that are still in
 gbt_modeler.forecast()
 ```
 
-The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv*](-metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only on the validation set. If we specified one or more test periods in our configuration we could have used `gbt_modeler.data['_test']` instead.
+Because our forecasts are for the final period of data, we can't measure their performance in future periods. However, we can train a new model where we pretend an earlier period is the final period, then measure performance through the actual final period. In other words, we can reserve some of the most recent periods for testing.
 
 ```python
-gbt_modeler.evaluate(gbt_modeler.data['_validation'])
+test_intervals = 4
+data_processor = PanelDataProcessor(config={'VALIDATION_SHARE': 0.2,
+                                            'TEST_INTERVALS': test_intervals},
+                                    data=data)
+data_processor.build_processed_data()
+gbt_modeler = GradientBoostedTreesModeler(config={'PATIENCE': 8},
+                                          data=data_processor.data)
+gbt_modeler.build_model()
 ```
 
-In each time period, what share of the observations two periods past would we expect to still be around? See the description of [Retention_Rates.csv](#retention-rates-csv) for more details.
+The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv](#metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period.
+
+```python
+evaluation_subset = gbt_modeler.data["_period"] == (
+            gbt_modeler.data["_period"].max() - test_intervals
+        )
+gbt_modeler.evaluate(evaluation_subset)
+```
+
+The model we train depends on hyperparameters such as the maximum number of leaves per tree and the minimum number of observations per leaf. The `hyperoptimize` method searches for better hyperparameter values than the LightGBM defaults. We need only specify the number of hyperparameter sets to trial. `hyperoptimize` will return the set that performs best on the validation set for each time horizon.
+
+```python
+params = gbt_modeler.hyperoptimize(16)
+```
+
+Now we can train and evaluate a new model with our curated hyperparameters.
+
+```python
+gbt_modeler.build_model(params=params)
+gbt_modeler.evaluate(evaluation_subset)
+```
+
+`evaluate` offers just one of many ways to examine a model. For example, we can answer "In each time period, what share of the observations two periods past would we expect to still be around?" See the description of [Retention_Rates.csv](#retention-rates-csv) for more details.
+
 ```python
 gbt_modeler.tabulate_retention_rates(2)
 ```
 
-Other modelers define different ways of using data to create forecasts, but they all support the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
+Other modelers define different ways of using data to create forecasts and metrics, but they all support the methods `build_model`, `forecast`, `evaluate`, `tabulate_retention_rates`, and more.
 
 ### Acknowledgement
 
@@ -395,4 +434,4 @@ BibTex:
 }
 ```
 
-This document was most recently updated 19 May 2020.
+This document was most recently updated 24 July 2020.

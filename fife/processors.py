@@ -6,20 +6,18 @@ import numpy as np
 import pandas as pd
 
 
-def check_column_consistency(data: pd.core.frame.DataFrame,
-                             colname: str) -> None:
+def check_column_consistency(data: pd.core.frame.DataFrame, colname: str) -> None:
     """Assert column exists, has no missing values, and is not constant."""
-    assert colname in data, (
-        f'{colname} not in data')
-    assert all(data[colname].notnull()), (
-        f'{colname} has missing values')
-    assert any(data[colname][1:].values != data[colname][:-1].values), (
-        f'{colname} does not have multiple unique values')
+    assert colname in data, f"{colname} not in data"
+    assert all(data[colname].notnull()), f"{colname} has missing values"
+    assert any(
+        data[colname][1:].values != data[colname][:-1].values
+    ), f"{colname} does not have multiple unique values"
 
 
-def deduplicate_column_values(data: pd.core.frame.DataFrame,
-                              reserved_cols: List[str] = [],
-                              max_obs: int = 65536) -> pd.core.frame.DataFrame:
+def deduplicate_column_values(
+    data: pd.core.frame.DataFrame, reserved_cols: List[str] = [], max_obs: int = 65536
+) -> pd.core.frame.DataFrame:
     """Delete columns with the same values as a later column.
 
     Args:
@@ -32,22 +30,22 @@ def deduplicate_column_values(data: pd.core.frame.DataFrame,
         A DataFrame containing only the last instance of each unique column.
     """
     comparison_data = data.drop(reserved_cols, axis=1).sample(
-        n=min(max_obs, data.shape[0]), replace=False)
-    deduplicated_cols = list(
-        comparison_data.T.drop_duplicates(keep='last').index)
-    deduplicated_data = data[deduplicated_cols + reserved_cols]
-    duplicated_cols = [col for col in data if
-                       col not in deduplicated_data.columns]
+        n=min(max_obs, data.shape[0]), replace=False
+    )
+    deduplicated_cols = list(comparison_data.T.drop_duplicates(keep="last").index)
+    deduplicated_data = data[reserved_cols + deduplicated_cols]
+    duplicated_cols = [col for col in data if col not in deduplicated_data.columns]
     if duplicated_cols:
-        print(f'{", ".join(duplicated_cols)} dropped for having identical ' +
-              'values as another feature')
+        print(
+            f'{", ".join(duplicated_cols)} dropped for having identical '
+            + "values as another feature"
+        )
     return deduplicated_data
 
 
 def normalize_numeric_feature(
-        col: pd.core.series.Series,
-        excluded_obs: Union[None, pd.core.series.Series] = None
-        ) -> Tuple[pd.core.series.Series, List[float]]:
+    col: pd.core.series.Series, excluded_obs: Union[None, pd.core.series.Series] = None
+) -> Tuple[pd.core.series.Series, List[float]]:
     """Scale numeric values to their empirical range.
 
     Args:
@@ -74,9 +72,9 @@ def normalize_numeric_feature(
     return normalized_col, numeric_range
 
 
-def process_numeric_feature(col: pd.core.series.Series,
-                            minimum: float,
-                            maximum: float) -> pd.core.series.Series:
+def process_numeric_feature(
+    col: pd.core.series.Series, minimum: float, maximum: float
+) -> pd.core.series.Series:
     """Scale numeric values to a given range.
 
     Args:
@@ -91,9 +89,8 @@ def process_numeric_feature(col: pd.core.series.Series,
 
 
 def factorize_categorical_feature(
-        col: pd.core.series.Series,
-        excluded_obs: Union[None, pd.core.series.Series] = None
-        ) -> Tuple[pd.core.series.Series, dict]:
+    col: pd.core.series.Series, excluded_obs: Union[None, pd.core.series.Series] = None
+) -> Tuple[pd.core.series.Series, dict]:
     """Map categorical values to unsigned integers.
 
     Args:
@@ -128,13 +125,14 @@ def produce_categorical_map(col: pd.core.series.Series) -> dict:
     """
     _, cat_map = pd.factorize(col.values, sort=True)
     cat_map = {val: (i + 1) for i, val in enumerate(cat_map)}
-    cat_map['unrecognized'] = 0
+    cat_map["unrecognized"] = 0
     cat_map[np.nan] = len(cat_map)
     return cat_map
 
 
-def process_categorical_feature(col: pd.core.series.Series,
-                                cat_map: dict) -> pd.core.frame.DataFrame:
+def process_categorical_feature(
+    col: pd.core.series.Series, cat_map: dict
+) -> pd.core.frame.DataFrame:
     """Map categorical values to unsigned integers.
 
     Args:
@@ -148,66 +146,66 @@ def process_categorical_feature(col: pd.core.series.Series,
     n_bits = 8
     while col.max() >= 2 ** n_bits:
         n_bits *= 2
-    col = col.astype('uint' + str(n_bits))
+    col = col.astype("uint" + str(n_bits))
     return col
 
 
 class DataProcessor:
     """Prepare data by identifying features as degenerate or categorical."""
 
-    def __init__(self,
-                 config: Union[None, dict] = None,
-                 data: Union[None, pd.core.frame.DataFrame] = None) -> None:
+    def __init__(
+        self,
+        config: Union[None, dict] = {},
+        data: Union[None, pd.core.frame.DataFrame] = None,
+    ) -> None:
         """Initialize the DataProcessor.
 
         Args:
             config: A dictionary of configuration parameters.
             data: A DataFrame to be processed.
         """
+        if (config.get("INDIVIDUAL_IDENTIFIER", "") == "") and data is not None:
+            config["INDIVIDUAL_IDENTIFIER"] = data.columns[0]
+            print(
+                "Individual identifier column name not given; assumed to be "
+                f'leftmost column ({config["INDIVIDUAL_IDENTIFIER"]})'
+            )
         self.config = config
         self.data = data
 
-    def drop_degenerate_features(self) -> pd.core.frame.DataFrame:
-        """Drop constant features or those with too many missing values."""
-        thresh = int((1 - self.config['MAX_NULL_SHARE']) * self.data.shape[0])
-        data = self.data.dropna(thresh=thresh, axis=1)
-        for col in data.columns:
-            if all(data[col][1:].values == data[col][:-1].values):
-                del data[col]
-                print(f'Feature {col} dropped for having zero variance')
-        return data
+    def is_degenerate(self, col: pd.Series) -> bool:
+        """Determine if a feature is constant or has too many missing values."""
+        if self.data[col].isnull().mean() >= self.config.get("MAX_NULL_SHARE", 0.999):
+            return True
+        if self.data[col].nunique(dropna=False) < 2:
+            return True
+        return False
 
-    def identify_categorical_features(self) -> Tuple[List[str], List[str]]:
-        """Split the list of features into categorical and numeric."""
-        categorical_cols = []
-        numeric_cols = []
-        for col in self.data:
-            if col == self.config.get('INDIVIDUAL_IDENTIFIER'):
-                pass
-            elif col.endswith(
-                    tuple(self.config.get('CATEGORICAL_SUFFIXES', []))):
-                categorical_cols.append(col)
-                if col.endswith(
-                        tuple(self.config.get('NUMERIC_SUFFIXES', []))):
-                    print(f'{col} matches categorical and numeric suffixes; '
-                          'identified as categorical')
-            elif (col in self.data.select_dtypes(include=['datetime']) or
-                  col == self.config.get('TIME_IDENTIFIER')):
-                numeric_cols.append(col)
-            elif col in self.data.select_dtypes(exclude=['number']):
-                categorical_cols.append(col)
-                if col.endswith(
-                        tuple(self.config.get('NUMERIC_SUFFIXES', []))):
-                    print(f'{col} matches numeric suffix but is non-numeric; '
-                          'identified as categorical')
-            elif (col.endswith(
-                    tuple(self.config.get('NUMERIC_SUFFIXES', []))) or
-                  (self.data[col].nunique() >
-                   self.config['MAX_UNIQUE_NUMERIC_CATS'])):
-                numeric_cols.append(col)
-            else:
-                categorical_cols.append(col)
-        return categorical_cols, numeric_cols
+    def is_categorical(self, col: str) -> bool:
+        """Determine if the given feature should be processed as categorical, as opposed to numeric."""
+        if col.endswith(tuple(self.config.get("CATEGORICAL_SUFFIXES", []))):
+            if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
+                print(
+                    f"{col} matches categorical and numeric suffixes; "
+                    "identified as categorical"
+                )
+            return True
+        if col in self.data.select_dtypes(
+            include=["datetime"]
+        ) or col == self.config.get("TIME_IDENTIFIER"):
+            return False
+        if col in self.data.select_dtypes(exclude=["number"]):
+            if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))):
+                print(
+                    f"{col} matches numeric suffix but is non-numeric; "
+                    "identified as categorical"
+                )
+            return True
+        if col.endswith(tuple(self.config.get("NUMERIC_SUFFIXES", []))) or (
+            self.data[col].nunique() > self.config.get("MAX_UNIQUE_NUMERIC_CATS", 1024)
+        ):
+            return False
+        return True
 
 
 class PanelDataProcessor(DataProcessor):
@@ -225,6 +223,25 @@ class PanelDataProcessor(DataProcessor):
             feature the maximum and minimum value in the training set.
     """
 
+    def __init__(
+        self,
+        config: Union[None, dict] = {},
+        data: Union[None, pd.core.frame.DataFrame] = None,
+    ) -> None:
+        """Initialize the PanelDataProcessor.
+
+        Args:
+            config: A dictionary of configuration parameters.
+            data: A DataFrame to be processed.
+        """
+        if (config.get("TIME_IDENTIFIER", "") == "") and data is not None:
+            config["TIME_IDENTIFIER"] = data.columns[1]
+            print(
+                "Time identifier column name not given; assumed to be "
+                f'second-leftmost column ({config["TIME_IDENTIFIER"]})'
+            )
+        super().__init__(config, data)
+
     def build_processed_data(self) -> None:
         """Clean, augment, and store a panel dataset and related information.
 
@@ -235,118 +252,69 @@ class PanelDataProcessor(DataProcessor):
         - Store a subset of the raw input data from the final period.
         - Map categorical features to unsigned integers.
         - Scale numeric features.
-        - Drop duplicated features.
         """
         self.check_panel_consistency()
         self.data = self.sort_panel_data()
-        self.data = self.drop_degenerate_features()
-        categorical_features, numeric_features = \
-            self.identify_categorical_features()
-        self.data = self.data[categorical_features
-                              + numeric_features
-                              + [self.config['INDIVIDUAL_IDENTIFIER']]]
-        self.data['_predict_obs'] = self.flag_final_periods(1)
-        self.data['_validation'] = self.flag_validation_individuals()
-        if self.config.get('TEST_PERIODS', 0) > 0:
-            self.data['_test'] = self.flag_final_periods(
-                self.config['TEST_PERIODS'])
-            self.data['_event_observed'] = self.flag_event_observed(
-                group=self.data['_test'])
-            self.data['_duration'] = self.compute_survival_duration(
-                group=self.data['_test'])
-        else:
-            self.data['_test'] = False
-            self.data['_event_observed'] = self.flag_event_observed()
-            self.data['_duration'] = self.compute_survival_duration()
-        sample_size = self.config.get('SHAP_SAMPLE_SIZE', 0)
-        self.raw_subset = (self.data[self.data['_predict_obs']]
-                           .sample(n=sample_size).sort_index())
-        held_out_obs = (self.data['_validation'] | self.data['_test'] |
-                        self.data['_predict_obs'])
-        self.categorical_maps = {}
-        for col in categorical_features:
-            self.data[col], self.categorical_maps[col] = \
-                factorize_categorical_feature(self.data[col], held_out_obs)
-        numeric_ranges = {}
-        for col in numeric_features:
-            self.data[col], numeric_ranges[col] = \
-                normalize_numeric_feature(
-                    self.data[col],
-                    self.data['_test'] | self.data['_validation'])
-        self.numeric_ranges = pd.DataFrame.from_dict(
-            numeric_ranges, orient='index', columns=['Minimum', 'Maximum'])
-        self.data = deduplicate_column_values(
-            self.data, ['_duration', '_event_observed',
-                        '_predict_obs', '_test', '_validation',
-                        self.config['INDIVIDUAL_IDENTIFIER']])
+        for col in self.data:
+            if col == self.config["INDIVIDUAL_IDENTIFIER"]:
+                continue
+            elif self.is_degenerate(col):
+                del self.data[col]
+            elif self.is_categorical(col):
+                self.data[col] = self.data[col].astype("category")
+        self.build_reserved_cols()
+
+    def build_reserved_cols(self):
+        """Add data split and outcome-related columns to the data."""
+        self.data["_period"] = pd.factorize(
+            self.data[self.config["TIME_IDENTIFIER"]], sort=True
+        )[0]
+        self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
+        self.data["_test"] = (
+            self.data["_period"]
+            + self.config.get("TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1)
+        ) >= self.data["_period"].max()
+        self.data["_validation"] = (
+            self.flag_validation_individuals() & ~self.data["_test"]
+        )
+        observation_max_period = self.data.groupby("_test")["_period"].transform("max")
+        self.data["_maximum_lead"] = (
+            observation_max_period
+            - self.data["_period"]
+            + (observation_max_period < self.data["_period"].max())
+        )
+        del observation_max_period
+        gaps = (
+            self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])["_period"].shift()
+            < self.data["_period"] - 1
+        )
+        spells = gaps.groupby(self.data[self.config["INDIVIDUAL_IDENTIFIER"]]).cumsum()
+        self.data["_duration"] = spells.groupby(
+            [self.data[self.config["INDIVIDUAL_IDENTIFIER"]], spells]
+        ).cumcount(ascending=False)
+        self.data["_event_observed"] = (
+            self.data["_duration"] < self.data["_maximum_lead"]
+        )
 
     def check_panel_consistency(self) -> None:
         """Ensure observations have unique individual-period combinations."""
-        check_column_consistency(self.data,
-                                 self.config['INDIVIDUAL_IDENTIFIER'])
-        check_column_consistency(self.data,
-                                 self.config['TIME_IDENTIFIER'])
-        ids = [self.config['INDIVIDUAL_IDENTIFIER'],
-               self.config['TIME_IDENTIFIER']]
+        check_column_consistency(self.data, self.config["INDIVIDUAL_IDENTIFIER"])
+        check_column_consistency(self.data, self.config["TIME_IDENTIFIER"])
+        ids = [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
         assert not any(self.data.duplicated(subset=ids)), (
-            'One or more individuals have multiple observations for '
-            'a single time value')
+            "One or more individuals have multiple observations for "
+            "a single time value"
+        )
 
     def sort_panel_data(self) -> pd.core.frame.DataFrame:
         """Sort the data by individual, then by period."""
         return self.data.sort_values(
-            [self.config['INDIVIDUAL_IDENTIFIER'],
-             self.config['TIME_IDENTIFIER']]).reset_index(drop=True)
-
-    def flag_final_periods(self, n_periods: int) -> pd.core.series.Series:
-        """Flag observations from the most recent periods."""
-        period_cutoff = pd.factorize(self.data[self.config['TIME_IDENTIFIER']],
-                                     sort=True)[1][-n_periods]
-        return self.data[self.config['TIME_IDENTIFIER']] >= period_cutoff
+            [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
+        ).reset_index(drop=True)
 
     def flag_validation_individuals(self) -> pd.core.series.Series:
         """Flag observations from a random share of individuals."""
-        unique_ids = self.data[self.config['INDIVIDUAL_IDENTIFIER']].unique()
-        size = int(self.config['VALIDATION_SHARE'] * unique_ids.shape[0])
-        validation_ids = np.random.choice(unique_ids,
-                                          size=size,
-                                          replace=False)
-        return (self.data[self.config['INDIVIDUAL_IDENTIFIER']]
-                .isin(validation_ids))
-
-    def flag_event_observed(self, group: pd.core.series.Series = None
-                            ) -> pd.core.series.Series:
-        """Flag observations from individuals observed to depart the data."""
-        time_id = self.config['TIME_IDENTIFIER']
-        individual_id = self.data[self.config['INDIVIDUAL_IDENTIFIER']]
-        last_period = self.data.groupby(individual_id)[time_id].transform(max)
-        if group is None:
-            return last_period < self.data[time_id].max()
-        return last_period < self.data.groupby(group)[time_id].transform(max)
-
-    def compute_survival_duration(self, group: pd.core.series.Series = None
-                                  ) -> pd.core.series.Series:
-        """Count future observations of the individual at each observation."""
-        factorized_time_ids = pd.factorize(
-            self.data[self.config['TIME_IDENTIFIER']], sort=True)[0]
-        groups = [self.data[self.config['INDIVIDUAL_IDENTIFIER']]]
-        if group is not None:
-            groups.append(group)
-        return (pd.Series(factorized_time_ids).groupby(groups).transform(max)
-                - factorized_time_ids)
-
-    def process_new_data(self, new_data: pd.core.frame.DataFrame
-                         ) -> pd.core.frame.DataFrame:
-        """Apply existing categorical maps and numeric ranges to new data."""
-        data = new_data.copy(deep=True)
-        for col, categorical_map in self.categorical_maps:
-            if col in data:
-                data[col] = process_categorical_feature(data[col],
-                                                        categorical_map)
-        for col in self.numeric_ranges.index:
-            if col in data:
-                minimum = self.numeric_ranges.loc[col]['Minimum']
-                maximum = self.numeric_ranges.loc[col]['Maximum']
-                data[col] = process_numeric_feature(data[col],
-                                                    minimum, maximum)
-        return data
+        unique_ids = self.data[self.config["INDIVIDUAL_IDENTIFIER"]].unique()
+        size = int(self.config.get("VALIDATION_SHARE", 0.25) * unique_ids.shape[0])
+        validation_ids = np.random.choice(unique_ids, size=size, replace=False)
+        return self.data[self.config["INDIVIDUAL_IDENTIFIER"]].isin(validation_ids)
