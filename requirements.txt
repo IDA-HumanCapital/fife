@@ -27,7 +27,7 @@ cycler==0.10.0
 cytoolz==0.10.1
 dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1596244567871/work
 decorator==4.4.2
-fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.1.0-py3-none-any.whl
+fife @ file:///C:/Users/jbishop/Desktop/fife/dist/fife-1.1.0-py3-none-any.whl
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1596863485713/work
