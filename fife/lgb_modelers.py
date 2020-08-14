@@ -2,6 +2,7 @@
 
 from typing import List, Union
 
+import dask
 from fife import survival_modeler
 import lightgbm as lgb
 import numpy as np
@@ -174,7 +175,10 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         return params
 
     def build_model(
-        self, n_intervals: Union[None, int] = None, params: dict = None
+        self,
+        n_intervals: Union[None, int] = None,
+        params: dict = None,
+        parallelize: bool = True,
     ) -> None:
         """Train and store a sequence of gradient-boosted tree models."""
         if n_intervals:
@@ -184,69 +188,99 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         early_stopping = (params is None) or (
             any(["num_iterations" not in d for d in params.values()])
         )
-        self.model = self.train(params=params, validation_early_stopping=early_stopping)
+        self.model = self.train(
+            params=params,
+            validation_early_stopping=early_stopping,
+            parallelize=parallelize,
+        )
 
     def train(
         self,
         params: Union[None, dict] = None,
         subset: Union[None, pd.core.series.Series] = None,
         validation_early_stopping: bool = True,
+        parallelize: bool = True,
     ) -> List[lgb.basic.Booster]:
         """Train a LightGBM model for each lead length."""
         models = []
+        if parallelize:
+            for time_horizon in range(self.n_intervals):
+                model = dask.delayed(self.train_single_model)(
+                    time_horizon=time_horizon,
+                    params=params,
+                    subset=subset,
+                    validation_early_stopping=validation_early_stopping,
+                )
+                models.append(model)
+            models = dask.compute(*models)
+        else:
+            for time_horizon in range(self.n_intervals):
+                model = self.train_single_model(
+                    time_horizon=time_horizon,
+                    params=params,
+                    subset=subset,
+                    validation_early_stopping=validation_early_stopping,
+                )
+                models.append(model)
+        return models
+
+    def train_single_model(
+        self,
+        time_horizon: int,
+        params: Union[None, dict] = None,
+        subset: Union[None, pd.core.series.Series] = None,
+        validation_early_stopping: bool = True,
+    ) -> lgb.basic.Booster:
+        """Train a LightGBM model for a single lead length."""
         if params is None:
             params = {
                 time_horizon: {
                     "objective": "binary",
                     "num_iterations": self.config.get("MAX_EPOCHS", 256),
                 }
-                for time_horizon in range(self.n_intervals)
             }
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
-        for time_horizon in range(self.n_intervals):
-            data = self.data[subset]
-            data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-                axis=1
+        data = self.data[subset]
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+        if validation_early_stopping:
+            train_data = lgb.Dataset(
+                data[~data[self.validation_col]][
+                    self.categorical_features + self.numeric_features
+                ],
+                label=data[~data[self.validation_col]][self.duration_col]
+                > time_horizon,
             )
-            data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
-            if validation_early_stopping:
-                train_data = lgb.Dataset(
-                    data[~data[self.validation_col]][
-                        self.categorical_features + self.numeric_features
-                    ],
-                    label=data[~data[self.validation_col]][self.duration_col]
-                    > time_horizon,
-                )
-                validation_data = train_data.create_valid(
-                    data[data[self.validation_col]][
-                        self.categorical_features + self.numeric_features
-                    ],
-                    label=data[data[self.validation_col]][self.duration_col]
-                    > time_horizon,
-                )
-                model = lgb.train(
-                    params[time_horizon],
-                    train_data,
-                    early_stopping_rounds=self.config.get("PATIENCE", 4),
-                    valid_sets=[validation_data],
-                    valid_names=["validation_set"],
-                    categorical_feature=self.categorical_features,
-                    verbose_eval=True,
-                )
-            else:
-                data = lgb.Dataset(
-                    data[self.categorical_features + self.numeric_features],
-                    label=data[self.duration_col] > time_horizon,
-                )
-                model = lgb.train(
-                    params[time_horizon],
-                    data,
-                    categorical_feature=self.categorical_features,
-                    verbose_eval=True,
-                )
-            models.append(model)
-        return models
+            validation_data = train_data.create_valid(
+                data[data[self.validation_col]][
+                    self.categorical_features + self.numeric_features
+                ],
+                label=data[data[self.validation_col]][self.duration_col] > time_horizon,
+            )
+            model = lgb.train(
+                params[time_horizon],
+                train_data,
+                early_stopping_rounds=self.config.get("PATIENCE", 4),
+                valid_sets=[validation_data],
+                valid_names=["validation_set"],
+                categorical_feature=self.categorical_features,
+                verbose_eval=True,
+            )
+        else:
+            data = lgb.Dataset(
+                data[self.categorical_features + self.numeric_features],
+                label=data[self.duration_col] > time_horizon,
+            )
+            model = lgb.train(
+                params[time_horizon],
+                data,
+                categorical_feature=self.categorical_features,
+                verbose_eval=True,
+            )
+        return model
 
     def predict(
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True

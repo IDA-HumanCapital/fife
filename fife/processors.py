@@ -2,6 +2,7 @@
 
 from typing import List, Tuple, Union
 
+import dask
 import numpy as np
 import pandas as pd
 
@@ -173,7 +174,7 @@ class DataProcessor:
         self.config = config
         self.data = data
 
-    def is_degenerate(self, col: pd.Series) -> bool:
+    def is_degenerate(self, col: str) -> bool:
         """Determine if a feature is constant or has too many missing values."""
         if self.data[col].isnull().mean() >= self.config.get("MAX_NULL_SHARE", 0.999):
             return True
@@ -242,7 +243,7 @@ class PanelDataProcessor(DataProcessor):
             )
         super().__init__(config, data)
 
-    def build_processed_data(self) -> None:
+    def build_processed_data(self, parallelize: bool = True) -> None:
         """Clean, augment, and store a panel dataset and related information.
 
         - Sort data by individual and time.
@@ -255,14 +256,35 @@ class PanelDataProcessor(DataProcessor):
         """
         self.check_panel_consistency()
         self.data = self.sort_panel_data()
-        for col in self.data:
-            if col == self.config["INDIVIDUAL_IDENTIFIER"]:
-                continue
-            elif self.is_degenerate(col):
-                del self.data[col]
-            elif self.is_categorical(col):
-                self.data[col] = self.data[col].astype("category").cat.add_categories("NaN").fillna("NaN")
+        self.process_all_columns(parallelize=parallelize)
         self.build_reserved_cols()
+
+    def process_all_columns(self, parallelize: bool = True) -> None:
+        """Split, process, and merge all data columns."""
+        data_dict = {}
+        if parallelize:
+            for colname in self.data:
+                data_dict[colname] = dask.delayed(self.process_single_column)(colname)
+            data_dict = dask.compute(data_dict)[0]
+        else:
+            for colname in self.data:
+                data_dict[colname] = self.process_single_column(colname)
+        data_dict = {key: val for key, val in data_dict.items() if val is not None}
+        self.data = pd.DataFrame.from_dict(data_dict)
+
+    def process_single_column(
+        self, colname: str
+    ) -> Union[None, pd.core.series.Series]:
+        """Apply data cleaning functions to an individual data column."""
+        if colname == self.config["INDIVIDUAL_IDENTIFIER"]:
+            return self.data[colname]
+        elif self.is_degenerate(colname):
+            print(f'Column "{colname}" is degenerate and will be dropped.')
+            return None
+        elif self.is_categorical(colname):
+            return self.data[colname].astype("category").cat.add_categories("NaN").fillna("NaN")
+        else:
+            return self.data[colname]
 
     def build_reserved_cols(self):
         """Add data split and outcome-related columns to the data."""

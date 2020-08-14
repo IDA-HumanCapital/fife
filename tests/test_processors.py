@@ -220,6 +220,60 @@ def test_PanelDataProcessor(setup_config, setup_dataframe):
     )
 
 
+def test_process_all_columns(setup_config, setup_dataframe):
+    """Test that PanelDataProcessor.process_all_columns() replaces the data
+    attribute of PanelDataProcessor instance with a Pandas Dataframe."""
+    errors_list = []
+    for parallelize in [True, False]:
+        data_processor = processors.PanelDataProcessor(
+            config=setup_config, data=setup_dataframe
+        )
+        data_processor.process_all_columns(parallelize=parallelize)
+        if not isinstance(data_processor.data, pd.DataFrame):
+            errors_list.append(
+                f"Data attribute returned when parallelize={parallelize} "
+                "is not an instance of pd.DataFrame."
+            )
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
+
+def test_process_single_column(setup_config, setup_dataframe):
+    """Test that PanelDataProcessor.process_single_column() drops degenerate
+    columns, correctly casts categorical columns, and does not modify individual
+    identifier column."""
+    errors_list = []
+    indiv_id_col = setup_config["INDIVIDUAL_IDENTIFIER"]
+    degenerate_cols = [
+        col
+        for col in setup_dataframe
+        if (setup_dataframe[col].isnull().all()) | (setup_dataframe[col].nunique() < 2)
+    ]
+    categorical_cols = [
+        col
+        for col in setup_dataframe
+        if ("categorical_var" in col) & (col not in degenerate_cols)
+    ]
+    data_processor = processors.PanelDataProcessor(
+        config=setup_config, data=setup_dataframe
+    )
+    processed_col = data_processor.process_single_column(indiv_id_col)
+    if not processed_col.equals(setup_dataframe[indiv_id_col]):
+        errors_list.append("Individual identifier column {indiv_id_col} modified.")
+    for degenerate_col in degenerate_cols:
+        processed_col = data_processor.process_single_column(degenerate_col)
+        if processed_col is not None:
+            errors_list.append(
+                f"Degenerate column {degenerate_col} not dropped from dataframe."
+            )
+    for categorical_col in categorical_cols:
+        processed_col = data_processor.process_single_column(categorical_col)
+        if not isinstance(processed_col.dtype, pd.api.types.CategoricalDtype):
+            errors_list.append(
+                f"Categorical column {categorical_col} not cast to categorical dtype."
+            )
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
+
 def test_check_panel_consistency(setup_config, setup_dataframe):
     """Test that check_panel_consistency raises an error if an
     observation is duplicated.

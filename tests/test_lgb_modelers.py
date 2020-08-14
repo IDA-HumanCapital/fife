@@ -116,6 +116,53 @@ def test_gbtm_train(setup_config, setup_dataframe):
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
 
+def test_gbtm_train_single_model(setup_config, setup_dataframe):
+    """Test that GradientBoostedTreesModeler.train_single_model() returns a
+    trained model of type lgb.basic.Booster.
+    """
+    errors_list = []
+    cat_features_list = setup_dataframe.select_dtypes(
+        include=["object"]
+    ).columns.tolist()
+    for cat_feature in cat_features_list:
+        setup_dataframe[cat_feature] = setup_dataframe[cat_feature].astype("category")
+    setup_dataframe["FILE_DATE"] = pd.Series(
+        pd.factorize(setup_dataframe["FILE_DATE"])[0]
+    )
+    subset_training_obs = (
+        ~setup_dataframe["_validation"]
+        & ~setup_dataframe["_test"]
+        & ~setup_dataframe["_predict_obs"]
+    )
+    training_obs_lead_lengths = setup_dataframe[subset_training_obs][
+        "_duration"
+    ].value_counts()
+    n_intervals = training_obs_lead_lengths[
+        training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
+    ].index.max()
+    modeler = lgb_modelers.GradientBoostedTreesModeler(
+        config=setup_config, data=setup_dataframe,
+    )
+    for time_horizon in range(n_intervals):
+        model = modeler.train_single_model(time_horizon=time_horizon)
+        if not isinstance(model, lgb.basic.Booster):
+            errors_list.append(
+                f"Model for time horizon {time_horizon} "
+                f"is not an instance of lgb.basic.Booster."
+            )
+        if not model.num_trees() > 0:
+            errors_list.append(
+                f"Model for time horizon {time_horizon} "
+                f"was not trained (num_trees == 0)."
+            )
+        if not model.params:
+            errors_list.append(
+                f"Model for time horizon {time_horizon} "
+                f"does not have any training parameters."
+            )
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
+
 def test_gbtm_predict(setup_config, setup_dataframe):
     """Test that GradientBoostedTreesModeler.predict() returns
     survival probabilities for all observations and time intervals.
