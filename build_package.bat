@@ -25,9 +25,15 @@ if '!errorlevel!' == '0' (
 	if '!errorlevel!' == '0' (
 		fife --TEST_INTERVALS 4
 		if '!errorlevel!' == '0' (
-			pip freeze > requirements.txt
-			color 0A
-			echo "Tests passed."
+			fife --TREE_MODELS False
+			if '!errorlevel!' == '0' (
+				pip freeze > requirements.txt
+				color 0A
+				echo "Tests passed."
+			) else (
+				color 0c
+				echo "Neural network functional test failed."
+			)
 		) else (
 			color 0c
 			echo "Evaluation functional test failed."
