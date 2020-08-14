@@ -269,18 +269,16 @@ class PanelDataProcessor(DataProcessor):
         self.data = pd.DataFrame.from_dict(data_dict)
 
     def process_single_column(
-        self, colname: Union[None, str] = None
+        self, colname: str
     ) -> Union[None, pd.core.series.Series]:
         """Apply data cleaning functions to an individual data column."""
-        if colname is None:
-            return None
-        elif colname == self.config["INDIVIDUAL_IDENTIFIER"]:
+        if colname == self.config["INDIVIDUAL_IDENTIFIER"]:
             return self.data[colname]
         elif self.is_degenerate(colname):
             print(f'Column "{colname}" is degenerate and will be dropped.')
             return None
         elif self.is_categorical(colname):
-            return self.data[colname].astype("category")
+            return self.data[colname].astype("category").cat.add_categories("NaN").fillna("NaN")
         else:
             return self.data[colname]
 

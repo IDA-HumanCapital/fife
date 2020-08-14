@@ -226,15 +226,12 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
 
     def train_single_model(
         self,
-        time_horizon: Union[None, int] = None,
+        time_horizon: int,
         params: Union[None, dict] = None,
         subset: Union[None, pd.core.series.Series] = None,
         validation_early_stopping: bool = True,
     ) -> lgb.basic.Booster:
         """Train a LightGBM model for a single lead length."""
-        if time_horizon is None:
-            print("Time horizon not provided. Defaulting to 1-period survival.")
-            time_horizon = 1
         if params is None:
             params = {
                 time_horizon: {
