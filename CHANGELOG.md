@@ -1,3 +1,28 @@
+## 1.2.0 - 2020-08-17
+
+### Added
+
+<u>GradientBoostedTreesModeler</u>
+
+- modeler.build_model() and modeler.train() now parallelize training over time horizons
+
+<u>PanelDataProcessor</u>
+
+- processor.build_processed_data() and processor.process_all_columns() now parallelize processing over columns
+
+<u>Command-line Interface</u>
+
+- Command-line execution now produces calibration and forecast error outputs
+
+<u>Utils</u>
+
+- Option within create_example_data() to specify number of persons and time periods in dataset
+
+### Fixed
+
+- Null category added to columns of pandas Categorical type in PanelDataProcessor
+- Command-line execution now trains modeler for specific number of test intervals if specified
+
 ## 1.1.0 - 2020-07-20
 
 ### Added
@@ -45,7 +70,7 @@
 - Validation and test sets no longer overlap
 - modeler.evaluate() now reports correct metrics for subsets in which maximum observable period varies (e.g., train and test set combined)
 - First period of test set now considered observed for computing training set outcomes
-- ProportionalHazards models are can now be saved to files
+- ProportionalHazards models can now be saved to files
 - Code now formatted using _Black_
 - Command-line interface now evaluates on earliest period of test set instead of validation set
 
