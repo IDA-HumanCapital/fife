@@ -133,8 +133,10 @@ If `TEST_INTERVALS` is greater than zero, or if `TEST_PERIODS` is greater than o
 
 Otherwise, FIFE produces:
 
--	*Output/Tables/Metrics.csv*: Model performance metrics
+-	*Output/Tables/Metrics.csv*: Model performance metrics on the test set
 -	*Output/Tables/Counts_by_Quantile.csv*: Number of individuals retained for each time horizon based on different quantiles of the predicted survival probability
+-	*Output/Tables/Forecast_Errors.csv*: The difference between predicted probability and actual binary outcome by time horizon for each individual in the test set
+-	*Output/Tables/Calibration_Errors.csv*: Actual and predicted shares survived by octile of predicted survival probability, aggregated over all time horizons and individuals in the test set
 
 In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
@@ -150,6 +152,13 @@ All files produced by FIFE will overwrite files of the same name in the director
 - First column: Time horizons over which the survival probabilities of all individuals observed in the final period of the dataset will be aggregated.
 - Second column: Expected number of individuals retained for each time horizon.
 - Third and fourth columns: Lower and upper two-sided [Chernoff bounds](https://en.wikipedia.org/wiki/Chernoff_bound) to quantify the aggregation uncertainty around the expected number of retained individuals.
+
+##### Retention_Rates.csv
+
+- First column: The number of time periods since the earliest period in the data.
+- Second column: The share of individuals observed a given number of periods prior who survived to the corresponding period. The number of periods prior is given by the `RETENTION_INTERVAL` configuration parameter.
+- Third column: The model prediction of the corresponding actual retention rate in the second column for periods in the data on which the model was trained.
+- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` or `TEST_INTERVALS` configuration parameter and periods beyond those in the data.
 
 ##### Figures
 
@@ -189,11 +198,16 @@ Plots with names beginning with `Dependence_`: SHAP values associated with the m
 - Third column: The number of observations for which the individuals in the given quantile survived the given horizon.
 - Fourth column: The number of observations in the given quantile. Ties in predicted probability among observations may cause the number of observations to vary across quantile for a given time horizon.
 
-##### Retention_Rates.csv
-- First column: The number of time periods since the earliest period in the data.
-- Second column: The share of individuals observed a given number of periods prior who survived to the corresponding period. The number of periods prior is given by the `RETENTION_INTERVAL` configuration parameter.
-- Third column: The model prediction of the corresponding actual retention rate in the second column for periods in the data on which the model was trained.
-- Fourth column: The predicted retention rate for periods in the data on which the model was not trained. These periods include periods in the data excluded from training by the `TEST_PERIODS` or `TEST_INTERVALS` configuration parameter and periods beyond those in the data.
+##### Forecast_Errors.csv
+
+- N-th column: Each test set individual's probability of surviving N more periods, minus one if they survived. Positive zero error indicates a probability of zero; negative zero error indicates a probability of one. The set of errors in this file is sufficient to compute any model performance metrics on the test set.
+
+##### Calibration_Errors.csv
+
+- First column: The octile of predicted probabilities in the test set. For example, quantile 1 represents the lowest 12.5% of predicted probabilities among all test set individuals and time horizons.
+- Second column: The mean of the predictions in the given octile.
+- Third column: The share of predictions in the given octile that corresponded to an outcome of survival.
+- Fourth column: The difference between the second and third columns. Values closer to zero indicate better model performance.
 
 ### Configuration Parameters
 
@@ -405,6 +419,26 @@ FIFE has also been known as the Persistence Prediction Capability (PPC).
 - IDA development team: humancapital@ida.org
 - IDA Principal Investigator: Dr. Julie Lockwood, jlockwood@ida.org, 703-578-2858
 
+### Contributing
+
+To contribute to FIFE please contact us at humancapital@ida.org and/or open a pull request at https://github.com/IDA-HumanCapital/fife.
+
+### Testing
+
+You can find our unit tests, powered by pytest, at https://github.com/IDA-HumanCapital/fife/tree/master/tests. For Windows users with conventional Anaconda or Miniconda installation paths, build_package.bat executes those unit tests and some functional tests in a fresh environment. Other users can execute the functional tests individually.
+
+### Future Work
+
+We intend to develop functionality for:
+
+- Forecasting future state conditional on survival
+- Forecasting type of exit ("competing hazards")
+- Model stacking and/or blending
+- GPU training
+- Distributed computing with Apache Spark
+
+We invite requests at humancapital@ida.org and issues at https://github.com/IDA-HumanCapital/fife/issues.
+
 ### Alternative Installation
 
 If firewall, air gap, or other issues prevent you from installing FIFE, please contact us at humancapital@ida.org. We know your pain. We offer in-person assistance in the Washington, D.C. metropolitan area. If you are unable to install Python, we can send you an executable version of FIFE.
@@ -434,4 +468,4 @@ BibTex:
 }
 ```
 
-This document was most recently updated 13 August 2020.
+This document was most recently updated 18 August 2020.
