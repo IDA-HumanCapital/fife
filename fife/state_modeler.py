@@ -1,12 +1,12 @@
-"""The abstract class on which FIFE state modelers are based."""
+"""The template class for FIFE state modelers."""
 
 from collections import OrderedDict
-from typing import Any, Union
+from typing import Union
 
 from fife.modeler import default_subset_to_all, Modeler
 import numpy as np
 import pandas as pd
-from sklearn.metrics import confusion_matrix, roc_auc_score
+from sklearn.metrics import roc_auc_score
 
 
 def compute_metrics_for_categorical_outcome(
@@ -70,12 +70,11 @@ class StateModeler(Modeler):
             observable future periods.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of periods ahead to forecast
+        n_intervals (int): The largest number of periods ahead to forecast.
     """
 
     def evaluate(
-        self,
-        subset: Union[None, pd.core.series.Series] = None
+        self, subset: Union[None, pd.core.series.Series] = None
     ) -> pd.core.frame.DataFrame:
         """Tabulate model performance metrics.
 
@@ -89,15 +88,18 @@ class StateModeler(Modeler):
             curve (AUROC).
         """
         subset = default_subset_to_all(subset, self.data)
-        predictions = self.predict(subset=subset, cumulative=True)
+        predictions = self.predict(subset=subset)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = self.data[subset].groupby(self.config["INDIVIDUAL_IDENTIFIER"]).shift(-lead_length)
+            actuals = (
+                self.data[subset]
+                .groupby(self.config["INDIVIDUAL_IDENTIFIER"])
+                .shift(-lead_length)
+            )
             metrics.append(
                 compute_metrics_for_categorical_outcome(
-                    actuals,
-                    np.array(predictions[:, lead_length - 1].to_list())
+                    actuals, np.array(predictions[:, lead_length - 1].to_list())
                 )
             )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
@@ -109,12 +111,14 @@ class StateModeler(Modeler):
         columns = [
             str(i + 1) + "-period State Probabilities" for i in range(self.n_intervals)
         ]
-        return pd.DataFrame(
-            self.predict(subset=self.data[self.predict_col], cumulative=True),
-            columns=columns,
-            index=(
+        forecasts = self.predict(subset=self.data[self.predict_col])
+        index = np.repeat(
                 self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
                     self.data[self.predict_col]
-                ]
-            ),
+                ], forecasts.shape[-1]
+            )
+        return pd.DataFrame(
+            forecasts,
+            columns=columns,
+            index=index,
         )

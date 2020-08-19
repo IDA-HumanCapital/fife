@@ -1,4 +1,4 @@
-"""The abstract class on which FIFE survival modelers are based."""
+"""The template class for FIFE survival modelers."""
 
 from collections import OrderedDict
 from typing import Union
