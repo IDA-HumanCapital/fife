@@ -260,7 +260,8 @@ def create_example_data(
         x_1 = np.random.uniform()
         x_2 = np.random.choice(["A", "B", "C"])
         x_3 = np.random.uniform() + 1.0
-        x_4 = np.random.choice(["a", "b", "c", 1, 2, 3, np.nan])
+        x_4_categories = ["a", "b", "c", 1, 2, 3, np.nan]
+        x_4 = np.random.choice(x_4_categories)
         while period <= n_periods:
             values.append([i, period, x_1, x_2, x_3, x_4])
             if x_2 == "A":
@@ -269,6 +270,10 @@ def create_example_data(
                 x_1 += np.random.uniform(0, 0.2)
             if x_1 > np.sqrt(x_3):
                 break
+            if x_4 in x_4_categories[:-2]:
+                x_4_transition_value = x_4_categories[x_4_categories.index(x_4) + 1]
+                x_4 = np.random.choice([x_4, x_4_transition_value],
+                                        p=[0.75, 0.25])
             period += 1
     values = pd.DataFrame(
         values,

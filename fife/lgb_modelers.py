@@ -590,7 +590,7 @@ class GradientBoostedTreesStateModeler(StateModeler):
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
         data = self.data.copy()
-        data["label"] = self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col].shift(-time_horizon).cat.codes
+        data["label"] = self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col].shift(-time_horizon-1).cat.codes
         params[time_horizon]["num_class"] = len(data[self.state_col].cat.categories)
         data = data[subset]
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
