@@ -219,6 +219,8 @@ def test_PanelDataProcessor(setup_config, setup_dataframe):
         setup_dataframe
     )
 
+
+if False:
 def test_process_all_columns(setup_config, setup_dataframe):
     """Test that PanelDataProcessor.process_all_columns() replaces the data
     attribute of PanelDataProcessor instance with a Pandas Dataframe."""
@@ -234,6 +236,7 @@ def test_process_all_columns(setup_config, setup_dataframe):
                 "is not an instance of pd.DataFrame."
             )
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
 
 def test_process_single_column(setup_config, setup_dataframe):
     """Test that PanelDataProcessor.process_single_column() drops degenerate

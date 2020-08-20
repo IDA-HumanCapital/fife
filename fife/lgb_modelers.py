@@ -66,7 +66,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         def evaluate_params(
             trial: optuna.trial.Trial,
             train_data: lgb.Dataset,
-            validation_data: lgb.Dataset
+            validation_data: lgb.Dataset,
         ) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
@@ -123,7 +123,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         for time_horizon in range(self.n_intervals):
             data = self.label_data(time_horizon)
             data = data[subset]
-            data = subset_for_training_horizon(data, time_horizon)
+            data = self.subset_for_training_horizon(data, time_horizon)
             if rolling_validation:
                 rolling_validation_n_periods = int(
                     max(
@@ -164,9 +164,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
             )
             study.optimize(
-                lambda trial: evaluate_params(
-                    trial, train_data, validation_data
-                ),
+                lambda trial: evaluate_params(trial, train_data, validation_data),
                 n_trials=n_trials,
             )
             params[time_horizon] = study.best_params
@@ -249,7 +247,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
         data = self.label_data(time_horizon)
         data = data[subset]
-        data = subset_for_training_horizon(data, time_horizon)
+        data = self.subset_for_training_horizon(data, time_horizon)
         if validation_early_stopping:
             train_data = lgb.Dataset(
                 data[~data[self.validation_col]][
@@ -270,7 +268,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 valid_sets=[validation_data],
                 valid_names=["validation_set"],
                 categorical_feature=self.categorical_features,
-                verbose_eval=True
+                verbose_eval=True,
             )
         else:
             data = lgb.Dataset(
@@ -285,7 +283,9 @@ class GradientBoostedTreesModeler(SurvivalModeler):
             )
         return model
 
-    def subset_for_training_horizon(self, data: pd.DataFrame, time_horizon: int) -> pd.DataFrame:
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
         """Return only observations with long enough duration for training."""
         return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
 
@@ -394,7 +394,9 @@ class GradientBoostedTreesStateModeler(StateModeler, GradientBoostedTreesModeler
         if self.data is not None:
             self.num_class = data[self.state_col].nunique()
 
-    def subset_for_training_horizon(self, data: pd.DataFrame, time_horizon: int) -> pd.DataFrame:
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
         """Return only observations with long enough duration for training."""
         return data[(data[self.duration_col] > time_horizon)]
 
@@ -404,7 +406,9 @@ class GradientBoostedTreesStateModeler(StateModeler, GradientBoostedTreesModeler
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
-                        .shift(-time_horizon - 1)
-                        .cat.codes)
+        data["label"] = (
+            data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
+            .shift(-time_horizon - 1)
+            .cat.codes
+        )
         return data
