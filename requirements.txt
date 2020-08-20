@@ -3,7 +3,7 @@ alembic==1.4.2
 appdirs==1.4.4
 astor==0.8.1
 atomicwrites==1.4.0
-attrs==19.3.0
+attrs==20.1.0
 autograd==1.3
 autograd-gamma==0.4.2
 backcall @ file:///home/conda/feedstock_root/build_artifacts/backcall_1592338393461/work
@@ -29,14 +29,14 @@ cytoolz==0.10.1
 dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1597423298521/work
 decorator==4.4.2
 distributed==2.23.0
-fife @ file:///C:/Users/jbishop/Desktop/fife/dist/fife-1.2.0-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.2.0-py3-none-any.whl
 fsspec==0.8.0
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1596863485713/work
 google-auth-oauthlib==0.4.1
 google-pasta==0.2.0
-grpcio==1.27.2
+grpcio @ file:///C:/ci/grpcio_1597406403308/work
 h5py==2.8.0
 HeapDict==1.0.1
 idna @ file:///tmp/build/80754af9/idna_1593446292537/work
@@ -59,12 +59,12 @@ locket==0.2.0
 Mako==1.1.3
 Markdown @ file:///C:/ci/markdown_1597415185889/work
 MarkupSafe==1.1.1
-matplotlib @ file:///D:/bld/matplotlib-base_1597428569923/work
+matplotlib @ file:///D:/bld/matplotlib-base_1597952542171/work
 mkl-service==2.3.0
 more-itertools==8.4.0
 msgpack==1.0.0
 networkx==2.4
-numpy @ file:///D:/bld/numpy_1595523078866/work
+numpy @ file:///D:/bld/numpy_1597938567428/work
 oauthlib==3.1.0
 olefile==0.46
 opt-einsum==3.1.0

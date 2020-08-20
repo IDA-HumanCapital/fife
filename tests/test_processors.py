@@ -220,7 +220,6 @@ def test_PanelDataProcessor(setup_config, setup_dataframe):
     )
 
 
-if False:
 def test_process_all_columns(setup_config, setup_dataframe):
     """Test that PanelDataProcessor.process_all_columns() replaces the data
     attribute of PanelDataProcessor instance with a Pandas Dataframe."""
