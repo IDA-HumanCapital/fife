@@ -99,8 +99,7 @@ class SurvivalModeler(Modeler):
             observable future periods.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of one-period intervals any
-            individual is observed to survive.
+        n_intervals (int): The largest number of periods ahead to forecast.
     """
 
     def evaluate(

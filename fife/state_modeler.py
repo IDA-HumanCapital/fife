@@ -47,7 +47,7 @@ def compute_metrics_for_categorical_outcome(
 
 
 class StateModeler(Modeler):
-    """Set template for modelers that use panel data to produce forecasts.
+    """Set template for modelers that produce state probabilities and metrics.
 
     Attributes:
         config (dict): User-provided configuration parameters.
