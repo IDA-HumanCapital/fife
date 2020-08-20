@@ -113,20 +113,17 @@ class StateModeler(Modeler):
         ]
         forecasts = self.predict(subset=self.data[self.predict_col])
         index = np.repeat(
-                self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
-                    self.data[self.predict_col]
-                ], forecasts.shape[0]
-            )
-        states = np.tile(self.data[self.state_col].cat.categories,
-                         forecasts.shape[1])
-        forecasts = np.reshape(forecasts,
-                               (forecasts.shape[0] * forecasts.shape[1],
-                                forecasts.shape[2]),
-                               order="F")
-        forecasts = pd.DataFrame(
-            forecasts,
-            columns=columns,
-            index=index,
+            self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
+                self.data[self.predict_col]
+            ],
+            forecasts.shape[0],
         )
+        states = np.tile(self.data[self.state_col].cat.categories, forecasts.shape[1])
+        forecasts = np.reshape(
+            forecasts,
+            (forecasts.shape[0] * forecasts.shape[1], forecasts.shape[2]),
+            order="F",
+        )
+        forecasts = pd.DataFrame(forecasts, columns=columns, index=index,)
         forecasts[self.state_col] = states
         return forecasts

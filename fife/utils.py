@@ -272,8 +272,7 @@ def create_example_data(
                 break
             if x_4 in x_4_categories[:-2]:
                 x_4_transition_value = x_4_categories[x_4_categories.index(x_4) + 1]
-                x_4 = np.random.choice([x_4, x_4_transition_value],
-                                        p=[0.75, 0.25])
+                x_4 = np.random.choice([x_4, x_4_transition_value], p=[0.75, 0.25])
             period += 1
     values = pd.DataFrame(
         values,

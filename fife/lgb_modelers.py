@@ -25,7 +25,19 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         n_intervals (int): The largest number of periods ahead to forecast.
         models (list): A trained LightGBM model (lgb.basic.Booster) for each
             lead length.
+        objective(str): The LightGBM model objective appropriate for the outcome type
     """
+
+    def __init__(self, **kwargs):
+        """Initialize the GradientBoostedTreesStateModeler.
+
+        Args:
+            state_col: The column representing the state to be forecasted.
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(**kwargs)
+        self.objective = "binary"
+        self.num_class = 1
 
     def hyperoptimize(
         self,
@@ -54,7 +66,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         def evaluate_params(
             trial: optuna.trial.Trial,
             train_data: lgb.Dataset,
-            validation_data: lgb.Dataset,
+            validation_data: lgb.Dataset
         ) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
@@ -87,7 +99,8 @@ class GradientBoostedTreesModeler(SurvivalModeler):
             params["max_cat_to_onehot"] = trial.suggest_int("max_cat_to_onehot", 1, 64)
             params["max_bin"] = trial.suggest_int("max_bin", 32, 1024)
             params["min_data_in_bin"] = trial.suggest_int("min_data_in_bin", 1, 64)
-            params["objective"] = "binary"
+            params["objective"] = self.objective
+            params["num_class"] = self.num_class
             params["verbosity"] = -1
             booster = lgb.Booster(params=params, train_set=train_data)
             booster.add_valid(validation_data, "validation_set")
@@ -99,7 +112,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
-        default_params = {"objective": "binary", "num_iterations": 100}
+        default_params = {"objective": self.objective, "num_iterations": 100}
         if n_trials <= 0:
             return {
                 time_horizon: default_params for time_horizon in range(self.n_intervals)
@@ -108,11 +121,9 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
         for time_horizon in range(self.n_intervals):
-            data = self.data[subset]
-            data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-                axis=1
-            )
-            data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+            data = self.label_data(time_horizon)
+            data = data[subset]
+            data = subset_for_training_horizon(data, time_horizon)
             if rolling_validation:
                 rolling_validation_n_periods = int(
                     max(
@@ -130,16 +141,8 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 )
             else:
                 rolling_validation_subset = [False] * data.shape[0]
-            if (
-                (
-                    data[self.duration_col][rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
-            ) and (
-                (
-                    data[self.duration_col][~rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
+            if (data[rolling_validation_subset]["label"].nunique() > 1) and (
+                data[~rolling_validation_subset]["label"].nunique() > 1
             ):
                 validation_subset = rolling_validation_subset
             else:
@@ -148,24 +151,26 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 data[~validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~validation_subset][self.duration_col] > time_horizon,
+                label=data[~validation_subset]["label"],
             )
             validation_data = train_data.create_valid(
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[validation_subset][self.duration_col] > time_horizon,
+                label=data[validation_subset]["label"],
             )
             study = optuna.create_study(
                 pruner=optuna.pruners.MedianPruner(),
                 sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
             )
             study.optimize(
-                lambda trial: evaluate_params(trial, train_data, validation_data),
+                lambda trial: evaluate_params(
+                    trial, train_data, validation_data
+                ),
                 n_trials=n_trials,
             )
             params[time_horizon] = study.best_params
-            params[time_horizon]["objective"] = "binary"
+            params[time_horizon]["objective"] = self.objective
             default_booster = lgb.Booster(params=default_params, train_set=train_data)
             default_booster.add_valid(validation_data, "validation_set")
             for _ in range(default_params["num_iterations"]):
@@ -236,30 +241,27 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         if params is None:
             params = {
                 time_horizon: {
-                    "objective": "binary",
+                    "objective": self.objective,
                     "num_iterations": self.config.get("MAX_EPOCHS", 256),
                 }
             }
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
-        data = self.data[subset]
-        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-            axis=1
-        )
-        data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+        data = self.label_data(time_horizon)
+        data = data[subset]
+        data = subset_for_training_horizon(data, time_horizon)
         if validation_early_stopping:
             train_data = lgb.Dataset(
                 data[~data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~data[self.validation_col]][self.duration_col]
-                > time_horizon,
+                label=data[~data[self.validation_col]]["label"],
             )
             validation_data = train_data.create_valid(
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[data[self.validation_col]][self.duration_col] > time_horizon,
+                label=data[data[self.validation_col]]["label"],
             )
             model = lgb.train(
                 params[time_horizon],
@@ -268,12 +270,12 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 valid_sets=[validation_data],
                 valid_names=["validation_set"],
                 categorical_feature=self.categorical_features,
-                verbose_eval=True,
+                verbose_eval=True
             )
         else:
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
-                label=data[self.duration_col] > time_horizon,
+                label=data["label"],
             )
             model = lgb.train(
                 params[time_horizon],
@@ -282,6 +284,19 @@ class GradientBoostedTreesModeler(SurvivalModeler):
                 verbose_eval=True,
             )
         return model
+
+    def subset_for_training_horizon(self, data: pd.DataFrame, time_horizon: int) -> pd.DataFrame:
+        """Return only observations with long enough duration for training."""
+        return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.DataFrame:
+        """Return data with an indicator for survival for each observation."""
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = data[self.duration_col] > time_horizon
+        return data
 
     def predict(
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
@@ -349,7 +364,7 @@ class GradientBoostedTreesModeler(SurvivalModeler):
         return shap_values
 
 
-class GradientBoostedTreesStateModeler(StateModeler):
+class GradientBoostedTreesStateModeler(StateModeler, GradientBoostedTreesModeler):
     """Train a gradient-boosted tree model for each lead length using LightGBM.
 
     Attributes:
@@ -362,6 +377,8 @@ class GradientBoostedTreesStateModeler(StateModeler):
             individual is observed to survive.
         models (list): A trained LightGBM model (lgb.basic.Booster) for each
             lead length.
+        state_col (str): 
+        num_class (int): 
     """
 
     def __init__(self, state_col, **kwargs):
@@ -373,303 +390,21 @@ class GradientBoostedTreesStateModeler(StateModeler):
         """
         super().__init__(**kwargs)
         self.state_col = state_col
+        self.objective = "multiclass"
+        if self.data is not None:
+            self.num_class = data[self.state_col].nunique()
 
-    def hyperoptimize(
-        self,
-        n_trials: int = 64,
-        rolling_validation: bool = True,
-        subset: Union[None, pd.core.series.Series] = None,
-    ) -> dict:
-        """Search for hyperparameters with greater out-of-sample performance.
+    def subset_for_training_horizon(self, data: pd.DataFrame, time_horizon: int) -> pd.DataFrame:
+        """Return only observations with long enough duration for training."""
+        return data[(data[self.duration_col] > time_horizon)]
 
-        Args:
-            n_trials: The number of hyperparameter sets to evaluate for each
-                time horizon. Return None if non-positive.
-            rolling_validation: Whether or not to evaluate performance on the
-                most recent possible period instead of the validation set
-                labeled by self.validation_col. Ignored for a given time horizon
-                if there is only one possible period for training and evaluation.
-            subset:  A Boolean Series that is True for observations on which
-                to train and validate. If None, default to all observations not
-                flagged by self.test_col or self.predict_col.
-
-        Returns:
-            A dictionary containing the best-performing parameter dictionary for
-            each time horizon.
-        """
-
-        def evaluate_params(
-            trial: optuna.trial.Trial,
-            train_data: lgb.Dataset,
-            validation_data: lgb.Dataset,
-        ) -> Union[None, dict]:
-            """Compute out-of-sample performance for a parameter set."""
-            params = {}
-            params["num_iterations"] = trial.suggest_int("num_iterations", 8, 128)
-            params["learning_rate"] = trial.suggest_uniform("learning_rate", 2e-5, 0.5)
-            params["num_leaves"] = trial.suggest_int("num_leaves", 8, 256)
-            params["max_depth"] = trial.suggest_int("max_depth", 4, 32)
-            params["min_data_in_leaf"] = trial.suggest_int("min_data_in_leaf", 4, 512)
-            params["min_sum_hessian_in_leaf"] = trial.suggest_uniform(
-                "min_sum_hessian_in_leaf", 2e-5, 0.25
-            )
-            params["bagging_freq"] = trial.suggest_int("bagging_freq", 0, 1)
-            params["bagging_fraction"] = trial.suggest_uniform(
-                "bagging_fraction", 0.5, 1
-            )
-            params["feature_fraction"] = trial.suggest_uniform(
-                "feature_fraction", 0.5, 1
-            )
-            params["lambda_l1"] = trial.suggest_uniform("lambda_l1", 0, 64)
-            params["lambda_l2"] = trial.suggest_uniform("lambda_l2", 0, 64)
-            params["min_gain_to_split"] = trial.suggest_uniform(
-                "min_gain_to_split", 0, 0.25
-            )
-            params["min_data_per_group"] = trial.suggest_int(
-                "min_data_per_group", 1, 512
-            )
-            params["max_cat_threshold"] = trial.suggest_int("max_cat_threshold", 1, 512)
-            params["cat_l2"] = trial.suggest_uniform("cat_l2", 0, 64)
-            params["cat_smooth"] = trial.suggest_uniform("cat_smooth", 0, 2048)
-            params["max_cat_to_onehot"] = trial.suggest_int("max_cat_to_onehot", 1, 64)
-            params["max_bin"] = trial.suggest_int("max_bin", 32, 1024)
-            params["min_data_in_bin"] = trial.suggest_int("min_data_in_bin", 1, 64)
-            params["objective"] = "multiclass"
-            params["verbosity"] = -1
-            booster = lgb.Booster(params=params, train_set=train_data)
-            booster.add_valid(validation_data, "validation_set")
-            for step in range(params["num_iterations"]):
-                booster.update()
-                validation_loss = booster.eval_valid()[0][2]
-                trial.report(validation_loss, step)
-                if trial.should_prune():
-                    raise optuna.exceptions.TrialPruned()
-            return validation_loss
-
-        default_params = {"objective": "multiclass", "num_iterations": 100}
-        if n_trials <= 0:
-            return {
-                time_horizon: default_params for time_horizon in range(self.n_intervals)
-            }
-        params = {}
-        if subset is None:
-            subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
-        for time_horizon in range(self.n_intervals):
-            data = self.data[subset]
-            data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-                axis=1
-            )
-            data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
-            if rolling_validation:
-                rolling_validation_n_periods = int(
-                    max(
-                        self.config.get("VALIDATION_SHARE", 0.25)
-                        * data[self.config["TIME_IDENTIFIER"]].nunique(),
-                        1,
-                    )
-                )
-                rolling_validation_period_cutoff = pd.factorize(
-                    data[self.config["TIME_IDENTIFIER"]], sort=True
-                )[1][-rolling_validation_n_periods]
-                rolling_validation_subset = (
-                    data[self.config["TIME_IDENTIFIER"]]
-                    >= rolling_validation_period_cutoff
-                )
-            else:
-                rolling_validation_subset = [False] * data.shape[0]
-            if (
-                (
-                    data[self.duration_col][rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
-            ) and (
-                (
-                    data[self.duration_col][~rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
-            ):
-                validation_subset = rolling_validation_subset
-            else:
-                validation_subset = data[self.validation_col]
-            train_data = lgb.Dataset(
-                data[~validation_subset][
-                    self.categorical_features + self.numeric_features
-                ],
-                label=data[~validation_subset][self.duration_col] > time_horizon,
-            )
-            validation_data = train_data.create_valid(
-                data[validation_subset][
-                    self.categorical_features + self.numeric_features
-                ],
-                label=data[validation_subset][self.duration_col] > time_horizon,
-            )
-            study = optuna.create_study(
-                pruner=optuna.pruners.MedianPruner(),
-                sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
-            )
-            study.optimize(
-                lambda trial: evaluate_params(trial, train_data, validation_data),
-                n_trials=n_trials,
-            )
-            params[time_horizon] = study.best_params
-            params[time_horizon]["objective"] = "multiclass"
-            default_booster = lgb.Booster(params=default_params, train_set=train_data)
-            default_booster.add_valid(validation_data, "validation_set")
-            for _ in range(default_params["num_iterations"]):
-                default_booster.update()
-            default_validation_loss = default_booster.eval_valid()[0][2]
-            if default_validation_loss <= study.best_value:
-                params[time_horizon] = default_params
-        return params
-
-    def build_model(
-        self,
-        n_intervals: Union[None, int] = None,
-        params: dict = None,
-        parallelize: bool = True,
-    ) -> None:
-        """Train and store a sequence of gradient-boosted tree models."""
-        if n_intervals:
-            self.n_intervals = n_intervals
-        else:
-            self.n_intervals = self.set_n_intervals()
-        early_stopping = (params is None) or (
-            any(["num_iterations" not in d for d in params.values()])
-        )
-        self.model = self.train(
-            params=params,
-            validation_early_stopping=early_stopping,
-            parallelize=parallelize,
-        )
-
-    def train(
-        self,
-        params: Union[None, dict] = None,
-        subset: Union[None, pd.core.series.Series] = None,
-        validation_early_stopping: bool = True,
-        parallelize: bool = True,
-    ) -> List[lgb.basic.Booster]:
-        """Train a LightGBM model for each lead length."""
-        models = []
-        if parallelize:
-            for time_horizon in range(self.n_intervals):
-                model = dask.delayed(self.train_single_model)(
-                    time_horizon=time_horizon,
-                    params=params,
-                    subset=subset,
-                    validation_early_stopping=validation_early_stopping,
-                )
-                models.append(model)
-            models = dask.compute(*models)
-        else:
-            for time_horizon in range(self.n_intervals):
-                model = self.train_single_model(
-                    time_horizon=time_horizon,
-                    params=params,
-                    subset=subset,
-                    validation_early_stopping=validation_early_stopping,
-                )
-                models.append(model)
-        return models
-
-    def train_single_model(
-        self,
-        time_horizon: int,
-        params: Union[None, dict] = None,
-        subset: Union[None, pd.core.series.Series] = None,
-        validation_early_stopping: bool = True,
-    ) -> lgb.basic.Booster:
-        """Train a LightGBM model for a single lead length."""
-        if params is None:
-            params = {
-                time_horizon: {
-                    "objective": "multiclass",
-                    "num_iterations": self.config.get("MAX_EPOCHS", 256),
-                }
-            }
-        if subset is None:
-            subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
+    def label_data(self, data: pd.DataFrame, time_horizon: int) -> pd.Series:
+        """Return data with the future state for each observation."""
         data = self.data.copy()
-        data["label"] = self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col].shift(-time_horizon-1).cat.codes
-        params[time_horizon]["num_class"] = len(data[self.state_col].cat.categories)
-        data = data[subset]
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data = data[(data[self.duration_col] > time_horizon)]
-        if validation_early_stopping:
-            train_data = lgb.Dataset(
-                data[~data[self.validation_col]][
-                    self.categorical_features + self.numeric_features
-                ],
-                label=data[~data[self.validation_col]]["label"],
-            )
-            validation_data = train_data.create_valid(
-                data[data[self.validation_col]][
-                    self.categorical_features + self.numeric_features
-                ],
-                label=data[data[self.validation_col]]["label"],
-            )
-            model = lgb.train(
-                params[time_horizon],
-                train_data,
-                early_stopping_rounds=self.config.get("PATIENCE", 4),
-                valid_sets=[validation_data],
-                valid_names=["validation_set"],
-                categorical_feature=self.categorical_features,
-                verbose_eval=True,
-            )
-        else:
-            data = lgb.Dataset(
-                data[self.categorical_features + self.numeric_features],
-                label=data["label"],
-            )
-            model = lgb.train(
-                params[time_horizon],
-                data,
-                categorical_feature=self.categorical_features,
-                verbose_eval=True,
-            )
-        return model
-
-    def predict(
-        self, subset: Union[None, pd.core.series.Series] = None
-    ) -> np.ndarray:
-        """Use trained LightGBM models to predict observation survival rates.
-
-        Args:
-            subset: A Boolean Series that is True for observations for which
-                predictions will be produced. If None, default to all
-                observations.
-
-        Returns:
-            A numpy array of lists of state probabilities by observation and lead
-            length.
-        """
-        subset = default_subset_to_all(subset, self.data)
-        predict_data = self.data[self.categorical_features + self.numeric_features][
-            subset
-        ]
-        predictions = np.array(
-            [
-                lead_specific_model.predict(predict_data)
-                for lead_specific_model in self.model
-            ]
-        ).T
-        return predictions
-
-    def transform_features(self):
-        """Transform features to suit model training."""
-        data = self.data.copy(deep=True)
-        if self.config.get("DATETIME_AS_DATE", True):
-            for col in data.select_dtypes("datetime"):
-                data[col] = (
-                    data[col].dt.year * 10000
-                    + data[col].dt.month * 100
-                    + data[col].dt.day
-                )
-        else:
-            data[data.select_dtypes("datetime")] = pd.to_numeric(
-                data[data.select_dtypes("datetime")]
-            )
+        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
+                        .shift(-time_horizon - 1)
+                        .cat.codes)
         return data
