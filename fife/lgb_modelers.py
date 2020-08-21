@@ -465,7 +465,7 @@ class LGBStateModeler(LGBModeler, StateModeler):
                 self.num_class = len(self.data[self.state_col].cat.categories)
             elif self.state_col in self.numeric_features:
                 self.objective = "regression"
-                self.num_class = len(self.data[self.state_col].cat.categories)
+                self.num_class = None
             else:
                 raise ValueError("state_col not in features.")
 
@@ -481,11 +481,11 @@ class LGBStateModeler(LGBModeler, StateModeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = (
-            data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
-            .shift(-time_horizon - 1)
-            .cat.codes
-        )
+        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
+            self.state_col
+        ].shift(-time_horizon - 1)
+        if self.state_col in self.categorical_features:
+            data["label"] = data["label"].cat.codes
         return data
 
 

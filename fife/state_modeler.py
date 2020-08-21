@@ -10,8 +10,7 @@ from sklearn.metrics import r2_score, roc_auc_score
 
 
 def compute_metrics_for_categorical_outcome(
-    actuals: pd.DataFrame,
-    predictions: np.ndarray
+    actuals: pd.DataFrame, predictions: np.ndarray
 ) -> OrderedDict:
     """Evaluate predicted probabilities against actual binary outcome values.
 
@@ -33,8 +32,7 @@ def compute_metrics_for_categorical_outcome(
 
 
 def compute_metrics_for_numeric_outcome(
-    actuals: pd.core.series.Series,
-    predictions: np.ndarray
+    actuals: pd.core.series.Series, predictions: np.ndarray
 ) -> OrderedDict:
     """Evaluate predicted numeric values against actual outcome values.
 
@@ -98,18 +96,28 @@ class StateModeler(Modeler):
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
             actuals = (
-                self.data
-                .groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
-                .shift(-lead_length)
+                self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
+                    self.state_col
+                ].shift(-lead_length)
             )[subset][self.data[subset][self.duration_col] >= lead_length]
             if self.state_col in self.categorical_features:
                 metrics.append(
                     compute_metrics_for_categorical_outcome(
-                        pd.get_dummies(actuals.cat.codes), predictions[:, :, lead_length - 1].T[self.data[subset][self.duration_col] >= lead_length]
+                        pd.get_dummies(actuals.cat.codes),
+                        predictions[:, :, lead_length - 1].T[
+                            self.data[subset][self.duration_col] >= lead_length
+                        ],
                     )
                 )
             else:
-                metrics.append(compute_metrics_for_numeric_outcome(actuals, predictions[:, lead_length - 1][self.data[subset][self.duration_col] >= lead_length]))
+                metrics.append(
+                    compute_metrics_for_numeric_outcome(
+                        actuals,
+                        predictions[:, lead_length - 1][
+                            self.data[subset][self.duration_col] >= lead_length
+                        ],
+                    )
+                )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
         metrics.index.name = "Lead Length"
         return metrics
@@ -119,7 +127,8 @@ class StateModeler(Modeler):
         forecasts = self.predict(subset=self.data[self.predict_col], cumulative=False)
         if self.state_col in self.categorical_features:
             columns = [
-                str(i + 1) + "-period State Probabilities" for i in range(self.n_intervals)
+                str(i + 1) + "-period State Probabilities"
+                for i in range(self.n_intervals)
             ]
             index = np.repeat(
                 self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
@@ -127,7 +136,9 @@ class StateModeler(Modeler):
                 ],
                 forecasts.shape[0],
             )
-            states = np.tile(self.data[self.state_col].cat.categories, forecasts.shape[1])
+            states = np.tile(
+                self.data[self.state_col].cat.categories, forecasts.shape[1]
+            )
             forecasts = np.reshape(
                 forecasts,
                 (forecasts.shape[0] * forecasts.shape[1], forecasts.shape[2]),
@@ -137,9 +148,11 @@ class StateModeler(Modeler):
             forecasts[f"Future {self.state_col}"] = states
         else:
             columns = [
-                str(i + 1) + f"-period {self.state_col} Forecast" for i in range(self.n_intervals)
+                str(i + 1) + f"-period {self.state_col} Forecast"
+                for i in range(self.n_intervals)
             ]
             index = self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
-                    self.data[self.predict_col]]
+                self.data[self.predict_col]
+            ]
             forecasts = pd.DataFrame(forecasts, columns=columns, index=index)
         return forecasts
