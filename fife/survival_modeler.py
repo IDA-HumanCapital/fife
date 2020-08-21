@@ -141,7 +141,7 @@ class SurvivalModeler(Modeler):
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
             actuals = (
-                actual_durations[self.data[self.max_lead_col] >= lead_length]
+                actual_durations[self.data[subset][self.max_lead_col] >= lead_length]
                 >= lead_length
             )
             metrics.append(
