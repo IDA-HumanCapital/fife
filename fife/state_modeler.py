@@ -71,6 +71,7 @@ class StateModeler(Modeler):
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
+        state_col (str): The column representing the state to forecast.
     """
 
     def evaluate(
@@ -111,7 +112,7 @@ class StateModeler(Modeler):
         columns = [
             str(i + 1) + "-period State Probabilities" for i in range(self.n_intervals)
         ]
-        forecasts = self.predict(subset=self.data[self.predict_col])
+        forecasts = self.predict(subset=self.data[self.predict_col], cumulative=False)
         index = np.repeat(
             self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
                 self.data[self.predict_col]
