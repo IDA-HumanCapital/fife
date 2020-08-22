@@ -356,6 +356,7 @@ class LGBModeler(Modeler):
 
 class LGBSurvivalModeler(LGBModeler, SurvivalModeler):
     """Use LightGBM to forecast probabilities of being observed in future periods."""
+
     pass
 
 
@@ -371,9 +372,11 @@ class GradientBoostedTreesModeler(LGBSurvivalModeler):
 
 class LGBStateModeler(LGBModeler, StateModeler):
     """Use LightGBM to forecast the future value of a feature conditional on survival."""
+
     pass
 
 
 class LGBExitModeler(LGBModeler, ExitModeler):
     """Use LightGBM to forecast the circumstance of exit conditional on exit."""
+
     pass

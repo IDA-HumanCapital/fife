@@ -28,7 +28,7 @@ cycler==0.10.0
 cytoolz==0.10.1
 dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1597423298521/work
 decorator==4.4.2
-distributed==2.23.0
+distributed==2.24.0
 fife @ file:///C:/Users/jbishop/Desktop/fife/dist/fife-1.2.0-py3-none-any.whl
 fsspec==0.8.0
 future==0.18.2
@@ -81,7 +81,7 @@ Pillow @ file:///D:/bld/pillow_1594213048891/work
 pluggy==0.13.1
 prettytable==0.7.2
 prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1597061474901/work
-protobuf==3.12.4
+protobuf==3.13.0
 psutil==5.7.2
 py==1.9.0
 pyasn1==0.4.8
@@ -106,7 +106,7 @@ requests-oauthlib==1.3.0
 rsa @ file:///tmp/build/80754af9/rsa_1596998415516/work
 scikit-image==0.17.2
 scikit-learn @ file:///D:/bld/scikit-learn_1596546337481/work
-scipy @ file:///C:/ci/scipy_1592916958183/work
+scipy @ file:///C:/ci/scipy_1597686737426/work
 seaborn==0.10.1
 shap==0.35.0
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1590081179328/work

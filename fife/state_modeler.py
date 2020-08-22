@@ -120,27 +120,23 @@ class StateModeler(Modeler):
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = self.subset_for_training_horizon(self.label_data(lead_length - 1)[subset].reset_index(),
-                                                       lead_length - 1)["label"]
+            actuals = self.subset_for_training_horizon(
+                self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
+            )["label"]
             if self.objective == "multiclass":
-                actuals = pd.DataFrame({label: actuals == label
-                                        for label in range(self.num_class)},
-                                        index=actuals.index)
+                actuals = pd.DataFrame(
+                    {label: actuals == label for label in range(self.num_class)},
+                    index=actuals.index,
+                )
                 metrics.append(
                     compute_metrics_for_categorical_outcome(
-                        actuals,
-                        predictions[:, :, lead_length - 1].T[
-                            actuals.index
-                        ],
+                        actuals, predictions[:, :, lead_length - 1].T[actuals.index],
                     )
                 )
             else:
                 metrics.append(
                     compute_metrics_for_numeric_outcome(
-                        actuals,
-                        predictions[:, lead_length - 1][
-                            actuals.index
-                        ],
+                        actuals, predictions[:, lead_length - 1][actuals.index],
                     )
                 )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
@@ -194,10 +190,9 @@ class StateModeler(Modeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = (
-            data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
-            .shift(-time_horizon - 1)
-        )
+        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
+            self.state_col
+        ].shift(-time_horizon - 1)
         if self.objective == "multiclass":
             data["label"] = data["label"].cat.codes
         return data

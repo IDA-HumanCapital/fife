@@ -151,14 +151,13 @@ class SurvivalModeler(Modeler):
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = self.subset_for_training_horizon(self.label_data(lead_length - 1)[subset].reset_index(),
-                                                       lead_length - 1)["label"]
+            actuals = self.subset_for_training_horizon(
+                self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
+            )["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
-                    predictions[:, lead_length - 1][
-                        actuals.index
-                    ],
+                    predictions[:, lead_length - 1][actuals.index],
                     threshold_positive=threshold_positive,
                     share_positive=share_positive,
                 )
