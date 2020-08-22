@@ -85,7 +85,7 @@ class StateModeler(Modeler):
         """Initialize the StateModeler.
 
         Args:
-            state_col: The column representing the state to be forecast.
+            state_col: The column representing the state to forecast.
             **kwargs: Arguments to Modeler.__init__().
         """
         super().__init__(**kwargs)
@@ -122,10 +122,13 @@ class StateModeler(Modeler):
         for lead_length in lead_lengths:
             actuals = self.subset_for_training_horizon(self.label_data(lead_length - 1)[subset].reset_index(),
                                                        lead_length - 1)["label"]
-            if self.state_col in self.categorical_features:
+            if self.objective == "multiclass":
+                actuals = pd.DataFrame({label: actuals == label
+                                        for label in range(self.num_class)},
+                                        index=actuals.index)
                 metrics.append(
                     compute_metrics_for_categorical_outcome(
-                        pd.get_dummies(actuals),
+                        actuals,
                         predictions[:, :, lead_length - 1].T[
                             actuals.index
                         ],
@@ -147,7 +150,7 @@ class StateModeler(Modeler):
     def forecast(self) -> pd.core.frame.DataFrame:
         """Tabulate state probabilities for most recent observations."""
         forecasts = self.predict(subset=self.data[self.predict_col], cumulative=False)
-        if self.state_col in self.categorical_features:
+        if self.objective == "multiclass":
             columns = [
                 str(i + 1) + "-period State Probabilities"
                 for i in range(self.n_intervals)
@@ -195,6 +198,35 @@ class StateModeler(Modeler):
             data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
             .shift(-time_horizon - 1)
         )
-        if self.state_col in self.categorical_features:
+        if self.objective == "multiclass":
             data["label"] = data["label"].cat.codes
         return data
+
+
+class ExitModeler(StateModeler):
+    """Forecast the circumstance of exit conditional on exit."""
+
+    def __init__(self, exit_col, **kwargs):
+        """Initialize the ExitModeler.
+
+        Args:
+            exit_col: The column representing the exit circumstance to forecast.
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(exit_col, **kwargs)
+        self.exit_col = self.state_col
+        if self.data is not None:
+            if self.state_col in self.categorical_features:
+                self.categorical_features.remove(self.state_col)
+            elif self.state_col in self.numeric_features:
+                self.numeric_features.remove(self.state_col)
+
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where exit is observed at the given time horizon."""
+        return data[data[self.event_col] & (data[self.duration_col] == time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.Series:
+        """Return data with the exit circumstance for each observation."""
+        return super().label_data(time_horizon - 1)

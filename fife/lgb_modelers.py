@@ -5,7 +5,7 @@ from warnings import warn
 
 import dask
 from fife.modeler import default_subset_to_all, Modeler
-from fife.state_modeler import StateModeler
+from fife.state_modeler import StateModeler, ExitModeler
 from fife.survival_modeler import SurvivalModeler
 import lightgbm as lgb
 import numpy as np
@@ -371,4 +371,9 @@ class GradientBoostedTreesModeler(LGBSurvivalModeler):
 
 class LGBStateModeler(LGBModeler, StateModeler):
     """Use LightGBM to forecast the future value of a feature conditional on survival."""
+    pass
+
+
+class LGBExitModeler(LGBModeler, ExitModeler):
+    """Use LightGBM to forecast the circumstance of exit conditional on exit."""
     pass
