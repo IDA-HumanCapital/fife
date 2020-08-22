@@ -49,7 +49,7 @@ def compute_metrics_for_numeric_outcome(
 
 
 class StateModeler(Modeler):
-    """Set template for modelers that produce state probabilities and metrics.
+    """Forecast the future value of a feature conditional on survival.
 
     Attributes:
         config (dict): User-provided configuration parameters.
@@ -74,7 +74,31 @@ class StateModeler(Modeler):
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
         state_col (str): The column representing the state to forecast.
+        objective (str): The model objective appropriate for the outcome type;
+            "multiclass" for categorical states and "regression" for numeric
+            states.
+        num_class (int): The number of state categories or, if the state is
+            numeric, None.
     """
+
+    def __init__(self, state_col, **kwargs):
+        """Initialize the StateModeler.
+
+        Args:
+            state_col: The column representing the state to be forecast.
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(**kwargs)
+        self.state_col = state_col
+        if self.data is not None:
+            if self.state_col in self.categorical_features:
+                self.objective = "multiclass"
+                self.num_class = len(self.data[self.state_col].cat.categories)
+            elif self.state_col in self.numeric_features:
+                self.objective = "regression"
+                self.num_class = None
+            else:
+                raise ValueError("state_col not in features.")
 
     def evaluate(
         self, subset: Union[None, pd.core.series.Series] = None
@@ -87,25 +111,23 @@ class StateModeler(Modeler):
                 observations.
 
         Returns:
-            A DataFrame containing area under the receiver operating characteristic
-            curve (AUROC).
+            A DataFrame containing, for each lead length, area under the
+            receiver operating characteristic curve (AUROC) for categorical
+            states, or, for numeric states, R-squared.
         """
         subset = default_subset_to_all(subset, self.data)
         predictions = self.predict(subset=subset, cumulative=False)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = (
-                self.data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
-                    self.state_col
-                ].shift(-lead_length)
-            )[subset][self.data[subset][self.duration_col] >= lead_length]
+            actuals = self.subset_for_training_horizon(self.label_data(lead_length - 1)[subset].reset_index(),
+                                                       lead_length - 1)["label"]
             if self.state_col in self.categorical_features:
                 metrics.append(
                     compute_metrics_for_categorical_outcome(
-                        pd.get_dummies(actuals.cat.codes),
+                        pd.get_dummies(actuals),
                         predictions[:, :, lead_length - 1].T[
-                            self.data[subset][self.duration_col] >= lead_length
+                            actuals.index
                         ],
                     )
                 )
@@ -114,7 +136,7 @@ class StateModeler(Modeler):
                     compute_metrics_for_numeric_outcome(
                         actuals,
                         predictions[:, lead_length - 1][
-                            self.data[subset][self.duration_col] >= lead_length
+                            actuals.index
                         ],
                     )
                 )
@@ -156,3 +178,23 @@ class StateModeler(Modeler):
             ]
             forecasts = pd.DataFrame(forecasts, columns=columns, index=index)
         return forecasts
+
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where the future state is observed."""
+        return data[(data[self.duration_col] > time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.Series:
+        """Return data with the future state for each observation."""
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = (
+            data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[self.state_col]
+            .shift(-time_horizon - 1)
+        )
+        if self.state_col in self.categorical_features:
+            data["label"] = data["label"].cat.codes
+        return data

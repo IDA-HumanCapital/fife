@@ -76,7 +76,7 @@ def compute_metrics_for_binary_outcome(
 
 
 class SurvivalModeler(Modeler):
-    """Set template for modelers to produce survival probabilities and metrics.
+    """Forecast probabilities of being observed in future periods.
 
     Attributes:
         config (dict): User-provided configuration parameters.
@@ -100,7 +100,21 @@ class SurvivalModeler(Modeler):
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
+        objective (str): The LightGBM model objective appropriate for the
+            outcome type, which is "binary" for binary classification.
+        num_class (int): The num_class LightGBM parameter, which is 1 for
+            binary classification.
     """
+
+    def __init__(self, **kwargs):
+        """Initialize the SurvivalModeler.
+
+        Args:
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(**kwargs)
+        self.objective = "binary"
+        self.num_class = 1
 
     def evaluate(
         self,
@@ -134,21 +148,16 @@ class SurvivalModeler(Modeler):
         """
         subset = default_subset_to_all(subset, self.data)
         predictions = self.predict(subset=subset, cumulative=True)
-        actual_durations = self.data[subset][
-            [self.duration_col, self.max_lead_col]
-        ].min(axis=1)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = (
-                actual_durations[self.data[subset][self.max_lead_col] >= lead_length]
-                >= lead_length
-            )
+            actuals = self.subset_for_training_horizon(self.label_data(lead_length - 1)[subset].reset_index(),
+                                                       lead_length - 1)["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
                     predictions[:, lead_length - 1][
-                        self.data[subset][self.max_lead_col] >= lead_length
+                        actuals.index
                     ],
                     threshold_positive=threshold_positive,
                     share_positive=share_positive,
@@ -158,7 +167,7 @@ class SurvivalModeler(Modeler):
         metrics.index.name = "Lead Length"
         metrics["Other Metrics:"] = ""
         concordance_index_value = concordance_index(
-            actual_durations,
+            self.data[subset][[self.duration_col, self.max_lead_col]].min(axis=1),
             np.sum(predictions, axis=-1),
             self.data[subset][self.event_col],
         )
@@ -275,3 +284,18 @@ class SurvivalModeler(Modeler):
         retention_rates.loc[retention_rates.index.max() + period_length] = np.nan
         retention_rates.index.name = "Period"
         return retention_rates
+
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where survival would be observed."""
+        return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.DataFrame:
+        """Return data with an indicator for survival for each observation."""
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = data[self.duration_col] > time_horizon
+        return data

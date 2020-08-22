@@ -355,138 +355,8 @@ class LGBModeler(Modeler):
 
 
 class LGBSurvivalModeler(LGBModeler, SurvivalModeler):
-    """Train a gradient-boosted tree model for each lead length using LightGBM.
-
-    Attributes:
-        config (dict): User-provided configuration parameters.
-        data (pd.core.frame.DataFrame): User-provided panel data.
-        categorical_features (list): Column names of categorical features.
-        duration_col (str): Name of the column representing the number of
-            future periods observed for the given individual.
-        event_col (str): Name of the column indicating whether the individual
-            is observed to exit the dataset.
-        predict_col (str): Name of the column indicating whether the
-            observation will be used for prediction after training.
-        test_col (str): Name of the column indicating whether the observation
-            will be used for testing model performance after training.
-        validation_col (str): Name of the column indicating whether the
-            observation will be used for evaluating model performance during
-            training.
-        period_col (str): Name of the column representing the number of
-            periods since the earliest period in the data.
-        max_lead_col (str): Name of the column representing the number of
-            observable future periods.
-        reserved_cols (list): Column names of non-features.
-        numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of periods ahead to forecast.
-        model (list): A trained LightGBM model (lgb.basic.Booster) for each
-            lead length.
-        state_col (str): The column representing the state to forecast.
-        objective (str): The LightGBM model objective appropriate for the
-            outcome type, which is "binary" for binary classification.
-        num_class (int): The num_class LightGBM parameter, which is 1 for
-            binary classification.
-    """
-
-    def __init__(self, **kwargs):
-        """Initialize the GradientBoostedTreesStateModeler.
-
-        Args:
-            **kwargs: Arguments to SurvivalModeler.__init__().
-        """
-        super().__init__(**kwargs)
-        self.objective = "binary"
-        self.num_class = 1
-
-    def subset_for_training_horizon(
-        self, data: pd.DataFrame, time_horizon: int
-    ) -> pd.DataFrame:
-        """Return only observations where survival would be observed."""
-        return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
-
-    def label_data(self, time_horizon: int) -> pd.DataFrame:
-        """Return data with an indicator for survival for each observation."""
-        data = self.data.copy()
-        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-            axis=1
-        )
-        data["label"] = data[self.duration_col] > time_horizon
-        return data
-
-
-class LGBStateModeler(LGBModeler, StateModeler):
-    """Train a gradient-boosted tree model for each lead length using LightGBM.
-
-    Attributes:
-        config (dict): User-provided configuration parameters.
-        data (pd.core.frame.DataFrame): User-provided panel data.
-        categorical_features (list): Column names of categorical features.
-        duration_col (str): Name of the column representing the number of
-            future periods observed for the given individual.
-        event_col (str): Name of the column indicating whether the individual
-            is observed to exit the dataset.
-        predict_col (str): Name of the column indicating whether the
-            observation will be used for prediction after training.
-        test_col (str): Name of the column indicating whether the observation
-            will be used for testing model performance after training.
-        validation_col (str): Name of the column indicating whether the
-            observation will be used for evaluating model performance during
-            training.
-        period_col (str): Name of the column representing the number of
-            periods since the earliest period in the data.
-        max_lead_col (str): Name of the column representing the number of
-            observable future periods.
-        reserved_cols (list): Column names of non-features.
-        numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of periods ahead to forecast.
-        model (list): A trained LightGBM model (lgb.basic.Booster) for each
-            lead length.
-        state_col (str): The column representing the state to forecast.
-        objective (str): The LightGBM model objective appropriate for the
-            outcome type, which is "multiclass" for categorical states and
-            "regression" for numeric states.
-        num_class (int): The num_class LightGBM parameter, which is the number
-            of state categories or, if the state is numeric, np.inf.
-    """
-
-    def __init__(self, state_col, **kwargs):
-        """Initialize the GradientBoostedTreesStateModeler.
-
-        Args:
-            state_col: The column representing the state to be forecast.
-            **kwargs: Arguments to StateModeler.__init__().
-        """
-        super().__init__(**kwargs)
-        self.state_col = state_col
-        self.objective = "multiclass"
-        if self.data is not None:
-            if self.state_col in self.categorical_features:
-                self.objective = "multiclass"
-                self.num_class = len(self.data[self.state_col].cat.categories)
-            elif self.state_col in self.numeric_features:
-                self.objective = "regression"
-                self.num_class = None
-            else:
-                raise ValueError("state_col not in features.")
-
-    def subset_for_training_horizon(
-        self, data: pd.DataFrame, time_horizon: int
-    ) -> pd.DataFrame:
-        """Return only observations where the future state is observed."""
-        return data[(data[self.duration_col] > time_horizon)]
-
-    def label_data(self, time_horizon: int) -> pd.Series:
-        """Return data with the future state for each observation."""
-        data = self.data.copy()
-        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-            axis=1
-        )
-        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
-            self.state_col
-        ].shift(-time_horizon - 1)
-        if self.state_col in self.categorical_features:
-            data["label"] = data["label"].cat.codes
-        return data
+    """Use LightGBM to forecast probabilities of being observed in future periods."""
+    pass
 
 
 class GradientBoostedTreesModeler(LGBSurvivalModeler):
@@ -497,3 +367,8 @@ class GradientBoostedTreesModeler(LGBSurvivalModeler):
         "Please use 'LGBSurvivalModeler' instead.",
         DeprecationWarning,
     )
+
+
+class LGBStateModeler(LGBModeler, StateModeler):
+    """Use LightGBM to forecast the future value of a feature conditional on survival."""
+    pass
