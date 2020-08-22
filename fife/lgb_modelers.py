@@ -4,9 +4,13 @@ from typing import List, Union
 from warnings import warn
 
 import dask
-from fife.modeler import default_subset_to_all, Modeler
-from fife.state_modeler import StateModeler, ExitModeler
-from fife.survival_modeler import SurvivalModeler
+from fife.base_modelers import (
+    default_subset_to_all,
+    Modeler,
+    SurvivalModeler,
+    StateModeler,
+    ExitModeler,
+)
 import lightgbm as lgb
 import numpy as np
 import optuna

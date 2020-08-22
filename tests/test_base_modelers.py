@@ -1,6 +1,6 @@
-"""Conduct unit testing for fife.survival_modeler module."""
+"""Conduct unit testing for fife.base_modelers module."""
 
-from fife import survival_modeler
+from fife import base_modelers
 import numpy as np
 
 
@@ -8,18 +8,18 @@ def test_compute_metrics_for_binary_outcome(fabricate_forecasts):
     """Test that FIFE produces correct example AUROC and confusion matrices."""
     errors_list = []
     metrics = {}
-    metrics["AUROC=1"] = survival_modeler.compute_metrics_for_binary_outcome(
+    metrics["AUROC=1"] = base_modelers.compute_metrics_for_binary_outcome(
         fabricate_forecasts["AUROC=1"][0], fabricate_forecasts["AUROC=1"][1]
     )
-    metrics["AUROC=0"] = survival_modeler.compute_metrics_for_binary_outcome(
+    metrics["AUROC=0"] = base_modelers.compute_metrics_for_binary_outcome(
         fabricate_forecasts["AUROC=0"][0], fabricate_forecasts["AUROC=0"][1]
     )
-    metrics["empty actual"] = survival_modeler.compute_metrics_for_binary_outcome(
+    metrics["empty actual"] = base_modelers.compute_metrics_for_binary_outcome(
         fabricate_forecasts["empty actual"][0], fabricate_forecasts["empty actual"][1]
     )
     metrics[
         "AUROC=1, threshold_positive=1"
-    ] = survival_modeler.compute_metrics_for_binary_outcome(
+    ] = base_modelers.compute_metrics_for_binary_outcome(
         fabricate_forecasts["AUROC=1"][0],
         fabricate_forecasts["AUROC=1"][1],
         threshold_positive=1.0,

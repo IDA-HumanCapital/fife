@@ -3,7 +3,7 @@
 from inspect import getfullargspec
 from typing import List, Union
 
-from fife import survival_modeler
+from fife import base_modelers
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
 import optuna
@@ -102,7 +102,7 @@ class CumulativeProduct(Layer):
         return K.cumprod(inputs, axis=1)
 
 
-class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
+class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
     """Train a neural network model using Keras.
 
     Attributes:
@@ -371,7 +371,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         """List each categorical feature for input to own embedding layer."""
         if data is None:
             data = self.data
-        subset = survival_modeler.default_subset_to_all(subset, data)
+        subset = base_modelers.default_subset_to_all(subset, data)
         return split_categorical_features(
             data[subset], self.categorical_features, self.numeric_features
         )
@@ -503,7 +503,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         return None
         model = make_predictions_marginal(self.model)
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         shap_subset = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         )
@@ -545,7 +545,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             A numpy array of predictions by observation, lead length, and
             iteration.
         """
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         model_inputs = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         ) + [1.0]
@@ -636,7 +636,7 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         """Keep only the features and observations desired for model input."""
         if data is None:
             data = self.data
-        subset = survival_modeler.default_subset_to_all(subset, data)
+        subset = base_modelers.default_subset_to_all(subset, data)
         formatted_data = data.drop(self.reserved_cols, axis=1)[subset]
         for col in self.categorical_features:
             formatted_data[col] = formatted_data[col].cat.codes

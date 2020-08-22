@@ -2,12 +2,12 @@
 
 from typing import Union
 
-from fife import survival_modeler
+from fife import base_modelers
 import numpy as np
 import pandas as pd
 
 
-class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
+class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
     """Predict with survival rate of training observations with same values.
 
     Attributes:
@@ -68,7 +68,7 @@ class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
             A numpy array of survival probabilities by observation and lead
             length.
         """
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         predictions = self.data[subset].merge(
             self.model, how="left", left_on=self.categorical_features, right_index=True
         )
