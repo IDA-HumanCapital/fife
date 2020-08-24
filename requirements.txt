@@ -26,10 +26,10 @@ colorlog==4.2.1
 cryptography==2.9.2
 cycler==0.10.0
 cytoolz==0.10.1
-dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1597423298521/work
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1598124697190/work
 decorator==4.4.2
 distributed==2.24.0
-fife @ file:///C:/Users/jbishop/Desktop/fife/dist/fife-1.2.0-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.2.0-py3-none-any.whl
 fsspec==0.8.0
 future==0.18.2
 gast==0.2.2
