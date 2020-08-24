@@ -32,9 +32,11 @@ def deduplicate_column_values(
     Returns:
         A DataFrame containing only the last instance of each unique column.
     """
-    warn("Warning: deduplicate_column_values is deprecated. "
-         "If you wish to deduplicate columns, do so prior to initializing a processor.",
-         DeprecationWarning)
+    warn(
+        "Warning: deduplicate_column_values is deprecated. "
+        "If you wish to deduplicate columns, do so prior to initializing a processor.",
+        DeprecationWarning,
+    )
     comparison_data = data.drop(reserved_cols, axis=1).sample(
         n=min(max_obs, data.shape[0]), replace=False
     )
@@ -63,9 +65,11 @@ def normalize_numeric_feature(
         - A list containing the minimum and maximum values among the included
           observations.
     """
-    warn("Warning: normalize_numeric_feature is deprecated. "
-         "Modelers now use transform_features upon initialization instead.",
-         DeprecationWarning)
+    warn(
+        "Warning: normalize_numeric_feature is deprecated. "
+        "Modelers now use transform_features upon initialization instead.",
+        DeprecationWarning,
+    )
     if excluded_obs is None:
         col_subset = col[col.notnull()]
     else:
@@ -94,9 +98,11 @@ def process_numeric_feature(
     Returns:
         A Series of floats.
     """
-    warn("Warning: process_numeric_feature is deprecated. "
-         "Modelers now use transform_features upon initialization instead.",
-         DeprecationWarning)
+    warn(
+        "Warning: process_numeric_feature is deprecated. "
+        "Modelers now use transform_features upon initialization instead.",
+        DeprecationWarning,
+    )
     return (col - minimum) / (maximum - minimum) - 0.5
 
 
@@ -115,9 +121,11 @@ def factorize_categorical_feature(
           observations and np.nan to an integer and any other value not in the
           Series to 0.
     """
-    warn("Warning: factorize_categorical_feature is deprecated. "
-         "Processors now convert categorical features to pandas Categorical type.",
-         DeprecationWarning)
+    warn(
+        "Warning: factorize_categorical_feature is deprecated. "
+        "Processors now convert categorical features to pandas Categorical type.",
+        DeprecationWarning,
+    )
     if excluded_obs is None:
         cat_map = produce_categorical_map(col)
     else:
@@ -138,9 +146,11 @@ def produce_categorical_map(col: pd.core.series.Series) -> dict:
         A dictionary mapping each unique value in the Series and np.nan to an
         integer and any other value not in the Series to zero.
     """
-    warn("Warning: produce_categorical_map is deprecated. "
-         "Processors now convert categorical features to pandas Categorical type.",
-         DeprecationWarning)
+    warn(
+        "Warning: produce_categorical_map is deprecated. "
+        "Processors now convert categorical features to pandas Categorical type.",
+        DeprecationWarning,
+    )
     _, cat_map = pd.factorize(col.values, sort=True)
     cat_map = {val: (i + 1) for i, val in enumerate(cat_map)}
     cat_map["unrecognized"] = 0
@@ -160,9 +170,11 @@ def process_categorical_feature(
     Returns:
         A pandas Series of unsigned integers.
     """
-    warn("Warning: process_categorical_feature is deprecated. "
-         "Processors now convert categorical features to pandas Categorical type.",
-         DeprecationWarning)
+    warn(
+        "Warning: process_categorical_feature is deprecated. "
+        "Processors now convert categorical features to pandas Categorical type.",
+        DeprecationWarning,
+    )
     col = col.map(cat_map).fillna(0)
     n_bits = 8
     while col.max() >= 2 ** n_bits:
