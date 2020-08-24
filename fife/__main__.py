@@ -12,18 +12,16 @@ including documentation of all configuration parameters.
 
 import json
 import os
-import pickle
-import sys
 from time import time
 
-from fife import lgb_modelers, pd_modelers, processors, tf_modelers, utils
+from fife import lgb_modelers, processors, tf_modelers, utils
 import numpy as np
 import pandas as pd
 from sklearn.calibration import calibration_curve
 
 
 def main():
-    """Execute default FIFE pipeline from data to forecasts and metrics."""
+    """Execute default FIFE pipeline from data to survival forecasts and metrics."""
     checkpoint_time = time()
 
     # Read configuration parameters
@@ -34,6 +32,14 @@ def main():
         with open(args.CONFIG_PATH, "r") as file:
             config.update(json.load(file))
     config.update({k: v for k, v in vars(args).items() if v is not None})
+    if config.get("EXIT_COL_PATH"):
+        raise NotImplementedError(
+            "Forecasting exit circumstances from the command line is not yet supported. Try LGBExitModeler from the FIFE Python package."
+        )
+    if config.get("STATE_COL"):
+        raise NotImplementedError(
+            "Forecasting future state from the command line is not yet supported. Try LGBStateModeler from the FIFE Python package."
+        )
 
     # Ensure reproducibility
     utils.make_results_reproducible(config["SEED"])
@@ -83,7 +89,7 @@ def main():
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
     test_intervals = config.get("TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1)
     if config["TREE_MODELS"]:
-        modeler = lgb_modelers.GradientBoostedTreesModeler(
+        modeler = lgb_modelers.LGBSurvivalModeler(
             config=config, data=data_processor.data,
         )
         modeler.n_intervals = (

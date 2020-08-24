@@ -383,6 +383,16 @@ class FIFEArgParser(argparse.ArgumentParser):
             help="The share of observations used for evaluation instead of training for hyperoptimization or early stopping.",
         )
         self.add_argument(
+            "--EXIT_FILE_PATH",
+            type=str,
+            help="The path to a file identifying the circumstances of exit for each individual observed to exit in the next period. If given, FIFE will forecast the circumstances of exit conditional on exit instead of forecasting survival.",
+        )
+        self.add_argument(
+            "--STATE_COL",
+            type=str,
+            help="The name of the column representing the future state to forecast. If given and EXIT_FILE_PATH not given, FIFE will forecast the future state conditional on survival instead of forecasting survival.",
+        )
+        self.add_argument(
             "--TREE_MODELS",
             type=strtobool,
             default=True,
