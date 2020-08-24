@@ -99,10 +99,7 @@ def compute_metrics_for_categorical_outcome(
         receiver operating characteristic curve (AUROC).
     """
     metrics = OrderedDict()
-    if actuals.sum().min() > 0:
-        metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
-    else:
-        metrics["AUROC"] = np.nan
+    metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
     return metrics
 
 
