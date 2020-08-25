@@ -195,6 +195,7 @@ def main():
 
     print(f"Output production time: {time() - checkpoint_time} seconds")
 
+
 def parse_config() -> dict:
     """Parse configuration parameters specified in the command line."""
     parser = utils.FIFEArgParser()
@@ -205,6 +206,7 @@ def parse_config() -> dict:
             config.update(json.load(file))
     config.update({k: v for k, v in vars(args).items() if v is not None})
     return config
+
 
 def read_data(config: dict) -> pd.DataFrame:
     """Read the input dataset as specified in config or inferred from current directory."""
