@@ -43,6 +43,12 @@ def print_config(config: dict) -> None:
     print(json.dumps(config, indent=4) + "\n")
 
 
+def print_copyright() -> None:
+    print("Produced using FIFE: Finite-Interval Forecasting Engine")
+    print("Copyright (c) 2018 - 2020, Institute for Defense Analyses (IDA)")
+    print("Please cite using the suggested citation in the LICENSE file.\n")
+
+
 def import_data_file(file_path: str = "Input_Data") -> pd.core.frame.DataFrame:
     """Return the data stored in given file in given folder."""
     if file_path.endswith(".feather"):

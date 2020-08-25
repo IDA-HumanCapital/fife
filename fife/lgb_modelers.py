@@ -323,7 +323,7 @@ class LGBModeler(Modeler):
             predictions = np.cumprod(predictions, axis=1)
         return predictions
 
-    def transform_features(self):
+    def transform_features(self) -> pd.DataFrame:
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
@@ -338,6 +338,12 @@ class LGBModeler(Modeler):
                 data[data.select_dtypes("datetime")]
             )
         return data
+
+    def save_model(self, file_name: str = "GBT_Model", path: str = "") -> None:
+        """Save the horizon-specific LightGBM models that comprise the model to disk."""
+        for i, lead_specific_model in enumerate(self.model):
+            with open(f"{path}{i + 1}-lead_{file_name}.json", "w") as file:
+                json.dump(lead_specific_model.dump_model(), file, indent=4)
 
     def compute_shap_values(
         self, subset: Union[None, pd.core.series.Series] = None
