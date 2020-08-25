@@ -303,7 +303,7 @@ import inspect
 print(inspect.getsource(fife.__main__))
 ```
 
-You can use FIFE modules to customize your own pipeline, whether starting from scratch or by copying and modifying `fife.__main__`. We'll want a module to process our panel data and another module to use the processed data to train a model. For this example we'll build gradient-boosted tree models using [LightGBM](https://lightgbm.readthedocs.io/en/latest/).
+You can use FIFE modules to customize your own pipeline, whether starting from scratch or by copying and modifying `fife.__main__`. We'll want a module to process our panel data and another module to use the processed data to train a model. For this example we'll build gradient-boosted tree models using [LightGBM](https://lightgbm.readthedocs.io/en/latest/). For more specific information on modules, see the modules tab.
 
 ```python
 from fife.processors import PanelDataProcessor
@@ -383,10 +383,10 @@ evaluation_subset = gbt_modeler.data["_period"] == (
 gbt_modeler.evaluate(evaluation_subset)
 ```
 
-The model we train depends on hyperparameters such as the maximum number of leaves per tree and the minimum number of observations per leaf. The `hyperoptimize` method searches for better hyperparameter values than the LightGBM defaults. We need only specify the number of hyperparameter sets to trial. `hyperoptimize` will return the set that performs best on the validation set for each time horizon.
+The model we train depends on hyperparameters such as the maximum number of leaves per tree and the minimum number of observations per leaf. The `hyperoptimize` method searches for better hyperparameter values than the LightGBM defaults. We need only specify the number of hyperparameter sets to trial. `hyperoptimize` will return the set that performs best on the validation set for each time horizon. It is not necessarily true that hyperoptimization will result in better results than the default.
 
 ```python
-params = gbt_modeler.hyperoptimize(16)
+params = gbt_modeler.hyperoptimize(45)
 ```
 
 Now we can train and evaluate a new model with our curated hyperparameters.
