@@ -83,10 +83,9 @@ class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
         """Save the pandas DataFrame model to disk."""
         self.model.to_csv(path + file_name + ".csv")
 
-    def hyperoptimize(
-        self,
-        **kwargs
-    ) -> dict:
+    def hyperoptimize(self, **kwargs) -> dict:
         """Returns None for InteractedFixedEffectsModeler, which does not have hyperparameters"""
-        warn("Warning: InteractedFixedEffectsModeler does not have hyperparameters to optimize.")
+        warn(
+            "Warning: InteractedFixedEffectsModeler does not have hyperparameters to optimize."
+        )
         return None

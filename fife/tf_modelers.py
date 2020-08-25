@@ -616,12 +616,11 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         """Save the TensorFlow model to disk."""
         self.model.save(path + file_name + ".h5")
 
-    def hyperoptimize(
-        self,
-        **kwargs
-    ) -> dict:
+    def hyperoptimize(self, **kwargs) -> dict:
         """Returns None for ProportionalHazardsModeler, which does not have hyperparameters"""
-        warn("Warning: ProportionalHazardsModeler does not have hyperparameters to optimize.")
+        warn(
+            "Warning: ProportionalHazardsModeler does not have hyperparameters to optimize."
+        )
         return None
 
 
@@ -679,10 +678,9 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         """Save the TensorFlow model to disk."""
         self.model.save(path + file_name + ".h5")
 
-    def hyperoptimize(
-        self,
-        **kwargs
-    ) -> dict:
+    def hyperoptimize(self, **kwargs) -> dict:
         """Returns None for ProportionalHazardsEncodingModeler, which does not have hyperparameters"""
-        warn("Warning: ProportionalHazardsEncodingModeler does not have hyperparameters to optimize.")
+        warn(
+            "Warning: ProportionalHazardsEncodingModeler does not have hyperparameters to optimize."
+        )
         return None
