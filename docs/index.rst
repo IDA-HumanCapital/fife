@@ -5,4 +5,5 @@ Welcome to the documentation for FIFE: The Finite-Interval Forecasting Engine!
    :maxdepth: 2
 
    user_guide_link
+   cli_link
    Modules <source/fife>

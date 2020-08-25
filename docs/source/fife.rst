@@ -1,15 +1,7 @@
 Modules
 =======
 
-fife.processors module
-----------------------
-
-.. automodule:: fife.processors
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-fife.survival\_modeler module
+fife.base_modelers module
 -----------------------------
 
 .. automodule:: fife.survival_modeler
@@ -21,14 +13,6 @@ fife.lgb\_modelers module
 -------------------------
 
 .. automodule:: fife.lgb_modelers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-fife.tf\_modelers module
-------------------------
-
-.. automodule:: fife.tf_modelers
    :members:
    :undoc-members:
    :show-inheritance:
@@ -47,6 +31,22 @@ fife.pd\_modelers module
 ------------------------
 
 .. automodule:: fife.pd_modelers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fife.processors module
+----------------------
+
+.. automodule:: fife.processors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fife.tf\_modelers module
+------------------------
+
+.. automodule:: fife.tf_modelers
    :members:
    :undoc-members:
    :show-inheritance:
