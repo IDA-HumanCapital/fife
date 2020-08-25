@@ -303,7 +303,7 @@ import inspect
 print(inspect.getsource(fife.__main__))
 ```
 
-You can use FIFE modules to customize your own pipeline, whether starting from scratch or by copying and modifying `fife.__main__`. We'll want a module to process our panel data and another module to use the processed data to train a model. For this example we'll build gradient-boosted tree models using [LightGBM](https://lightgbm.readthedocs.io/en/latest/). For more specific information on modules, see the modules tab.
+You can use FIFE modules to customize your own pipeline, whether starting from scratch or by copying and modifying `fife.__main__`. We'll want a module to process our panel data and another module to use the processed data to train a model. For this example we'll build gradient-boosted tree models using [LightGBM](https://lightgbm.readthedocs.io/en/latest/). For more specific information on modules, see the [Modules tab](source/fife.html).
 
 ```python
 from fife.processors import PanelDataProcessor
