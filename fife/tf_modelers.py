@@ -2,6 +2,7 @@
 
 from inspect import getfullargspec
 from typing import List, Union
+from warnings import warn
 
 from fife import base_modelers
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
@@ -437,7 +438,7 @@ class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
         )
         return model
 
-    def transform_features(self):
+    def transform_features(self) -> pd.DataFrame:
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         numeric_data = data.drop(self.reserved_cols, axis=1).select_dtypes(
@@ -476,6 +477,10 @@ class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
         else:
             model = make_predictions_marginal(self.model)
         return model.predict(self.format_input_data(data=custom_data, subset=subset))
+
+    def save_model(self, file_name: str = "FFNN_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
 
     def compute_shap_values(
         self, subset: Union[None, pd.core.series.Series] = None
@@ -607,6 +612,17 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         )
         return model
 
+    def save_model(self, file_name: str = "PH_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
+
+    def hyperoptimize(self, **kwargs) -> dict:
+        """Returns None for ProportionalHazardsModeler, which does not have hyperparameters"""
+        warn(
+            "Warning: ProportionalHazardsModeler does not have hyperparameters to optimize."
+        )
+        return None
+
 
 class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
     """Train a proportional hazards model with binary-encoded categorical features using Keras."""
@@ -657,3 +673,14 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         output_layer = PropHazards(self.n_intervals)(dense_layer)
         model = Model(inputs=input_layer, outputs=output_layer)
         return model
+
+    def save_model(self, file_name: str = "PH_Encoded_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
+
+    def hyperoptimize(self, **kwargs) -> dict:
+        """Returns None for ProportionalHazardsEncodingModeler, which does not have hyperparameters"""
+        warn(
+            "Warning: ProportionalHazardsEncodingModeler does not have hyperparameters to optimize."
+        )
+        return None

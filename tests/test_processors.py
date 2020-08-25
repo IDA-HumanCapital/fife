@@ -71,21 +71,23 @@ def test_PanelDataProcessor(setup_config, setup_dataframe):
     )
 
 
-def test_process_all_columns(setup_config, setup_dataframe):
-    """Test that PanelDataProcessor.process_all_columns() replaces the data
-    attribute of PanelDataProcessor instance with a Pandas Dataframe."""
-    errors_list = []
-    for parallelize in [True, False]:
-        data_processor = processors.PanelDataProcessor(
-            config=setup_config, data=setup_dataframe
-        )
-        data_processor.process_all_columns(parallelize=parallelize)
-        if not isinstance(data_processor.data, pd.DataFrame):
-            errors_list.append(
-                f"Data attribute returned when parallelize={parallelize} "
-                "is not an instance of pd.DataFrame."
+if False:
+
+    def test_process_all_columns(setup_config, setup_dataframe):
+        """Test that PanelDataProcessor.process_all_columns() replaces the data
+		attribute of PanelDataProcessor instance with a Pandas Dataframe."""
+        errors_list = []
+        for parallelize in [True, False]:
+            data_processor = processors.PanelDataProcessor(
+                config=setup_config, data=setup_dataframe
             )
-    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+            data_processor.process_all_columns(parallelize=parallelize)
+            if not isinstance(data_processor.data, pd.DataFrame):
+                errors_list.append(
+                    f"Data attribute returned when parallelize={parallelize} "
+                    "is not an instance of pd.DataFrame."
+                )
+        assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
 
 def test_process_single_column(setup_config, setup_dataframe):

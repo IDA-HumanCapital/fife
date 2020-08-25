@@ -249,7 +249,21 @@ class Modeler(ABC):
     def forecast(self) -> pd.core.frame.DataFrame:
         """Tabulate survival probabilities for most recent observations."""
 
-    def transform_features(self):
+    @abstractmethod
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where the outcome is observed."""
+
+    @abstractmethod
+    def label_data(self, time_horizon: int) -> pd.DataFrame:
+        """Return data with an outcome label for each observation."""
+
+    @abstractmethod
+    def save_model(self, path: str = "") -> None:
+        """Save model file(s) to disk."""
+
+    def transform_features(self) -> pd.DataFrame:
         """Transform datetime features to suit model training."""
         return self.data
 
@@ -283,16 +297,6 @@ class Modeler(ABC):
         train_subset: Union[None, pd.core.series.Series] = None,
     ) -> dict:
         """Search for hyperparameters with greater out-of-sample performance."""
-
-    def compute_shap_values(
-        self, subset: Union[None, pd.core.series.Series] = None
-    ) -> dict:
-        """Compute SHAP values by lead length, observation, and feature."""
-
-    def compute_model_uncertainty(
-        self, subset: Union[None, pd.core.series.Series] = None, n_iterations: int = 200
-    ) -> np.ndarray:
-        """Produce predictions of models modified after training."""
 
 
 class SurvivalModeler(Modeler):

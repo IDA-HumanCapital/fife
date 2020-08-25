@@ -13,8 +13,10 @@ including documentation of all configuration parameters.
 import json
 import os
 from time import time
+from typing import Type
 
 from fife import lgb_modelers, processors, tf_modelers, utils
+from fife.base_modelers import Modeler
 import numpy as np
 import pandas as pd
 from sklearn.calibration import calibration_curve
@@ -23,15 +25,7 @@ from sklearn.calibration import calibration_curve
 def main():
     """Execute default FIFE pipeline from data to survival forecasts and metrics."""
     checkpoint_time = time()
-
-    # Read configuration parameters
-    parser = utils.FIFEArgParser()
-    args = parser.parse_args()
-    config = {}
-    if args.CONFIG_PATH:
-        with open(args.CONFIG_PATH, "r") as file:
-            config.update(json.load(file))
-    config.update({k: v for k, v in vars(args).items() if v is not None})
+    config = parse_config()
     if config.get("EXIT_COL_PATH"):
         raise NotImplementedError(
             "Forecasting exit circumstances from the command line is not yet supported. Try LGBExitModeler from the FIFE Python package."
@@ -40,104 +34,46 @@ def main():
         raise NotImplementedError(
             "Forecasting future state from the command line is not yet supported. Try LGBStateModeler from the FIFE Python package."
         )
-
-    # Ensure reproducibility
     utils.make_results_reproducible(config["SEED"])
     utils.redirect_output_to_log(path=config["RESULTS_PATH"])
-    print("Produced using FIFE: Finite-Interval Forecasting Engine")
-    print("Copyright (c) 2018 - 2020, Institute for Defense Analyses (IDA)")
-    print("Please cite using the suggested citation in the LICENSE file.\n")
+    utils.print_copyright()
     utils.print_config(config)
-
-    # Read data file
-    if "DATA_FILE_PATH" not in config.keys():
-        valid_suffixes = (".csv", ".csv.gz", ".p", ".pkl", ".h5")
-        candidate_data_files = [
-            file for file in os.listdir() if file.endswith(valid_suffixes)
-        ]
-        assert len(candidate_data_files) >= 1, (
-            "No data files found in current directory. "
-            f"Valid data file suffixes are {valid_suffixes}. "
-            "If you want to use data in another directory, "
-            "please specify the DATA_FILE_PATH."
-        )
-        assert len(candidate_data_files) <= 1, (
-            "Multiple data files found in current directory. "
-            "please specify the DATA_FILE_PATH."
-        )
-        print(f"Using {candidate_data_files[0]} as data file.")
-        config["DATA_FILE_PATH"] = candidate_data_files[0]
-    data = utils.import_data_file(config["DATA_FILE_PATH"])
+    data = read_data(config)
     print(f"I/O setup time: {time() - checkpoint_time} seconds")
-    checkpoint_time = time()
 
-    # Process data
+    checkpoint_time = time()
     data_processor = processors.PanelDataProcessor(config, data)
     data_processor.build_processed_data()
-    print(f"Data processing time: {time() - checkpoint_time} seconds")
-    checkpoint_time = time()
-
-    # Save intermediate data
     utils.save_intermediate_data(
         data_processor.data,
         "Processed_Data",
         file_format="pickle",
         path=config["RESULTS_PATH"],
     )
+    print(f"Data processing time: {time() - checkpoint_time} seconds")
 
-    # Train and save model
+    checkpoint_time = time()
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
     test_intervals = config.get("TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1)
-    if config["TREE_MODELS"]:
-        modeler = lgb_modelers.LGBSurvivalModeler(
-            config=config, data=data_processor.data,
-        )
-        modeler.n_intervals = (
-            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
-        )
-        if config.get("HYPER_TRIALS", 0) > 0:
-            params = modeler.hyperoptimize(config["HYPER_TRIALS"])
-        else:
-            params = None
-        modeler.build_model(n_intervals=modeler.n_intervals, params=params)
-        for i, lead_specific_model in enumerate(modeler.model):
-            lead_path = (
-                f'{config["RESULTS_PATH"]}/Intermediate/Models/'
-                f"{i + 1}-lead_GBT_Model.json"
-            )
-            with open(lead_path, "w") as file:
-                json.dump(lead_specific_model.dump_model(), file, indent=4)
+    if config.get("TREE_MODELS"):
+        modeler_class = lgb_modelers.LGBSurvivalModeler
     elif config.get("PROPORTIONAL_HAZARDS"):
-        modeler = tf_modelers.ProportionalHazardsModeler(
-            config=config, data=data_processor.data,
-        )
-        n_intervals = (
-            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
-        )
-        modeler.build_model(n_intervals)
-        modeler.model.save(f'{config["RESULTS_PATH"]}/Intermediate/Models/PH_Model.h5')
+        modeler_class = tf_modelers.ProportionalHazardsModeler
     else:
-        modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-            config=config, data=data_processor.data,
-        )
-        modeler.n_intervals = (
-            test_intervals if test_intervals > 0 else modeler.set_n_intervals()
-        )
-        if config.get("HYPER_TRIALS", 0) > 0:
-            params = modeler.hyperoptimize(config["HYPER_TRIALS"])
-        else:
-            params = None
-        modeler.build_model(n_intervals=modeler.n_intervals, params=params)
-        modeler.model.save(
-            f'{config["RESULTS_PATH"]}/Intermediate/Models/FFNN_Model.h5'
-        )
-    print(f"Model training time: {time() - checkpoint_time} seconds")
-    checkpoint_time = time()
-
-    # Save metrics or forecasts
-    test_intervals = modeler.config.get(
-        "TEST_INTERVALS", modeler.config.get("TEST_PERIODS", 0) - 1
+        modeler_class = tf_modelers.FeedforwardNeuralNetworkModeler
+    modeler = modeler_class(config=config, data=data_processor.data,)
+    modeler.n_intervals = (
+        test_intervals if test_intervals > 0 else modeler.set_n_intervals()
     )
+    if config.get("HYPER_TRIALS", 0) > 0:
+        params = modeler.hyperoptimize(config["HYPER_TRIALS"])
+    else:
+        params = None
+    modeler.build_model(n_intervals=modeler.n_intervals, params=params)
+    modeler.save_model(path=f"{config['RESULTS_PATH']}/Intermediate/Models/")
+    print(f"Model training time: {time() - checkpoint_time} seconds")
+
+    checkpoint_time = time()
     if test_intervals > 0:
 
         # Save metrics
@@ -258,6 +194,41 @@ def main():
             )
 
     print(f"Output production time: {time() - checkpoint_time} seconds")
+
+
+def parse_config() -> dict:
+    """Parse configuration parameters specified in the command line."""
+    parser = utils.FIFEArgParser()
+    args = parser.parse_args()
+    config = {}
+    if args.CONFIG_PATH:
+        with open(args.CONFIG_PATH, "r") as file:
+            config.update(json.load(file))
+    config.update({k: v for k, v in vars(args).items() if v is not None})
+    return config
+
+
+def read_data(config: dict) -> pd.DataFrame:
+    """Read the input dataset as specified in config or inferred from current directory."""
+    if "DATA_FILE_PATH" not in config.keys():
+        valid_suffixes = (".csv", ".csv.gz", ".p", ".pkl", ".h5")
+        candidate_data_files = [
+            file for file in os.listdir() if file.endswith(valid_suffixes)
+        ]
+        assert len(candidate_data_files) >= 1, (
+            "No data files found in current directory. "
+            f"Valid data file suffixes are {valid_suffixes}. "
+            "If you want to use data in another directory, "
+            "please specify the DATA_FILE_PATH."
+        )
+        assert len(candidate_data_files) <= 1, (
+            "Multiple data files found in current directory. "
+            "please specify the DATA_FILE_PATH."
+        )
+        print(f"Using {candidate_data_files[0]} as data file.")
+        config["DATA_FILE_PATH"] = candidate_data_files[0]
+    data = utils.import_data_file(config["DATA_FILE_PATH"])
+    return data
 
 
 if __name__ == "__main__":
