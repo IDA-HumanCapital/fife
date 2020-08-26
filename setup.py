@@ -10,7 +10,7 @@ setup(
     version="1.3.0",
     description=(
         "Finite-Interval Forecasting Engine: Machine learning models "
-        "for discrete-time survival analysis and finite time series "
+        "for discrete-time survival analysis and multivariate time series "
         "forecasting"
     ),
     long_description=README,
