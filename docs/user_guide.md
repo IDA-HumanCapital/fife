@@ -330,6 +330,26 @@ FIFE has also been known as the Persistence Prediction Capability (PPC).
 - IDA development team: humancapital@ida.org
 - IDA Principal Investigator: Dr. Julie Lockwood, jlockwood@ida.org, 703-578-2858
 
+### Contributing
+
+To contribute to FIFE please contact us at humancapital@ida.org and/or open a pull request at https://github.com/IDA-HumanCapital/fife.
+
+### Testing
+
+You can find our unit tests, powered by pytest, at https://github.com/IDA-HumanCapital/fife/tree/master/tests. For Windows users with conventional Anaconda or Miniconda installation paths, build_package.bat executes those unit tests and some functional tests in a fresh environment. Other users can execute the functional tests individually.
+
+### Future Work
+
+We intend to develop functionality for:
+
+- Forecasting future state conditional on survival
+- Forecasting type of exit ("competing hazards")
+- Model stacking and/or blending
+- GPU training
+- Distributed computing with Apache Spark
+
+We invite requests at humancapital@ida.org and issues at https://github.com/IDA-HumanCapital/fife/issues.
+
 ### Alternative Installation
 
 If firewall, air gap, or other issues prevent you from installing FIFE, please contact us at humancapital@ida.org. We know your pain. We offer in-person assistance in the Washington, D.C. metropolitan area. If you are unable to install Python, we can send you an executable version of FIFE.
@@ -360,4 +380,3 @@ BibTex:
 ```
 
 This document was most recently updated 25 August 2020.
-
