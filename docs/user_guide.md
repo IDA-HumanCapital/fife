@@ -342,8 +342,6 @@ You can find our unit tests, powered by pytest, at https://github.com/IDA-HumanC
 
 We intend to develop functionality for:
 
-- Forecasting future state conditional on survival
-- Forecasting type of exit ("competing hazards")
 - Model stacking and/or blending
 - GPU training
 - Distributed computing with Apache Spark
