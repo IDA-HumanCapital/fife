@@ -1,3 +1,17 @@
+## 1.3.0 - 2020-08-25
+
+### Added
+
+- LGBStateModeler, which forecasts the value of a feature conditional on survival ("multivariate time series forecasting")
+
+- LGBExitModeler, which forecasts the circumstances of exit conditional on exit ("competing risks")
+
+### Deprecated
+
+- GradientBoostedTreesModeler, now called "LGBSurvivalModeler"
+
+- Standalone functions in the processors module, their responsibility having moved to the modeler method transform_features()
+
 ## 1.2.0 - 2020-08-17
 
 ### Added

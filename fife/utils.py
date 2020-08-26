@@ -43,6 +43,12 @@ def print_config(config: dict) -> None:
     print(json.dumps(config, indent=4) + "\n")
 
 
+def print_copyright() -> None:
+    print("Produced using FIFE: Finite-Interval Forecasting Engine")
+    print("Copyright (c) 2018 - 2020, Institute for Defense Analyses (IDA)")
+    print("Please cite using the suggested citation in the LICENSE file.\n")
+
+
 def import_data_file(file_path: str = "Input_Data") -> pd.core.frame.DataFrame:
     """Return the data stored in given file in given folder."""
     if file_path.endswith(".feather"):
@@ -258,9 +264,10 @@ def create_example_data(
     for i in np.arange(n_persons):
         period = np.random.randint(n_periods) + 1
         x_1 = np.random.uniform()
-        x_2 = np.random.choice(["A", "B", "C"])
+        x_2 = rn.choice(["A", "B", "C"])
         x_3 = np.random.uniform() + 1.0
-        x_4 = np.random.choice(["a", "b", "c", 1, 2, 3, np.nan])
+        x_4_categories = ["a", "b", "c", 1, 2, 3, np.nan]
+        x_4 = rn.choice(x_4_categories)
         while period <= n_periods:
             values.append([i, period, x_1, x_2, x_3, x_4])
             if x_2 == "A":
@@ -269,6 +276,11 @@ def create_example_data(
                 x_1 += np.random.uniform(0, 0.2)
             if x_1 > np.sqrt(x_3):
                 break
+            if x_4 in x_4_categories[:-2]:
+                x_4_transition_value = x_4_categories[x_4_categories.index(x_4) + 1]
+                if np.random.uniform() >= 0.75:
+                    x_4 = x_4_transition_value
+                    del x_4_transition_value
             period += 1
     values = pd.DataFrame(
         values,
@@ -375,6 +387,16 @@ class FIFEArgParser(argparse.ArgumentParser):
             "--VALIDATION_SHARE",
             type=float,
             help="The share of observations used for evaluation instead of training for hyperoptimization or early stopping.",
+        )
+        self.add_argument(
+            "--EXIT_FILE_PATH",
+            type=str,
+            help="The path to a file identifying the circumstances of exit for each individual observed to exit in the next period. If given, FIFE will forecast the circumstances of exit conditional on exit instead of forecasting survival.",
+        )
+        self.add_argument(
+            "--STATE_COL",
+            type=str,
+            help="The name of the column representing the future state to forecast. If given and EXIT_FILE_PATH not given, FIFE will forecast the future state conditional on survival instead of forecasting survival.",
         )
         self.add_argument(
             "--TREE_MODELS",

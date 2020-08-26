@@ -1,4 +1,4 @@
-FIFE User Guide
-===============
+User Guide
+==========
 
 .. mdinclude:: user_guide.md

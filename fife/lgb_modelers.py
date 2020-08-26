@@ -1,9 +1,17 @@
-"""FIFE modeler based on LightGBM, which trains gradient-boosted trees."""
+"""FIFE modelers based on LightGBM, which trains gradient-boosted trees."""
 
+import json
 from typing import List, Union
+from warnings import warn
 
 import dask
-from fife import survival_modeler
+from fife.base_modelers import (
+    default_subset_to_all,
+    Modeler,
+    SurvivalModeler,
+    StateModeler,
+    ExitModeler,
+)
 import lightgbm as lgb
 import numpy as np
 import optuna
@@ -11,18 +19,32 @@ import pandas as pd
 import shap
 
 
-class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
+class LGBModeler(Modeler):
     """Train a gradient-boosted tree model for each lead length using LightGBM.
 
     Attributes:
         config (dict): User-provided configuration parameters.
         data (pd.core.frame.DataFrame): User-provided panel data.
         categorical_features (list): Column names of categorical features.
+        duration_col (str): Name of the column representing the number of
+            future periods observed for the given individual.
+        event_col (str): Name of the column indicating whether the individual
+            is observed to exit the dataset.
+        predict_col (str): Name of the column indicating whether the
+            observation will be used for prediction after training.
+        test_col (str): Name of the column indicating whether the observation
+            will be used for testing model performance after training.
+        validation_col (str): Name of the column indicating whether the
+            observation will be used for evaluating model performance during
+            training.
+        period_col (str): Name of the column representing the number of
+            periods since the earliest period in the data.
+        max_lead_col (str): Name of the column representing the number of
+            observable future periods.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of one-period intervals any
-            individual is observed to survive.
-        models (list): A trained LightGBM model (lgb.basic.Booster) for each
+        n_intervals (int): The largest number of periods ahead to forecast.
+        model (list): A trained LightGBM model (lgb.basic.Booster) for each
             lead length.
     """
 
@@ -86,7 +108,8 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             params["max_cat_to_onehot"] = trial.suggest_int("max_cat_to_onehot", 1, 64)
             params["max_bin"] = trial.suggest_int("max_bin", 32, 1024)
             params["min_data_in_bin"] = trial.suggest_int("min_data_in_bin", 1, 64)
-            params["objective"] = "binary"
+            params["objective"] = self.objective
+            params["num_class"] = self.num_class
             params["verbosity"] = -1
             booster = lgb.Booster(params=params, train_set=train_data)
             booster.add_valid(validation_data, "validation_set")
@@ -98,7 +121,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
-        default_params = {"objective": "binary", "num_iterations": 100}
+        default_params = {"objective": self.objective, "num_iterations": 100}
         if n_trials <= 0:
             return {
                 time_horizon: default_params for time_horizon in range(self.n_intervals)
@@ -107,11 +130,9 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
         for time_horizon in range(self.n_intervals):
-            data = self.data[subset]
-            data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-                axis=1
-            )
-            data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+            data = self.label_data(time_horizon)
+            data = data[subset]
+            data = self.subset_for_training_horizon(data, time_horizon)
             if rolling_validation:
                 rolling_validation_n_periods = int(
                     max(
@@ -129,16 +150,8 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 )
             else:
                 rolling_validation_subset = [False] * data.shape[0]
-            if (
-                (
-                    data[self.duration_col][rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
-            ) and (
-                (
-                    data[self.duration_col][~rolling_validation_subset] > time_horizon
-                ).nunique()
-                > 1
+            if (data[rolling_validation_subset]["label"].nunique() > 1) and (
+                data[~rolling_validation_subset]["label"].nunique() > 1
             ):
                 validation_subset = rolling_validation_subset
             else:
@@ -147,13 +160,13 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 data[~validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~validation_subset][self.duration_col] > time_horizon,
+                label=data[~validation_subset]["label"],
             )
             validation_data = train_data.create_valid(
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[validation_subset][self.duration_col] > time_horizon,
+                label=data[validation_subset]["label"],
             )
             study = optuna.create_study(
                 pruner=optuna.pruners.MedianPruner(),
@@ -164,7 +177,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
                 n_trials=n_trials,
             )
             params[time_horizon] = study.best_params
-            params[time_horizon]["objective"] = "binary"
+            params[time_horizon]["objective"] = self.objective
             default_booster = lgb.Booster(params=default_params, train_set=train_data)
             default_booster.add_valid(validation_data, "validation_set")
             for _ in range(default_params["num_iterations"]):
@@ -235,30 +248,28 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         if params is None:
             params = {
                 time_horizon: {
-                    "objective": "binary",
+                    "objective": self.objective,
                     "num_iterations": self.config.get("MAX_EPOCHS", 256),
                 }
             }
+        params[time_horizon]["num_class"] = self.num_class
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
-        data = self.data[subset]
-        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-            axis=1
-        )
-        data = data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
+        data = self.label_data(time_horizon)
+        data = data[subset]
+        data = self.subset_for_training_horizon(data, time_horizon)
         if validation_early_stopping:
             train_data = lgb.Dataset(
                 data[~data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~data[self.validation_col]][self.duration_col]
-                > time_horizon,
+                label=data[~data[self.validation_col]]["label"],
             )
             validation_data = train_data.create_valid(
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[data[self.validation_col]][self.duration_col] > time_horizon,
+                label=data[data[self.validation_col]]["label"],
             )
             model = lgb.train(
                 params[time_horizon],
@@ -272,7 +283,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
         else:
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
-                label=data[self.duration_col] > time_horizon,
+                label=data["label"],
             )
             model = lgb.train(
                 params[time_horizon],
@@ -299,7 +310,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             A numpy array of survival probabilities by observation and lead
             length.
         """
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = default_subset_to_all(subset, self.data)
         predict_data = self.data[self.categorical_features + self.numeric_features][
             subset
         ]
@@ -313,7 +324,7 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             predictions = np.cumprod(predictions, axis=1)
         return predictions
 
-    def transform_features(self):
+    def transform_features(self) -> pd.DataFrame:
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
@@ -329,11 +340,17 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             )
         return data
 
+    def save_model(self, file_name: str = "GBT_Model", path: str = "") -> None:
+        """Save the horizon-specific LightGBM models that comprise the model to disk."""
+        for i, lead_specific_model in enumerate(self.model):
+            with open(f"{path}{i + 1}-lead_{file_name}.json", "w") as file:
+                json.dump(lead_specific_model.dump_model(), file, indent=4)
+
     def compute_shap_values(
         self, subset: Union[None, pd.core.series.Series] = None
     ) -> dict:
         """Compute SHAP values by lead length, observation, and feature."""
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = default_subset_to_all(subset, self.data)
         shap_subset = self.data[self.categorical_features + self.numeric_features][
             subset
         ]
@@ -346,3 +363,31 @@ class GradientBoostedTreesModeler(survival_modeler.SurvivalModeler):
             if lead_specific_model.num_trees() > 0
         }
         return shap_values
+
+
+class LGBSurvivalModeler(LGBModeler, SurvivalModeler):
+    """Use LightGBM to forecast probabilities of being observed in future periods."""
+
+    pass
+
+
+class GradientBoostedTreesModeler(LGBSurvivalModeler):
+    """Deprecated alias for LGBSurvivalModeler"""
+
+    warn(
+        "The name 'GradientBoostedTreesModeler' is deprecated. "
+        "Please use 'LGBSurvivalModeler' instead.",
+        DeprecationWarning,
+    )
+
+
+class LGBStateModeler(LGBModeler, StateModeler):
+    """Use LightGBM to forecast the future value of a feature conditional on survival."""
+
+    pass
+
+
+class LGBExitModeler(LGBModeler, ExitModeler):
+    """Use LightGBM to forecast the circumstance of exit conditional on exit."""
+
+    pass

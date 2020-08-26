@@ -1,13 +1,13 @@
-"""The abstract class on which all FIFE modelers are based."""
+"""The abstract classes on which all FIFE modelers are based."""
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, Union
 
 from lifelines.utils import concordance_index
 import numpy as np
 import pandas as pd
-from sklearn.metrics import confusion_matrix, roc_auc_score
+from sklearn.metrics import confusion_matrix, r2_score, roc_auc_score
 
 
 def default_subset_to_all(
@@ -21,7 +21,7 @@ def default_subset_to_all(
 
 def compute_metrics_for_binary_outcome(
     actuals: pd.core.series.Series,
-    predictions: pd.core.series.Series,
+    predictions: np.ndarray,
     threshold_positive: Union[None, str, float] = 0.5,
     share_positive: Union[None, str, float] = None,
 ) -> OrderedDict:
@@ -84,8 +84,44 @@ def compute_metrics_for_binary_outcome(
     return metrics
 
 
-class SurvivalModeler(ABC):
-    """Set template for modelers to produce survival probabilities and metrics.
+def compute_metrics_for_categorical_outcome(
+    actuals: pd.DataFrame, predictions: np.ndarray
+) -> OrderedDict:
+    """Evaluate predicted probabilities against actual binary outcome values.
+
+    Args:
+        actuals: A DataFrame representing one-hot-encoded actual class membership.
+        predictions: A DataFrame of predicted probabilities of class membership 
+            for the respective observations represented in actuals.
+
+    Returns:
+        An ordered dictionary containing a key-value pair for area under the
+        receiver operating characteristic curve (AUROC).
+    """
+    metrics = OrderedDict()
+    metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
+    return metrics
+
+
+def compute_metrics_for_numeric_outcome(
+    actuals: pd.core.series.Series, predictions: np.ndarray
+) -> OrderedDict:
+    """Evaluate predicted numeric values against actual outcome values.
+
+    Args:
+        actuals: A Series representing actual outcome values.
+        predictions: A Series of predictions for the respective outcome values.
+
+    Returns:
+        An ordered dictionary containing a key-value pair for R-squared.
+    """
+    metrics = OrderedDict()
+    metrics["R-squared"] = r2_score(actuals, predictions)
+    return metrics
+
+
+class Modeler(ABC):
+    """Set template for modelers that use panel data to produce forecasts.
 
     Attributes:
         config (dict): User-provided configuration parameters.
@@ -108,8 +144,7 @@ class SurvivalModeler(ABC):
             observable future periods.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
-        n_intervals (int): The largest number of one-period intervals any
-            individual is observed to survive.
+        n_intervals (int): The largest number of periods ahead to forecast
     """
 
     def __init__(
@@ -201,7 +236,34 @@ class SurvivalModeler(ABC):
     ) -> np.ndarray:
         """Use trained model to produce observation survival probabilities."""
 
-    def transform_features(self):
+    @abstractmethod
+    def evaluate(
+        self,
+        subset: Union[None, pd.core.series.Series] = None,
+        threshold_positive: Union[None, str, float] = 0.5,
+        share_positive: Union[None, str, float] = None,
+    ) -> pd.core.frame.DataFrame:
+        """Tabulate model performance metrics."""
+
+    @abstractmethod
+    def forecast(self) -> pd.core.frame.DataFrame:
+        """Tabulate survival probabilities for most recent observations."""
+
+    @abstractmethod
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where the outcome is observed."""
+
+    @abstractmethod
+    def label_data(self, time_horizon: int) -> pd.DataFrame:
+        """Return data with an outcome label for each observation."""
+
+    @abstractmethod
+    def save_model(self, path: str = "") -> None:
+        """Save model file(s) to disk."""
+
+    def transform_features(self) -> pd.DataFrame:
         """Transform datetime features to suit model training."""
         return self.data
 
@@ -228,20 +290,55 @@ class SurvivalModeler(ABC):
         ].index.max()
         return n_intervals
 
-    def forecast(self) -> pd.core.frame.DataFrame:
-        """Tabulate survival probabilities for most recent observations."""
-        columns = [
-            str(i + 1) + "-period Survival Probability" for i in range(self.n_intervals)
-        ]
-        return pd.DataFrame(
-            self.predict(subset=self.data[self.predict_col], cumulative=True),
-            columns=columns,
-            index=(
-                self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
-                    self.data[self.predict_col]
-                ]
-            ),
-        )
+    def hyperoptimize(
+        self,
+        n_trials: int = 64,
+        rolling_validation: bool = True,
+        train_subset: Union[None, pd.core.series.Series] = None,
+    ) -> dict:
+        """Search for hyperparameters with greater out-of-sample performance."""
+
+
+class SurvivalModeler(Modeler):
+    """Forecast probabilities of being observed in future periods.
+
+    Attributes:
+        config (dict): User-provided configuration parameters.
+        data (pd.core.frame.DataFrame): User-provided panel data.
+        categorical_features (list): Column names of categorical features.
+        duration_col (str): Name of the column representing the number of
+            future periods observed for the given individual.
+        event_col (str): Name of the column indicating whether the individual
+            is observed to exit the dataset.
+        predict_col (str): Name of the column indicating whether the
+            observation will be used for prediction after training.
+        test_col (str): Name of the column indicating whether the observation
+            will be used for testing model performance after training.
+        validation_col (str): Name of the column indicating whether the
+            observation will be used for evaluating model performance during
+            training.
+        period_col (str): Name of the column representing the number of
+            periods since the earliest period in the data.
+        max_lead_col (str): Name of the column representing the number of
+            observable future periods.
+        reserved_cols (list): Column names of non-features.
+        numeric_features (list): Column names of numeric features.
+        n_intervals (int): The largest number of periods ahead to forecast.
+        objective (str): The LightGBM model objective appropriate for the
+            outcome type, which is "binary" for binary classification.
+        num_class (int): The num_class LightGBM parameter, which is 1 for
+            binary classification.
+    """
+
+    def __init__(self, **kwargs):
+        """Initialize the SurvivalModeler.
+
+        Args:
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(**kwargs)
+        self.objective = "binary"
+        self.num_class = 1
 
     def evaluate(
         self,
@@ -275,22 +372,16 @@ class SurvivalModeler(ABC):
         """
         subset = default_subset_to_all(subset, self.data)
         predictions = self.predict(subset=subset, cumulative=True)
-        actual_durations = self.data[subset][
-            [self.duration_col, self.max_lead_col]
-        ].min(axis=1)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = (
-                actual_durations[self.data[self.max_lead_col] >= lead_length]
-                >= lead_length
-            )
+            actuals = self.subset_for_training_horizon(
+                self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
+            )["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
-                    predictions[:, lead_length - 1][
-                        self.data[subset][self.max_lead_col] >= lead_length
-                    ],
+                    predictions[:, lead_length - 1][actuals.index],
                     threshold_positive=threshold_positive,
                     share_positive=share_positive,
                 )
@@ -299,12 +390,27 @@ class SurvivalModeler(ABC):
         metrics.index.name = "Lead Length"
         metrics["Other Metrics:"] = ""
         concordance_index_value = concordance_index(
-            actual_durations,
+            self.data[subset][[self.duration_col, self.max_lead_col]].min(axis=1),
             np.sum(predictions, axis=-1),
             self.data[subset][self.event_col],
         )
         metrics["C-Index"] = np.where(metrics.index == 1, concordance_index_value, "")
         return metrics
+
+    def forecast(self) -> pd.core.frame.DataFrame:
+        """Tabulate survival probabilities for most recent observations."""
+        columns = [
+            str(i + 1) + "-period Survival Probability" for i in range(self.n_intervals)
+        ]
+        return pd.DataFrame(
+            self.predict(subset=self.data[self.predict_col], cumulative=True),
+            columns=columns,
+            index=(
+                self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
+                    self.data[self.predict_col]
+                ]
+            ),
+        )
 
     def tabulate_survival_by_quantile(
         self, n_quantiles: int, subset: Union[None, pd.core.series.Series] = None
@@ -402,20 +508,196 @@ class SurvivalModeler(ABC):
         retention_rates.index.name = "Period"
         return retention_rates
 
-    def hyperoptimize(
-        self,
-        n_trials: int = 64,
-        rolling_validation: bool = True,
-        train_subset: Union[None, pd.core.series.Series] = None,
-    ) -> dict:
-        """Search for hyperparameters with greater out-of-sample performance."""
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where survival would be observed."""
+        return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
 
-    def compute_shap_values(
+    def label_data(self, time_horizon: int) -> pd.DataFrame:
+        """Return data with an indicator for survival for each observation."""
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = data[self.duration_col] > time_horizon
+        return data
+
+
+class StateModeler(Modeler):
+    """Forecast the future value of a feature conditional on survival.
+
+    Attributes:
+        config (dict): User-provided configuration parameters.
+        data (pd.core.frame.DataFrame): User-provided panel data.
+        categorical_features (list): Column names of categorical features.
+        duration_col (str): Name of the column representing the number of
+            future periods observed for the given individual.
+        event_col (str): Name of the column indicating whether the individual
+            is observed to exit the dataset.
+        predict_col (str): Name of the column indicating whether the
+            observation will be used for prediction after training.
+        test_col (str): Name of the column indicating whether the observation
+            will be used for testing model performance after training.
+        validation_col (str): Name of the column indicating whether the
+            observation will be used for evaluating model performance during
+            training.
+        period_col (str): Name of the column representing the number of
+            periods since the earliest period in the data.
+        max_lead_col (str): Name of the column representing the number of
+            observable future periods.
+        reserved_cols (list): Column names of non-features.
+        numeric_features (list): Column names of numeric features.
+        n_intervals (int): The largest number of periods ahead to forecast.
+        state_col (str): The column representing the state to forecast.
+        objective (str): The model objective appropriate for the outcome type;
+            "multiclass" for categorical states and "regression" for numeric
+            states.
+        num_class (int): The number of state categories or, if the state is
+            numeric, None.
+    """
+
+    def __init__(self, state_col, **kwargs):
+        """Initialize the StateModeler.
+
+        Args:
+            state_col: The column representing the state to forecast.
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(**kwargs)
+        self.state_col = state_col
+        if self.data is not None:
+            if self.state_col in self.categorical_features:
+                self.objective = "multiclass"
+                self.num_class = len(self.data[self.state_col].cat.categories)
+            elif self.state_col in self.numeric_features:
+                self.objective = "regression"
+                self.num_class = None
+            else:
+                raise ValueError("state_col not in features.")
+
+    def evaluate(
         self, subset: Union[None, pd.core.series.Series] = None
-    ) -> dict:
-        """Compute SHAP values by lead length, observation, and feature."""
+    ) -> pd.core.frame.DataFrame:
+        """Tabulate model performance metrics.
 
-    def compute_model_uncertainty(
-        self, subset: Union[None, pd.core.series.Series] = None, n_iterations: int = 200
-    ) -> np.ndarray:
-        """Produce predictions of models modified after training."""
+        Args:
+            subset: A Boolean Series that is True for observations over which
+                the metrics will be computed. If None, default to all
+                observations.
+
+        Returns:
+            A DataFrame containing, for each lead length, area under the
+            receiver operating characteristic curve (AUROC) for categorical
+            states, or, for numeric states, R-squared.
+        """
+        subset = default_subset_to_all(subset, self.data)
+        predictions = self.predict(subset=subset, cumulative=False)
+        metrics = []
+        lead_lengths = np.arange(self.n_intervals) + 1
+        for lead_length in lead_lengths:
+            actuals = self.subset_for_training_horizon(
+                self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
+            )["label"]
+            if self.objective == "multiclass":
+                actuals = pd.DataFrame(
+                    {label: actuals == label for label in range(self.num_class)},
+                    index=actuals.index,
+                )
+                metrics.append(
+                    compute_metrics_for_categorical_outcome(
+                        actuals, predictions[:, :, lead_length - 1].T[actuals.index],
+                    )
+                )
+            else:
+                metrics.append(
+                    compute_metrics_for_numeric_outcome(
+                        actuals, predictions[:, lead_length - 1][actuals.index],
+                    )
+                )
+        metrics = pd.DataFrame(metrics, index=lead_lengths)
+        metrics.index.name = "Lead Length"
+        return metrics
+
+    def forecast(self) -> pd.core.frame.DataFrame:
+        """Tabulate state probabilities for most recent observations."""
+        forecasts = self.predict(subset=self.data[self.predict_col], cumulative=False)
+        if self.objective == "multiclass":
+            columns = [
+                str(i + 1) + "-period State Probabilities"
+                for i in range(self.n_intervals)
+            ]
+            index = np.repeat(
+                self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
+                    self.data[self.predict_col]
+                ],
+                forecasts.shape[0],
+            )
+            states = np.tile(
+                self.data[self.state_col].cat.categories, forecasts.shape[1]
+            )
+            forecasts = np.reshape(
+                forecasts,
+                (forecasts.shape[0] * forecasts.shape[1], forecasts.shape[2]),
+                order="F",
+            )
+            forecasts = pd.DataFrame(forecasts, columns=columns, index=index)
+            forecasts[f"Future {self.state_col}"] = states
+        else:
+            columns = [
+                str(i + 1) + f"-period {self.state_col} Forecast"
+                for i in range(self.n_intervals)
+            ]
+            index = self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
+                self.data[self.predict_col]
+            ]
+            forecasts = pd.DataFrame(forecasts, columns=columns, index=index)
+        return forecasts
+
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where the future state is observed."""
+        return data[(data[self.duration_col] > time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.Series:
+        """Return data with the future state for each observation."""
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
+            self.state_col
+        ].shift(-time_horizon - 1)
+        if self.objective == "multiclass":
+            data["label"] = data["label"].cat.codes
+        return data
+
+
+class ExitModeler(StateModeler):
+    """Forecast the circumstance of exit conditional on exit."""
+
+    def __init__(self, exit_col, **kwargs):
+        """Initialize the ExitModeler.
+
+        Args:
+            exit_col: The column representing the exit circumstance to forecast.
+            **kwargs: Arguments to Modeler.__init__().
+        """
+        super().__init__(exit_col, **kwargs)
+        self.exit_col = self.state_col
+        if self.data is not None:
+            if self.state_col in self.categorical_features:
+                self.categorical_features.remove(self.state_col)
+            elif self.state_col in self.numeric_features:
+                self.numeric_features.remove(self.state_col)
+
+    def subset_for_training_horizon(
+        self, data: pd.DataFrame, time_horizon: int
+    ) -> pd.DataFrame:
+        """Return only observations where exit is observed at the given time horizon."""
+        return data[data[self.event_col] & (data[self.duration_col] == time_horizon)]
+
+    def label_data(self, time_horizon: int) -> pd.Series:
+        """Return data with the exit circumstance for each observation."""
+        return super().label_data(time_horizon - 1)

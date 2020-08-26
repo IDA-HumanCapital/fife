@@ -2,8 +2,9 @@
 
 from inspect import getfullargspec
 from typing import List, Union
+from warnings import warn
 
-from fife import survival_modeler
+from fife import base_modelers
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
 import optuna
@@ -102,7 +103,7 @@ class CumulativeProduct(Layer):
         return K.cumprod(inputs, axis=1)
 
 
-class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
+class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
     """Train a neural network model using Keras.
 
     Attributes:
@@ -371,7 +372,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         """List each categorical feature for input to own embedding layer."""
         if data is None:
             data = self.data
-        subset = survival_modeler.default_subset_to_all(subset, data)
+        subset = base_modelers.default_subset_to_all(subset, data)
         return split_categorical_features(
             data[subset], self.categorical_features, self.numeric_features
         )
@@ -437,7 +438,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         return model
 
-    def transform_features(self):
+    def transform_features(self) -> pd.DataFrame:
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         numeric_data = data.drop(self.reserved_cols, axis=1).select_dtypes(
@@ -477,6 +478,10 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             model = make_predictions_marginal(self.model)
         return model.predict(self.format_input_data(data=custom_data, subset=subset))
 
+    def save_model(self, file_name: str = "FFNN_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
+
     def compute_shap_values(
         self, subset: Union[None, pd.core.series.Series] = None
     ) -> dict:
@@ -503,7 +508,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
         )
         return None
         model = make_predictions_marginal(self.model)
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         shap_subset = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         )
@@ -545,7 +550,7 @@ class FeedforwardNeuralNetworkModeler(survival_modeler.SurvivalModeler):
             A numpy array of predictions by observation, lead length, and
             iteration.
         """
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         model_inputs = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         ) + [1.0]
@@ -607,6 +612,17 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         )
         return model
 
+    def save_model(self, file_name: str = "PH_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
+
+    def hyperoptimize(self, **kwargs) -> dict:
+        """Returns None for ProportionalHazardsModeler, which does not have hyperparameters"""
+        warn(
+            "Warning: ProportionalHazardsModeler does not have hyperparameters to optimize."
+        )
+        return None
+
 
 class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
     """Train a proportional hazards model with binary-encoded categorical features using Keras."""
@@ -636,7 +652,7 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         """Keep only the features and observations desired for model input."""
         if data is None:
             data = self.data
-        subset = survival_modeler.default_subset_to_all(subset, data)
+        subset = base_modelers.default_subset_to_all(subset, data)
         formatted_data = data.drop(self.reserved_cols, axis=1)[subset]
         for col in self.categorical_features:
             formatted_data[col] = formatted_data[col].cat.codes
@@ -657,3 +673,14 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         output_layer = PropHazards(self.n_intervals)(dense_layer)
         model = Model(inputs=input_layer, outputs=output_layer)
         return model
+
+    def save_model(self, file_name: str = "PH_Encoded_Model", path: str = "") -> None:
+        """Save the TensorFlow model to disk."""
+        self.model.save(path + file_name + ".h5")
+
+    def hyperoptimize(self, **kwargs) -> dict:
+        """Returns None for ProportionalHazardsEncodingModeler, which does not have hyperparameters"""
+        warn(
+            "Warning: ProportionalHazardsEncodingModeler does not have hyperparameters to optimize."
+        )
+        return None

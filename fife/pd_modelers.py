@@ -2,12 +2,12 @@
 
 from typing import Union
 
-from fife import survival_modeler
+from fife import base_modelers
 import numpy as np
 import pandas as pd
 
 
-class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
+class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
     """Predict with survival rate of training observations with same values.
 
     Attributes:
@@ -68,7 +68,7 @@ class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
             A numpy array of survival probabilities by observation and lead
             length.
         """
-        subset = survival_modeler.default_subset_to_all(subset, self.data)
+        subset = base_modelers.default_subset_to_all(subset, self.data)
         predictions = self.data[subset].merge(
             self.model, how="left", left_on=self.categorical_features, right_index=True
         )
@@ -78,3 +78,14 @@ class InteractedFixedEffectsModeler(survival_modeler.SurvivalModeler):
         if cumulative:
             predictions = np.cumprod(predictions, axis=1)
         return predictions
+
+    def save_model(self, file_name: str = "IFE_Model", path: str = "") -> None:
+        """Save the pandas DataFrame model to disk."""
+        self.model.to_csv(path + file_name + ".csv")
+
+    def hyperoptimize(self, **kwargs) -> dict:
+        """Returns None for InteractedFixedEffectsModeler, which does not have hyperparameters"""
+        warn(
+            "Warning: InteractedFixedEffectsModeler does not have hyperparameters to optimize."
+        )
+        return None
