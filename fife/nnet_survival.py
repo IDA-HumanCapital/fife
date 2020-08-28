@@ -15,24 +15,24 @@ from tensorflow.keras.layers import Layer
 
 def surv_likelihood(n_intervals):
     """Create custom Keras loss function for neural network survival model.
-  Arguments
-      n_intervals: the number of survival time intervals
-  Returns
-      Custom loss function that can be used with Keras
-  """
+    Arguments
+        n_intervals: the number of survival time intervals
+    Returns
+        Custom loss function that can be used with Keras
+    """
 
     def loss(y_true, y_pred):
         """
-    Required to have only 2 arguments by Keras.
-    Arguments
-        y_true: Tensor.
-          First half of the values is 1 if individual survived that interval, 0 if not.
-          Second half of the values is for individuals who failed, and is 1 for time interval during which failure occured, 0 for other intervals.
-          See make_surv_array function.
-        y_pred: Tensor, predicted survival probability (1-hazard probability) for each time interval.
-    Returns
-        Vector of losses for this minibatch.
-    """
+        Required to have only 2 arguments by Keras.
+        Arguments
+            y_true: Tensor.
+              First half of the values is 1 if individual survived that interval, 0 if not.
+              Second half of the values is for individuals who failed, and is 1 for time interval during which failure occured, 0 for other intervals.
+              See make_surv_array function.
+            y_pred: Tensor, predicted survival probability (1-hazard probability) for each time interval.
+        Returns
+            Vector of losses for this minibatch.
+        """
         cens_uncens = 1.0 + y_true[:, 0:n_intervals] * (
             y_pred - 1.0
         )  # component for all individuals
@@ -49,8 +49,8 @@ def surv_likelihood(n_intervals):
 
 def surv_likelihood_rnn(n_intervals):
     """Create custom Keras loss function for neural network survival model. Used for recurrent neural networks with time-distributed output.
-       This function is very similar to surv_likelihood but deals with the extra dimension of y_true and y_pred that exists because of the time-distributed output.
-  """
+    This function is very similar to surv_likelihood but deals with the extra dimension of y_true and y_pred that exists because of the time-distributed output.
+    """
 
     def loss(y_true, y_pred):
         cens_uncens = 1.0 + y_true[0, :, 0:n_intervals] * (
@@ -75,7 +75,7 @@ def make_surv_array(t, f, breaks):
         breaks: Locations of breaks between time intervals for discrete-time survival model (always includes 0)
     Returns
         Two-dimensional array of survival data, dimensions are number of individuals X number of time intervals*2
-  """
+    """
     n_samples = t.shape[0]
     n_intervals = len(breaks) - 1
     timegap = breaks[1:] - breaks[:-1]

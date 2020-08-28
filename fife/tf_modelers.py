@@ -660,7 +660,7 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
 
     def construct_network(self) -> keras.Model:
         """Set all features to feed directly into a single node.
-        
+
         The single node feeds into a proportional hazards layer.
 
         Returns:

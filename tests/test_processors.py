@@ -75,7 +75,7 @@ if False:
 
     def test_process_all_columns(setup_config, setup_dataframe):
         """Test that PanelDataProcessor.process_all_columns() replaces the data
-		attribute of PanelDataProcessor instance with a Pandas Dataframe."""
+        attribute of PanelDataProcessor instance with a Pandas Dataframe."""
         errors_list = []
         for parallelize in [True, False]:
             data_processor = processors.PanelDataProcessor(
