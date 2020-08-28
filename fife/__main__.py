@@ -81,13 +81,16 @@ def main():
             modeler.data["_period"].max() - test_intervals
         )
         utils.save_output_table(
-            modeler.evaluate(evaluation_subset), "Metrics", path=config["RESULTS_PATH"],
+            modeler.evaluate(evaluation_subset),
+            "Metrics",
+            path=config["RESULTS_PATH"],
         )
 
         # Save counts by quantile
         utils.save_output_table(
             modeler.tabulate_survival_by_quantile(
-                n_quantiles=config["QUANTILES"], subset=evaluation_subset,
+                n_quantiles=config["QUANTILES"],
+                subset=evaluation_subset,
             ),
             "Counts_by_Quantile",
             index=False,
@@ -130,7 +133,9 @@ def main():
         calibration_errors.index.name = "Quantile"
         calibration_errors.index = calibration_errors.index + 1
         utils.save_output_table(
-            calibration_errors, "Calibration_Errors", path=config["RESULTS_PATH"],
+            calibration_errors,
+            "Calibration_Errors",
+            path=config["RESULTS_PATH"],
         )
 
     else:
