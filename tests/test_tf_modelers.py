@@ -174,7 +174,8 @@ def test_ffnnm_hyperoptimize(setup_ffnnm_dataframe, setup_config):
         training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
     ].index.max()
     modeler = tf_modelers.FeedforwardNeuralNetworkModeler(
-        config=setup_config, data=setup_ffnnm_dataframe,
+        config=setup_config,
+        data=setup_ffnnm_dataframe,
     )
     modeler.n_intervals = n_intervals
     params = modeler.hyperoptimize(2)

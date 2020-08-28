@@ -48,7 +48,8 @@ def test_gbtm_hyperoptimize(setup_config, setup_dataframe):
         training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
     ].index.max()
     modeler = lgb_modelers.GradientBoostedTreesModeler(
-        config=setup_config, data=setup_dataframe,
+        config=setup_config,
+        data=setup_dataframe,
     )
     modeler.n_intervals = n_intervals
     params = modeler.hyperoptimize(2)
@@ -88,7 +89,8 @@ def test_gbtm_train(setup_config, setup_dataframe):
         training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
     ].index.max()
     modeler = lgb_modelers.GradientBoostedTreesModeler(
-        config=setup_config, data=setup_dataframe,
+        config=setup_config,
+        data=setup_dataframe,
     )
     modeler.n_intervals = n_intervals
     models_list = modeler.train()
@@ -141,7 +143,8 @@ def test_gbtm_train_single_model(setup_config, setup_dataframe):
         training_obs_lead_lengths > setup_config["MIN_SURVIVORS_IN_TRAIN"]
     ].index.max()
     modeler = lgb_modelers.GradientBoostedTreesModeler(
-        config=setup_config, data=setup_dataframe,
+        config=setup_config,
+        data=setup_dataframe,
     )
     for time_horizon in range(n_intervals):
         model = modeler.train_single_model(time_horizon=time_horizon)
@@ -241,7 +244,8 @@ def test_gbtm_predict(setup_config, setup_dataframe):
         )
         models_list.append(model)
     modeler = lgb_modelers.GradientBoostedTreesModeler(
-        config=setup_config, data=setup_dataframe,
+        config=setup_config,
+        data=setup_dataframe,
     )
     modeler.model = models_list
     predictions_dict = {}
@@ -325,7 +329,8 @@ def test_gbtm_build_model(setup_config, setup_dataframe):
         pd.factorize(setup_dataframe["FILE_DATE"])[0]
     )
     modeler = lgb_modelers.GradientBoostedTreesModeler(
-        config=setup_config, data=setup_dataframe,
+        config=setup_config,
+        data=setup_dataframe,
     )
     if hasattr(modeler, "n_intervals"):
         errors_list.append(

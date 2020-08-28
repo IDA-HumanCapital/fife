@@ -49,5 +49,9 @@ setup(
         "scikit-learn",
         "tensorflow",
     ],
-    entry_points={"console_scripts": ["fife=fife.__main__:main",]},
+    entry_points={
+        "console_scripts": [
+            "fife=fife.__main__:main",
+        ]
+    },
 )
