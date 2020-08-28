@@ -91,7 +91,7 @@ def compute_metrics_for_categorical_outcome(
 
     Args:
         actuals: A DataFrame representing one-hot-encoded actual class membership.
-        predictions: A DataFrame of predicted probabilities of class membership 
+        predictions: A DataFrame of predicted probabilities of class membership
             for the respective observations represented in actuals.
 
     Returns:
@@ -375,9 +375,9 @@ class SurvivalModeler(Modeler):
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = self.subset_for_training_horizon(
-                self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
-            )["label"]
+            actuals = self.label_data(lead_length - 1)[
+                subset & (self.data[self.max_lead_col] >= lead_length)
+            ].reset_index()["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
@@ -606,13 +606,15 @@ class StateModeler(Modeler):
                 )
                 metrics.append(
                     compute_metrics_for_categorical_outcome(
-                        actuals, predictions[:, :, lead_length - 1].T[actuals.index],
+                        actuals,
+                        predictions[:, :, lead_length - 1].T[actuals.index],
                     )
                 )
             else:
                 metrics.append(
                     compute_metrics_for_numeric_outcome(
-                        actuals, predictions[:, lead_length - 1][actuals.index],
+                        actuals,
+                        predictions[:, lead_length - 1][actuals.index],
                     )
                 )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
