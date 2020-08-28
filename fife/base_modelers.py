@@ -350,8 +350,8 @@ class SurvivalModeler(Modeler):
 
         Args:
             subset: A Boolean Series that is True for observations over which
-                the metrics will be computed. If None, default to all
-                observations.
+                the metrics will be computed. If None, default to all test
+                observations in the earliest period of the test set.
             threshold_positive: None, "predicted", or a value in [0, 1]
                 representing the minimum predicted probability considered to be a
                 positive prediction; Specify "predicted" to use the predicted share
@@ -370,6 +370,11 @@ class SurvivalModeler(Modeler):
             outcome of True, and all elements of the confusion matrix. Also
             includes concordance index over the restricted mean survival time.
         """
+        if subset is None:
+            subset = self.data[self.test_col] & (
+                self.data[self.period_col]
+                == self.data[self.data[self.test_col]][self.period_col].min()
+            )
         subset = default_subset_to_all(subset, self.data)
         predictions = self.predict(subset=subset, cumulative=True)
         metrics = []
@@ -583,15 +588,19 @@ class StateModeler(Modeler):
 
         Args:
             subset: A Boolean Series that is True for observations over which
-                the metrics will be computed. If None, default to all
-                observations.
+                the metrics will be computed. If None, default to all test
+                observations in the earliest period of the test set.
 
         Returns:
             A DataFrame containing, for each lead length, area under the
             receiver operating characteristic curve (AUROC) for categorical
             states, or, for numeric states, R-squared.
         """
-        subset = default_subset_to_all(subset, self.data)
+        if subset is None:
+            subset = self.data[self.test_col] & (
+                self.data[self.period_col]
+                == self.data[self.data[self.test_col]][self.period_col].min()
+            )
         predictions = self.predict(subset=subset, cumulative=False)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
