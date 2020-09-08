@@ -50,5 +50,6 @@ Want to forecast future states, too? Just replace `LGBSurvivalModeler` with `LGB
 
 Want to forecast circumstances of exit ("competing risks")? Try `LGBExitModeler` with the `exit_col` argument instead.
 
-Read the documentation for FIFE at: https://fife.readthedocs.io/en/latest.
+Here's a [guided example notebook](https://nbviewer.jupyter.org/github/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb) with real data, where we forecast when world leaders will lose power.
 
+You can read the documentation for FIFE [here](https://fife.readthedocs.io/en/latest).
