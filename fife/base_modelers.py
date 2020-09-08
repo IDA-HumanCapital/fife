@@ -375,14 +375,12 @@ class SurvivalModeler(Modeler):
                 self.data[self.period_col]
                 == self.data[self.data[self.test_col]][self.period_col].min()
             )
-        subset = default_subset_to_all(subset, self.data)
         predictions = self.predict(subset=subset, cumulative=True)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
-            actuals = self.label_data(lead_length - 1)[
-                subset & (self.data[self.max_lead_col] >= lead_length)
-            ].reset_index()["label"]
+            actuals = self.label_data(lead_length - 1)[subset].reset_index()
+            actuals = actuals[actuals[self.max_lead_col] >= lead_length]["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
