@@ -1,3 +1,13 @@
+## 1.3.1 - 2020-09-08
+
+### Added
+
+- A guided [example notebook](https://github.com/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb); prettier view [here](https://nbviewer.jupyter.org/github/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb)
+
+### Changed
+
+- modeler.evaluate method now defaults to evaluating on the earliest period of test set observations instead of all observations
+
 ## 1.3.0 - 2020-08-25
 
 ### Added
