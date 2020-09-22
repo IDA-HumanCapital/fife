@@ -1,3 +1,9 @@
+## 1.3.2 - 2020-09-22
+
+### Removed
+
+- Bokeh dependency
+
 ## 1.3.1 - 2020-09-08
 
 ### Added
