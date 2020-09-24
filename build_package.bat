@@ -16,7 +16,7 @@ python setup.py sdist bdist_wheel
 call conda install -y -c conda-forge shap iniconfig
 call conda install -y -c anaconda tensorflow
 for /F %%i in ('python setup.py --version') do set version=%%i
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl black pytest
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade dist/fife-%version%-py3-none-any.whl[shap] black pytest
 black .
 pytest
 if '!errorlevel!' == '0' (
