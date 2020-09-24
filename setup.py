@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="fife",
-    version="1.3.2",
+    version="1.3.3",
     description=(
         "Finite-Interval Forecasting Engine: Machine learning models "
         "for discrete-time survival analysis and multivariate time series "
@@ -35,7 +35,7 @@ setup(
     ],
     packages=["fife"],
     install_requires=[
-        "dask[array,bag,dataframe,distributed,delayed]",
+        "dask[delayed]",
         "ipython",
         "keras",
         "lifelines",
@@ -45,10 +45,10 @@ setup(
         "optuna",
         "pandas",
         "seaborn",
-        "shap",
         "scikit-learn",
         "tensorflow",
     ],
+    extras_require={"shap": ["shap"]},
     entry_points={
         "console_scripts": [
             "fife=fife.__main__:main",

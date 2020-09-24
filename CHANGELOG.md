@@ -1,3 +1,13 @@
+## 1.3.3 - 2020-09-24
+
+### Changed
+
+- SHAP is now an optional dependency; install fife with `pip install fife[shap]` to ensure you can produce SHAP plots
+
+### Removed
+
+- Dask optional dependencies except `cloudpickle` and `toolz`
+
 ## 1.3.2 - 2020-09-22
 
 ### Removed
