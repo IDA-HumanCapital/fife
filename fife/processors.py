@@ -333,9 +333,9 @@ class PanelDataProcessor(DataProcessor):
             "TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1
         )
 
-        if self.config.get("TEST_INTERVALS", -1) > max_test_intervals:
+        if test_intervals > max_test_intervals:
             warn(
-                f"The specified value for TEST_INTERVALS of {test_intervals} was too high. It was automatically reduced to {max_test_intervals}"
+                f"The specified value for TEST_INTERVALS of {test_intervals} was too high and will not allow for enough training periods. It was automatically reduced to {max_test_intervals}"
             )
             test_intervals = max_test_intervals
 
