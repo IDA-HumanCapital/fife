@@ -236,40 +236,5 @@ def read_data(config: dict) -> pd.DataFrame:
     return data
 
 
-def parse_config() -> dict:
-    """Parse configuration parameters specified in the command line."""
-    parser = utils.FIFEArgParser()
-    args = parser.parse_args()
-    config = {}
-    if args.CONFIG_PATH:
-        with open(args.CONFIG_PATH, "r") as file:
-            config.update(json.load(file))
-    config.update({k: v for k, v in vars(args).items() if v is not None})
-    return config
-
-
-def read_data(config: dict) -> pd.DataFrame:
-    """Read the input dataset as specified in config or inferred from current directory."""
-    if "DATA_FILE_PATH" not in config.keys():
-        valid_suffixes = (".csv", ".csv.gz", ".p", ".pkl", ".h5")
-        candidate_data_files = [
-            file for file in os.listdir() if file.endswith(valid_suffixes)
-        ]
-        assert len(candidate_data_files) >= 1, (
-            "No data files found in current directory. "
-            f"Valid data file suffixes are {valid_suffixes}. "
-            "If you want to use data in another directory, "
-            "please specify the DATA_FILE_PATH."
-        )
-        assert len(candidate_data_files) <= 1, (
-            "Multiple data files found in current directory. "
-            "please specify the DATA_FILE_PATH."
-        )
-        print(f"Using {candidate_data_files[0]} as data file.")
-        config["DATA_FILE_PATH"] = candidate_data_files[0]
-    data = utils.import_data_file(config["DATA_FILE_PATH"])
-    return data
-
-
 if __name__ == "__main__":
     main()
