@@ -74,11 +74,14 @@ def main():
     print(f"Model training time: {time() - checkpoint_time} seconds")
 
     checkpoint_time = time()
+
     if test_intervals > 0:
 
         # Save metrics
+        max_test_intervals = (len(set(modeler.data["_period"])) - 1) / 2
+
         evaluation_subset = modeler.data["_period"] == (
-            modeler.data["_period"].max() - test_intervals
+            modeler.data["_period"].max() - min(test_intervals, max_test_intervals)
         )
         utils.save_output_table(
             modeler.evaluate(evaluation_subset),

@@ -398,6 +398,7 @@ class SurvivalModeler(Modeler):
             self.data[subset][self.event_col],
         )
         metrics["C-Index"] = np.where(metrics.index == 1, concordance_index_value, "")
+        metrics = metrics.dropna()
         return metrics
 
     def forecast(self) -> pd.core.frame.DataFrame:

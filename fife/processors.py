@@ -327,10 +327,21 @@ class PanelDataProcessor(DataProcessor):
             self.data[self.config["TIME_IDENTIFIER"]], sort=True
         )[0]
         self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
-        self.data["_test"] = (
-            self.data["_period"]
-            + self.config.get("TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1)
-        ) >= self.data["_period"].max()
+
+        max_test_intervals = (len(set(self.data["_period"])) - 1) / 2
+        test_intervals = self.config.get(
+            "TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1
+        )
+
+        if test_intervals > max_test_intervals:
+            warn(
+                f"The specified value for TEST_INTERVALS of {test_intervals} was too high and will not allow for enough training periods. It was automatically reduced to {max_test_intervals}"
+            )
+            test_intervals = max_test_intervals
+
+        self.data["_test"] = (self.data["_period"] + test_intervals) >= self.data[
+            "_period"
+        ].max()
         self.data["_validation"] = (
             self.flag_validation_individuals() & ~self.data["_test"]
         )
