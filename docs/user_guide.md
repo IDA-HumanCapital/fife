@@ -166,7 +166,7 @@ survival_modeler = LGBSurvivalModeler(config={'PATIENCE': 8},
 survival_modeler.build_model()
 ```
 
-The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv](cli_link.html#metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period. Be careful to not set test intervals to be too large-- if it exceeds half of the number of periods, it will not provide the training dataset with enough periods.
+The `evaluate` method offers a suite of performance metrics specific to each time horizon as well as the concordance index over the restricted mean survival time. See the description of [Metrics.csv](cli_link.html#metrics-csv) above for more details. We can pass a Boolean mask to `evaluate` to obtain metrics only for the period we pretended was the most recent period. Be careful to not set `TEST_INTERVALS` to be too large; if it exceeds half of the number of intervals, it will not provide the training dataset with enough intervals.
 
 ```python
 evaluation_subset = survival_modeler.data["_period"] == (
