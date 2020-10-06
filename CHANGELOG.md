@@ -1,3 +1,11 @@
+## 1.3.4 - 2020-10-06
+
+### Changed
+
+- Restriction imposed on test_intervals to ensure enough periods for testing.
+
+- 'BY_FEATURE' argument, which allows for separate FIFE models to be generated for each value of that feature using the command-line interface.
+
 ## 1.3.3 - 2020-09-24
 
 ### Changed
