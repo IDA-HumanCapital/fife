@@ -43,7 +43,9 @@ def main():
     print(f"I/O setup time: {time() - checkpoint_time} seconds")
 
     by_feature = config.get("BY_FEATURE", None)
-    if by_feature != None and by_feature not in df.columns():
+    if by_feature == "None":
+        by_feature = None
+    if by_feature != None and by_feature not in df.columns:
         raise ValueError(
             "The selected feature for 'BY_FEATURE' is not in the dataset. Check spelling or the original dataset to ensure that you are entering the correct feature name."
         )
