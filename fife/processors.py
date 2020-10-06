@@ -328,7 +328,7 @@ class PanelDataProcessor(DataProcessor):
         )[0]
         self.data["_predict_obs"] = self.data["_period"] == self.data["_period"].max()
 
-        max_test_intervals = (len(set(self.data["_period"])) - 1) / 2
+        max_test_intervals = int((len(set(self.data["_period"])) - 1) / 2)
         test_intervals = self.config.get(
             "TEST_INTERVALS", self.config.get("TEST_PERIODS", 0) - 1
         )
