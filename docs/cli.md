@@ -85,6 +85,8 @@ In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
 All files produced by FIFE will overwrite files of the same name in the directory designated by the `RESULTS_PATH` configuration parameter.
 
+If by_feature is specified, then a separate metrics.csv file will be produced for each value of that feature corresponding to the results of just those values.
+
 ##### Survival_Curves.csv
 
 - First column: The identifier of each individual observed in the final time period of the dataset.
