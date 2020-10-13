@@ -1,3 +1,9 @@
+## 1.3.4 - 2020-10-13
+
+### Changed
+
+- Can now produce separate metrics.csv files for each value of a selected feature
+
 ## 1.3.3 - 2020-09-24
 
 ### Changed
