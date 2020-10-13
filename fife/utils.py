@@ -342,6 +342,11 @@ class FIFEArgParser(argparse.ArgumentParser):
             help="The name of the feature that identifies time periods in the data.",
         )
         self.add_argument(
+            "--BY_FEATURE",
+            type=str,
+            help="The name of the feature that identifies the feature by which to produce separate metrics.csv files.",
+        )
+        self.add_argument(
             "--CATEGORICAL_SUFFIXES",
             type=str,
             nargs="+",
