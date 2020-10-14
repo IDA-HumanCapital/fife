@@ -7,7 +7,6 @@
 
     "INDIVIDUAL_IDENTIFIER": "",
     "TIME_IDENTIFIER": "",
-	"BY_FEATURE": "None",
 
     "CATEGORICAL_SUFFIXES": [],
 	"DATETIME_AS_DATE": true,
@@ -34,6 +33,7 @@
     "NON_CAT_MISSING_VALUE": -1,
     "PROPORTIONAL_HAZARDS": false,
 
+    "BY_FEATURE": "None",
     "QUANTILES": 5,
     "RETENTION_INTERVAL": 1,
     "SHAP_PLOT_ALPHA": 0.5,
