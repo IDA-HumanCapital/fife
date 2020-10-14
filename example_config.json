@@ -33,7 +33,7 @@
     "NON_CAT_MISSING_VALUE": -1,
     "PROPORTIONAL_HAZARDS": false,
 
-    "BY_FEATURE": "None",
+    "BY_FEATURE": "",
     "QUANTILES": 5,
     "RETENTION_INTERVAL": 1,
     "SHAP_PLOT_ALPHA": 0.5,
