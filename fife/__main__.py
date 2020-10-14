@@ -52,10 +52,8 @@ def main():
     )
     print(f"Data processing time: {time() - checkpoint_time} seconds")
 
-    by_feature = config.get("BY_FEATURE", None)
-    if by_feature == "None":
-        by_feature = None
-    if by_feature is not None and by_feature not in data.columns:
+    by_feature = config.get("BY_FEATURE", "")
+    if by_feature != "" and by_feature not in data.columns:
         raise ValueError(
             "The selected feature for 'BY_FEATURE' is not in the dataset. Check spelling or the original dataset to ensure that you are entering the correct feature name."
         )
@@ -87,32 +85,26 @@ def main():
         # Save metrics
         max_test_intervals = int((len(set(modeler.data["_period"])) - 1) / 2)
 
-        if by_feature is not None:
+        evaluation_subset = modeler.data["_period"] == (
+            modeler.data["_period"].max() - min(test_intervals, max_test_intervals)
+        )
+
+        if by_feature != "":
             values = list(set(data[by_feature]))
 
             for feature_value in values:
 
-                evaluation_subset_by_period = modeler.data["_period"] == (
-                    modeler.data["_period"].max()
-                    - min(test_intervals, max_test_intervals)
+                evaluation_subset_by_feature = modeler.data[by_feature] == feature_value
+                evaluation_subset_comparison = (
+                    evaluation_subset & evaluation_subset_by_feature
                 )
 
-                evaluation_subset_by_feature = modeler.data[by_feature] == (
-                    feature_value
-                )
-
-                evaluation_subset = (
-                    evaluation_subset_by_period & evaluation_subset_by_feature
-                )
                 utils.save_output_table(
-                    modeler.evaluate(evaluation_subset),
+                    modeler.evaluate(evaluation_subset_comparison),
                     f"Metrics_{feature_value}",
                     path=config["RESULTS_PATH"],
                 )
 
-        evaluation_subset = modeler.data["_period"] == (
-            modeler.data["_period"].max() - min(test_intervals, max_test_intervals)
-        )
         utils.save_output_table(
             modeler.evaluate(evaluation_subset),
             "Metrics",
