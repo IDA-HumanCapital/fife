@@ -1,8 +1,10 @@
 ## 1.3.4 - 2020-10-13
 
-### Changed
+### Added
 
-- Can now produce separate metrics.csv files for each value of a selected feature
+<u>Command-line Interface</u>
+
+- Can now use `BY_FEATURE` to produce separate Metrics.csv files for each value of a selected feature
 
 ## 1.3.3 - 2020-09-24
 
