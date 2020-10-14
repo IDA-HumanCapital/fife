@@ -344,7 +344,7 @@ class FIFEArgParser(argparse.ArgumentParser):
         self.add_argument(
             "--BY_FEATURE",
             type=str,
-            help="The name of the feature that identifies the feature by which to produce separate metrics.csv files.",
+            help="The name of the feature by which to produce separate Metrics.csv files.",
         )
         self.add_argument(
             "--CATEGORICAL_SUFFIXES",
