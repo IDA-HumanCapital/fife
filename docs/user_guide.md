@@ -75,13 +75,13 @@ FIFE is even simpler to use [from the command line](cli_link.html) (but currentl
 	* Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.<br/>
 		Example: `cd C:\Users\insert-user-name\Downloads`
 	* Pip install the name of the `.whl` or `.tar.gz` file.<br/>
-		Example: `pip install fife-1.3.0-py3-none-any.whl`
+		Example: `pip install fife-1.3.4-py3-none-any.whl`
 * From GitHub (https://github.com/IDA-HumanCapital/fife):
 	*	Clone the FIFE repository
 	* Open Anaconda Prompt
 	* Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
 	* Execute `python setup.py sdist bdist_wheel`
-	* Execute `pip install dist/fife-1.3.0-py3-none-any.whl`
+	* Execute `pip install dist/fife-1.3.4-py3-none-any.whl`
 
 ### Usage
 
@@ -306,6 +306,8 @@ PROPORTIONAL_HAZARDS; default: `false`; type: Boolean
 
 ##### Metrics
 
+BY_FEATURE; default: default: `""` (empty string); type: String
+	The name of the feature for which FIFE will also produce separate Metrics_{value}.csv files for each group defined by each unique value of that feature.
 QUANTILES; default: 5; type: Integer
 	The number of similarly-sized bins for which survival and total counts will be reported for each time horizon. Larger values may increase run time and/or evaluation precision.
 RETENTION_INTERVAL; default: 1; type: Integer
