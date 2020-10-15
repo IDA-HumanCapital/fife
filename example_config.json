@@ -9,7 +9,7 @@
     "TIME_IDENTIFIER": "",
 
     "CATEGORICAL_SUFFIXES": [],
-	"DATETIME_AS_DATE": true,
+    "DATETIME_AS_DATE": true,
     "MAX_NULL_SHARE": 0.999,
     "MAX_UNIQUE_NUMERIC_CATS": 1024,
     "NUMERIC_SUFFIXES": [],
@@ -20,7 +20,7 @@
 
     "TREE_MODELS": true,
 
-	"HYPER_TRIALS": 0,
+    "HYPER_TRIALS": 0,
     "MAX_EPOCHS": 256,
     "PATIENCE": 4,
 
@@ -33,6 +33,7 @@
     "NON_CAT_MISSING_VALUE": -1,
     "PROPORTIONAL_HAZARDS": false,
 
+    "BY_FEATURE": "",
     "QUANTILES": 5,
     "RETENTION_INTERVAL": 1,
     "SHAP_PLOT_ALPHA": 0.5,

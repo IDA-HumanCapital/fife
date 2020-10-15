@@ -52,6 +52,12 @@ def main():
     )
     print(f"Data processing time: {time() - checkpoint_time} seconds")
 
+    by_feature = config.get("BY_FEATURE", "")
+    if by_feature != "" and by_feature not in data.columns:
+        raise ValueError(
+            "The selected feature for 'BY_FEATURE' is not in the dataset. Check spelling or the original dataset to ensure that you are entering the correct feature name."
+        )
+
     checkpoint_time = time()
     utils.ensure_folder_existence(f'{config["RESULTS_PATH"]}/Intermediate/Models')
     test_intervals = config.get("TEST_INTERVALS", config.get("TEST_PERIODS", 0) - 1)
@@ -74,15 +80,31 @@ def main():
     print(f"Model training time: {time() - checkpoint_time} seconds")
 
     checkpoint_time = time()
-
     if test_intervals > 0:
 
         # Save metrics
-        max_test_intervals = (len(set(modeler.data["_period"])) - 1) / 2
+        max_test_intervals = int((len(set(modeler.data["_period"])) - 1) / 2)
 
         evaluation_subset = modeler.data["_period"] == (
             modeler.data["_period"].max() - min(test_intervals, max_test_intervals)
         )
+
+        if by_feature != "":
+            values = list(set(data[by_feature]))
+
+            for feature_value in values:
+
+                evaluation_subset_by_feature = modeler.data[by_feature] == feature_value
+                evaluation_subset_comparison = (
+                    evaluation_subset & evaluation_subset_by_feature
+                )
+
+                utils.save_output_table(
+                    modeler.evaluate(evaluation_subset_comparison),
+                    f"Metrics_{feature_value}",
+                    path=config["RESULTS_PATH"],
+                )
+
         utils.save_output_table(
             modeler.evaluate(evaluation_subset),
             "Metrics",
@@ -202,41 +224,6 @@ def main():
             )
 
     print(f"Output production time: {time() - checkpoint_time} seconds")
-
-
-def parse_config() -> dict:
-    """Parse configuration parameters specified in the command line."""
-    parser = utils.FIFEArgParser()
-    args = parser.parse_args()
-    config = {}
-    if args.CONFIG_PATH:
-        with open(args.CONFIG_PATH, "r") as file:
-            config.update(json.load(file))
-    config.update({k: v for k, v in vars(args).items() if v is not None})
-    return config
-
-
-def read_data(config: dict) -> pd.DataFrame:
-    """Read the input dataset as specified in config or inferred from current directory."""
-    if "DATA_FILE_PATH" not in config.keys():
-        valid_suffixes = (".csv", ".csv.gz", ".p", ".pkl", ".h5")
-        candidate_data_files = [
-            file for file in os.listdir() if file.endswith(valid_suffixes)
-        ]
-        assert len(candidate_data_files) >= 1, (
-            "No data files found in current directory. "
-            f"Valid data file suffixes are {valid_suffixes}. "
-            "If you want to use data in another directory, "
-            "please specify the DATA_FILE_PATH."
-        )
-        assert len(candidate_data_files) <= 1, (
-            "Multiple data files found in current directory. "
-            "please specify the DATA_FILE_PATH."
-        )
-        print(f"Using {candidate_data_files[0]} as data file.")
-        config["DATA_FILE_PATH"] = candidate_data_files[0]
-    data = utils.import_data_file(config["DATA_FILE_PATH"])
-    return data
 
 
 def parse_config() -> dict:

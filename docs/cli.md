@@ -64,7 +64,7 @@ Intermediate files are not intended to be read by humans.
 
 ### Outputs
 
-If `TEST_INTERVALS` is greater than zero, or if `TEST_PERIODS` is greater than one and `TEST_INTERVALS` is unspecified, FIFE produces:
+If `TEST_INTERVALS` is zero, or if `TEST_PERIODS` is one or less and `TEST_INTERVALS` is unspecified, FIFE produces:
 
 -	*Output/Tables/Survival_Curves.csv*: Predicted survival curves for each individual observed in the final period of the dataset
 -	*Output/Tables/Aggregate_Survival_Bounds.csv*: Expected number of individuals retained for each time horizon with corresponding uncertainty bounds
@@ -84,6 +84,8 @@ Otherwise, FIFE produces:
 In either case, FIFE produces *Output/Logs/Log.txt*, a log of script execution.
 
 All files produced by FIFE will overwrite files of the same name in the directory designated by the `RESULTS_PATH` configuration parameter.
+
+If 'BY_FEATURE' is specified, then, in addition to Metrics.csv, a separate Metrics_{value}.csv file will be produced for each group defined by each unique value of that feature.
 
 ##### Survival_Curves.csv
 
