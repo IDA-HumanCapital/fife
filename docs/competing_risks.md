@@ -1,12 +1,12 @@
 ﻿FIFE can be used to forecast time-to-event under a competing risks framework. Competing risks analysis is useful when you desire to predict not only when a terminal event occurs, but which terminal event occurs. Forecasts from the survival modeler and the exit modeler can be combined to produce cause-specific hazard probabilities and cumulative incidence function forecasts. An alternative approach is to model the subdistribution of risk, which is not currently implemented in FIFE (Schmid and Berger, 2020).
 
-Suppose there are :math:`M` different terminal events that occur at times :math:`T_{i1}, T_{i2}, ..., T_{iM}` for individual :math:`i` where each time shares a common time scale and starting period. The period of analysis terminates at :math:`T_{iM}=T_{M}`, representing a right-censoring time that is shared for all individuals. Thus :math:`T_M=\underset{i}{max}\;T_i`.  For each individual we only observe the first occurring event :math:`T_i=min(T_{i1}, T_{i2}, ..., T_{iM})` and which event occurred :math:`d_i=\underset{d\in\{1,2,...,M\}}{argmin}(T_{i1}, T_{i2}, ..., T_{iM})`. After time :math:`T_i` individual :math:`i` is no longer observed in the data. 
+Suppose there are :math:`M` different terminal events that occur at times :math:`T_{i1}, T_{i2}, ..., T_{iM}` for individual :math:`i` where each time shares a common time scale and starting period of 0. The period of analysis terminates at :math:`T_{iM}=T_{M}`, representing a right-censoring time that is shared for all individuals. Thus :math:`T_M=\underset{i}{max}\;T_i`.  For each individual we only observe the first occurring event :math:`T_i=min(T_{i1}, T_{i2}, ..., T_{iM})` and which event occurred :math:`d_i=\underset{d\in\{1,2,...,M\}}{argmin}(T_{i1}, T_{i2}, ..., T_{iM})`. After time :math:`T_i` individual :math:`i` is no longer observed in the data. 
 
 #### Dataset for training and prediction
 
 The dataset format is similar to the format as used for the single-risk case for `LGBSurvivalModeler` except that a column containing the type of terminal event for the individual must be provided as an argument to `exit_col` in `LGBExitModeler`. Currently, exit modeling is only supported for LightGBM. 
 
-The REIGN dataset as an example for predicting not just when a leader's reign will end but how their rein will end (see https://oefresearch.org/datasets/reign for details). The reign can end by the government type remaining the same (e.g., remains as presidential democracy, USA 2016), government type changing (e.g., changes from personal dictatorship to warlordism, Yemen 2015), or a complete country dissolution (e.g., Yugoslavia 1991). 
+We use the same [Rulers, Elections, and Irregular Governance dataset (REIGN)](https://oefdatascience.github.io/REIGN.github.io/) dataset as we use in [this example notebook](https://nbviewer.jupyter.org/github/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb) as an example for predicting not just when a leader's reign will end but how their reign will end. The reign can end by the government type remaining the same (e.g., remains as presidential democracy, USA 2016), government type changing (e.g., changes from personal dictatorship to warlordism, Yemen 2015), or a complete country dissolution (e.g., Yugoslavia 1991). 
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ The REIGN dataset as an example for predicting not just when a leader's reign wi
 	
 	mdata = data_processor.data.copy()
 
-The REIGN data does not come with columns indicating the type of terminal event, thus such a column needs to be engineered. The terminal event type column must be a categorical data type. Only the value from the last observation in the terminal event type column is used, any preceding values within an individual are ignored. FIFE's `build_processed_data()` identifies unique individuals by their spells (or broken panels). That is if an individual leaves the dataset and reenters, they are treated as two different individuals. Therefore, terminal event types need to be provided at the last time period for each individual-spell. This can be accomplished using the `_period` column output with `build_processed_data()` as shown below.
+The REIGN data does not come with columns indicating the type of terminal event, thus such a column needs to be engineered. The terminal event type column must be a categorical data type. FIFE only uses the terminal event value from each reign's last observation; any preceding terminal event values for the same reign are ignored. FIFE's `build_processed_data()` identifies unique reigns by their spells (i.e., broken panels). That is, if an individual leaves the dataset and re-enters, they are treated as two different individuals. Therefore, terminal event types need to be provided at the last time period for each individual-spell. This can be accomplished using the `_period` column output with `build_processed_data()` as shown below.
 
 .. code-block:: python
 
@@ -62,7 +62,7 @@ The REIGN data does not come with columns indicating the type of terminal event,
 	spells = gaps.groupby(mdata["country-leader"]).cumsum()
 	mdata['country-leader-spell'] = mdata['country-leader'] + array(spells, dtype = 'str')
 	
-	## Create exit status for dissolution, change of government type, and same government type
+	# Create exit status for dissolution, change of government type, and same government type
 	mdata['outcome'] = 'No exit'
 	
 	for i in mdata['country-leader-spell'].unique():
@@ -118,13 +118,13 @@ We can do additional feature engineering such as including features that count t
 
 ##### Survival probabilities
 
-Now that the data is prepared, we can train and forecast with the survival modeler, `LGBSurvivalModeler`, to obtain the survival probabilities. The survival probabilities are defined to be 
+Now that the data are prepared, we can train and forecast with the survival modeler, `LGBSurvivalModeler`, to obtain the survival probabilities. The survival probabilities are defined to be 
 
 .. math::
 
-   Pr(T_i\geq t|X_{i}).
+   Pr(T_i\geq t|X_{i{\tau}}).
 
-Forecasts are produced for censored individuals with `.forecast()` up to the furthest observed time period after the initial period, :math:`t\in\{T_M+1,T_M+2,...,2\cdot T_M\}`. The features used are from the last observed row, :math:`X_{i{T_M}}`. Thus all forecasted probabilities are conditional on the same observed features and are coherent up to numerical accuracy. If a terminal event type column is in the data, it should not be passed to `LGBSurvivalModeler()`.
+where :math:`X_{i}` is a vector of feature values for individual :math:`i` at time :math:`\tau`. Forecasts are produced for censored individuals with `.forecast()` up to the furthest observed time period after the initial period, :math:`t\in\{T_M+1,T_M+2,...,2\cdot T_M\}`. The features used are from the last observed row, :math:`X_{i{T_M}}`. Thus all forecasted probabilities across all future periods for the same reign are conditional on the same observed features and are coherent up to numerical accuracy. If a terminal event type column is in the data, it should not be passed to `LGBSurvivalModeler()`.
 
 .. code-block:: python
 
@@ -135,8 +135,8 @@ Forecasts are produced for censored individuals with `.forecast()` up to the fur
 	
 	# Set custom column names
 	custom_forecast_headers = date_range(data["year-month"].max(),
-	                                      periods=len(survival_modeler_forecasts .columns),
-	                                      freq="M").strftime("%b %Y")
+	                                     periods=len(survival_modeler_forecasts.columns),
+	                                     freq="M").strftime("%b %Y")
 	survival_modeler_forecasts.columns = custom_forecast_headers
 	survival_modeler_forecasts
 	```
@@ -162,9 +162,9 @@ Forecasts are produced for censored individuals with `.forecast()` up to the fur
 The same data can be used to train and forecast with the exit modeler, `LGBExitModeler`, where the terminal event type column name is passed as an argument to `exit_col`. The exit modeler produces forecasts for type of exit, conditional on :math:`t` being the last period observed. This is defined formally as
 
 .. math::
-   Pr(D_i=d_i|T_i= t,X_{i}).
+   Pr(D_i=d_i|T_i= t,X_{i{\tau}}).
 
-`LGBExitModeler` follows similar rules as `LGBSurvivalModeler` for selecting observations for training and forecasting. Except for training, where only observations with an observed exit in the desired time period are used.
+Like `LGBSurvivalModeler`, `LGBExitModeler` produces forecasts for every observation at time :math:`T_M`. Also like `LGBSurvivalModeler`, `LGBExitModeler` trains a separate model for each number of periods into the future. Unlike `LGBSurvivalModeler`, `LGBExitModeler` trains each model only on observations with an observed exit exactly the given number of periods into the future.
 
 .. code-block:: python
 
@@ -196,7 +196,7 @@ The same data can be used to train and forecast with the exit modeler, `LGBExitM
 
 ##### Cumulative Incidence Function
 
-It is often of interest to obtain the Cumulative Incidence Function (CIF) defined as :math:`Pr(T_i\leq t,D_i=d|X_{i})`.  The CIF is obtained using the forecasts from `LGBSurvivalModeler` and `LGBExitModeler` using the relationship
+It is often of interest to obtain the Cumulative Incidence Function (CIF) defined as :math:`Pr(T_i\leq t,D_i=d|X_{i})` (we omit :math:`\tau` here for conciseness, noting :math:`\tau \eq \T_M` for all forecasts).  The CIF is obtained using the forecasts from `LGBSurvivalModeler` and `LGBExitModeler` using the relationship
 
 .. math::
 	Pr(T_i\leq t,D_i=d|X_{i})&=\sum_{l=T_M+1}^{t}Pr(D_i=d|T_i=l,X_{i})Pr(T_i= l|X_{i})\textrm{, where}\\
@@ -241,7 +241,7 @@ Note, :math:`Pr(T_i\geq 0 |X_{i})=1`.
 
 ##### Cause-specific hazard probability
 
-You can also obtain the cause-specific probability defined as :math:`Pr(T_i=t,D_i=d|T_i\geq t,X_{i})`. The relationship is
+You can also obtain the cause-specific hazard probability defined as :math:`Pr(T_i=t,D_i=d|T_i\geq t,X_{i})`. The relationship is
 
 .. math::
 
