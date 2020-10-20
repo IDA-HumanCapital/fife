@@ -241,8 +241,8 @@ Note, we lose forecasts for the last time period due the differencing in the sec
 	
 	# Plot cumulative incidence function
 	plotdf = cumulative_incidence_forecasts.loc["USA: Trump",:].transpose()
-	plt.figure()
-	plotdf.plot()
+	plt.figure(dpi=512)
+	plotdf.plot(ax = plt.gca())
 	plt.ylim(bottom=0,top=1)
 
 .. image:: images/CIF_Trump.png
@@ -290,8 +290,8 @@ We can also obtain the cause-specific hazard. The cause-specific hazard is the p
 
 	# Plot cause-specific hazard probabilities
 	plotdf = cause_hazard_forecasts.loc["USA: Trump",:].transpose()
-	plt.figure()
-	plotdf.plot()
+	plt.figure(dpi=512)
+	plotdf.plot(ax = plt.gca())
 	plt.ylim(bottom=0)
 
 .. image:: images/Hazard_Trump.png
