@@ -1,12 +1,16 @@
-﻿FIFE can be used to forecast time-to-event under a competing risks framework. Competing risks analysis is useful when you desire to predict not only when a terminal event occurs, but which terminal event occurs. Forecasts from the survival modeler and the exit modeler can be combined to produce cause-specific hazard probabilities and cumulative incidence function forecasts. An alternative approach is to model the subdistribution of risk, which is not currently implemented in FIFE (Schmid and Berger, 2020).
+﻿FIFE can be used to forecast time-to-event under a competing risks framework. Competing risks analysis is useful when you desire to predict not only when a terminal event occurs, but which terminal event occurs. Forecasts from the survival modeler and the exit modeler can be combined to produce cumulative incidence function and cause-specific hazard forecasts. An alternative approach is to model the subdistribution of risk, which is not currently implemented in FIFE (Schmid and Berger, 2020).
 
-Suppose there are :math:`M` different terminal events that occur at times :math:`T_{i1}, T_{i2}, ..., T_{iM}` for individual :math:`i` where each time shares a common time scale and starting period of 0. The period of analysis terminates at :math:`T_{iM}=T_{M}`, representing a right-censoring time that is shared for all individuals. Thus :math:`T_M=\underset{i}{max}\;T_i`.  For each individual we only observe the first occurring event :math:`T_i=min(T_{i1}, T_{i2}, ..., T_{iM})` and which event occurred :math:`d_i=\underset{d\in\{1,2,...,M\}}{argmin}(T_{i1}, T_{i2}, ..., T_{iM})`. After time :math:`T_i` individual :math:`i` is no longer observed in the data. 
+Suppose there are :math:`M` different terminal events that occur at times :math:`T_{i1}, T_{i2}, ..., T_{iM}` for individual :math:`i`, where each terminal event time shares a common individual-specific time scale and starting period of 0. The period of analysis terminates at :math:`T_{i0}`, representing an individual-specific right-censoring time. Note, all individuals share the same right-censoring *absolute* time, which is the last observed time period in the data. 
+
+For each individual we only observe the first occurring event, :math:`T_i=min(T_{i0},T_{i1}, T_{i2}, ..., T_{iM})`, and which event occurred, :math:`d_i=\underset{d\in\{0,1,2,...,M\}}{argmin}T_{id}`. After time :math:`T_i`, individual :math:`i` is no longer observed in the data. 
+
+It is assumed that if censoring and a terminal event occur at the same time then only censoring is observed. This is because a terminal event can only be verified in period :math:`T_i + 1` and censoring occurs in the last time period in the data. Additionally, it is assumed that terminal events are mutually exclusive. In other words, no two events can be simultaneously observed as a terminal event for the same individual. Thus, :math:`d_i` is a singleton for every individual.
 
 #### Dataset for training and prediction
 
-The dataset format is similar to the format as used for the single-risk case for `LGBSurvivalModeler` except that a column containing the type of terminal event for the individual must be provided as an argument to `exit_col` in `LGBExitModeler`. Currently, exit modeling is only supported for LightGBM. 
+The dataset format is similar to the one used in the single-risk case (with `LGBSurvivalModeler`) except that a column containing the type of terminal event for the individual must be provided as an argument to `exit_col` in `LGBExitModeler`. Currently, exit modeling is only supported for LightGBM. 
 
-We use the same [Rulers, Elections, and Irregular Governance dataset (REIGN)](https://oefdatascience.github.io/REIGN.github.io/) dataset as we use in [this example notebook](https://nbviewer.jupyter.org/github/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb) as an example for predicting not just when a leader's reign will end but how their reign will end. The reign can end by the government type remaining the same (e.g., remains as presidential democracy, USA 2016), government type changing (e.g., changes from personal dictatorship to warlordism, Yemen 2015), or a complete country dissolution (e.g., Yugoslavia 1991). 
+We use the [Rulers, Elections, and Irregular Governance dataset (REIGN)](https://oefdatascience.github.io/REIGN.github.io/) dataset (also used in this [notebook](https://nbviewer.jupyter.org/github/IDA-HumanCapital/fife/blob/master/examples/country_leadership.ipynb)) as an example for predicting not just when a leader's reign will end but how their reign will end. The reign can end by the government type remaining the same (e.g., remains as presidential democracy, USA 2016), government type changing (e.g., changes from personal dictatorship to warlordism, Yemen 2015), or a complete country dissolution (e.g., Yugoslavia 1991). 
 
 .. code-block:: python
 
@@ -15,7 +19,7 @@ We use the same [Rulers, Elections, and Irregular Governance dataset (REIGN)](ht
 	from fife.processors import PanelDataProcessor
 	from fife.utils import make_results_reproducible, plot_shap_values
 	from pandas import concat, date_range, read_csv, to_datetime, Index, DataFrame
-	from numpy import array, repeat, nan, ones
+	from numpy import array, repeat, nan
 	
 	# import warnings
 	#warnings.filterwarnings('ignore')
@@ -34,26 +38,14 @@ We use the same [Rulers, Elections, and Irregular Governance dataset (REIGN)](ht
                 	         axis=1)], axis=1)
 	
 	data = data.drop_duplicates(["country-leader", "year-month"], keep="first")
-	data.head()
-	```
-	Out[1]: 
-	country-leader year-month country    year  month  ...  pt_suc  pt_attempt    precip  couprisk  pctile_risk
-	0    USA: Truman 1950-01-01     USA  1950.0    1.0  ...     0.0         0.0 -0.069058       NaN          NaN
-	1    USA: Truman 1950-02-01     USA  1950.0    2.0  ...     0.0         0.0 -0.113721       NaN          NaN
-	2    USA: Truman 1950-03-01     USA  1950.0    3.0  ...     0.0         0.0 -0.108042       NaN          NaN
-	3    USA: Truman 1950-04-01     USA  1950.0    4.0  ...     0.0         0.0 -0.041600       NaN          NaN
-	4    USA: Truman 1950-05-01     USA  1950.0    5.0  ...     0.0         0.0 -0.129703       NaN          NaN
-	
-	[5 rows x 38 columns]
-	​```
-	
+
 	# Process data for model input
 	data_processor = PanelDataProcessor(data=data, config={'NUMERIC_SUFFIXES':	['year','month','age','tenure_months','lastelection','loss','irregular','prev_conflict','precip','couprisk','pctile_risk']})
 	data_processor.build_processed_data()
 	
 	mdata = data_processor.data.copy()
 
-The REIGN data does not come with columns indicating the type of terminal event, thus such a column needs to be engineered. The terminal event type column must be a categorical data type. FIFE only uses the terminal event value from each reign's last observation; any preceding terminal event values for the same reign are ignored. FIFE's `build_processed_data()` identifies unique reigns by their spells (i.e., broken panels). That is, if an individual leaves the dataset and re-enters, they are treated as two different individuals. Therefore, terminal event types need to be provided at the last time period for each individual-spell. This can be accomplished using the `_period` column output with `build_processed_data()` as shown below.
+The REIGN data does not natively come with columns indicating the type of terminal event, thus such a column needs to be engineered. In doing do so there are several notes the user should be aware of. First, the terminal event type column must be a categorical data type. Second, FIFE only uses the terminal event value from each individual's last observation; any preceding terminal event values for the same individual are ignored. Third, FIFE's `.build_processed_data()` identifies unique individuals by their spells (i.e., broken panels). That is, if an individual leaves the dataset and re-enters, they are treated as two different individuals. Therefore, terminal event types need to be provided at the last time period for each individual-spell. This can be accomplished using the `_period` column output with `.build_processed_data()` as shown below.
 
 .. code-block:: python
 
@@ -118,13 +110,15 @@ We can do additional feature engineering such as including features that count t
 
 ##### Survival probabilities
 
-Now that the data are prepared, we can train and forecast with the survival modeler, `LGBSurvivalModeler`, to obtain the survival probabilities. The survival probabilities are defined to be 
+Now that the data are prepared, we can train and forecast with the survival modeler, `LGBSurvivalModeler`, to obtain the survival probabilities. The survival probabilities are the probability of surviving at least up to some future time horizon and are defined to be 
 
 .. math::
 
-   Pr(T_i\geq t|X_{i{\tau}}).
+   Pr(T_i\geq t|X_{i{\tau}}),
 
-where :math:`X_{i}` is a vector of feature values for individual :math:`i` at time :math:`\tau`. Forecasts are produced for censored individuals with `.forecast()` up to the furthest observed time period after the initial period, :math:`t\in\{T_M+1,T_M+2,...,2\cdot T_M\}`. The features used are from the last observed row, :math:`X_{i{T_M}}`. Thus all forecasted probabilities across all future periods for the same reign are conditional on the same observed features and are coherent up to numerical accuracy. If a terminal event type column is in the data, it should not be passed to `LGBSurvivalModeler()`.
+where :math:`X_{i{\tau}}` is a vector of feature values for individual :math:`i` at time :math:`\tau`. 
+
+Forecasts are produced for censored individuals with `.forecast()` up to the furthest observed time period after the initial period, :math:`t\in\{T_{i0}+1, T_{i0}+2, ..., T_{i0} + \check{T}\}`, where :math:`\check{T}=\underset{i}{max}\; T_{i}`. The features used are from the last observed row, :math:`X_{i} = X_{i{\tau}}=X_{i{T_{i0}}}`. Thus forecasted probabilities for all future periods for a given individual are conditional on the same observed features and are coherent up to numerical accuracy (i.e., probabilities are theoretically valid, but when summed over the full support there may be a small numerical difference from 1). Note, if a terminal event type column is in the data, it should not be passed to `LGBSurvivalModeler`.
 
 .. code-block:: python
 
@@ -135,113 +129,129 @@ where :math:`X_{i}` is a vector of feature values for individual :math:`i` at ti
 	
 	# Set custom column names
 	custom_forecast_headers = date_range(data["year-month"].max(),
-	                                     periods=len(survival_modeler_forecasts.columns),
-	                                     freq="M").strftime("%b %Y")
+	                                      periods=len(survival_modeler_forecasts .columns)+1,
+	                                      freq="M").strftime("%b %Y")[1:]
 	survival_modeler_forecasts.columns = custom_forecast_headers
 	survival_modeler_forecasts
-	```
-	                           Jul 2020  Aug 2020  Sep 2020  Oct 2020  ...  May 2040  Jun 2040  Jul 2040  Aug 2040
-	country-leader                                                     ...                                        
+
+.. table::
+
+	=========================  ========  ========  ========  ========  ===  ========  ========  ========  ========
+	country-leader             Aug 2020  Sep 2020  Oct 2020  Nov 2020  ...  Jun 2040  Jul 2040  Aug 2040  Sep 2040
+	=========================  ========  ========  ========  ========  ===  ========  ========  ========  ========
 	Afghanistan: Ashraf Ghani  0.986044  0.965914  0.953822  0.942614  ...  0.000322  0.000320  0.000273  0.000271
 	Albania: Rama              0.992290  0.984483  0.977156  0.968703  ...  0.008364  0.008308  0.008252  0.008197
 	Algeria: Tebboune          0.991351  0.977605  0.965622  0.941865  ...  0.007509  0.007316  0.006988  0.006939
 	Andorra: Espot Zamora      0.990101  0.981595  0.975345  0.966500  ...  0.000727  0.000723  0.000718  0.000713
 	Angola: Lourenco           0.985230  0.972513  0.959758  0.947597  ...  0.025139  0.024493  0.023396  0.023232
-	                            ...       ...       ...       ...  ...       ...       ...       ...       ...
+	...                             ...       ...       ...       ...  ...       ...       ...       ...       ...
 	Venezuela: Nicolas Maduro  0.993150  0.986412  0.982183  0.975254  ...  0.000331  0.000329  0.000321  0.000313
 	Vietnam: Phu Trong         0.991983  0.982679  0.968412  0.959021  ...  0.002620  0.002586  0.002209  0.002123
 	Yemen: Houthi              0.992832  0.983635  0.950930  0.939746  ...  0.056119  0.055744  0.055367  0.054997
 	Zambia: Lungu              0.993150  0.986317  0.981646  0.973240  ...  0.008273  0.006682  0.005709  0.005411
 	Zimbabwe: Mnangagwa        0.993150  0.986421  0.981954  0.974727  ...  0.058133  0.057746  0.057357  0.056975
-	
-	[194 rows x 242 columns]
-	```
+	=========================  ========  ========  ========  ========  ===  ========  ========  ========  ========
 
-##### Type of exit probabilities
 
-The same data can be used to train and forecast with the exit modeler, `LGBExitModeler`, where the terminal event type column name is passed as an argument to `exit_col`. The exit modeler produces forecasts for type of exit, conditional on :math:`t` being the last period observed. This is defined formally as
+##### Type of terminal event probabilities
+
+The same data can be used to train and forecast with the exit modeler, `LGBExitModeler`, where the terminal event type column name is passed as an argument to `exit_col`. The exit modeler produces estimates for the type of terminal event, conditional on :math:`t` being the last period observed. This is defined formally as
 
 .. math::
-   Pr(D_i=d_i|T_i= t,X_{i{\tau}}).
+   Pr(D_i=d|T_i= t,X_{i{\tau}}).
 
-Like `LGBSurvivalModeler`, `LGBExitModeler` produces forecasts for every observation at time :math:`T_M`. Also like `LGBSurvivalModeler`, `LGBExitModeler` trains a separate model for each number of periods into the future. Unlike `LGBSurvivalModeler`, `LGBExitModeler` trains each model only on observations with an observed exit exactly the given number of periods into the future.
+Like `LGBSurvivalModeler`, `LGBExitModeler` produces forecasts for every indvidual who is censored using features from the last observed row. Also like `LGBSurvivalModeler`, `LGBExitModeler` trains a separate model for each number of periods into the future. Unlike `LGBSurvivalModeler`, `LGBExitModeler` trains each model only on observations with an observed terminal event :math:`t` periods into the future.
 
 .. code-block:: python
 
-	# Obtain the probability of type of exit conditional on exit that period
+	# Obtain the probability of type of terminal event conditional on exit that period
 	exit_modeler = LGBExitModeler(data=mdata, exit_col = 'outcome')
 	exit_modeler.build_model(parallelize=False)
 	exit_modeler_forecasts = exit_modeler.forecast()
 	
 	# Set MultiIndex and column names
 	exit_modeler_forecasts = exit_modeler_forecasts.set_index('Future outcome', append = True, drop = True)
-	exit_modeler_forecasts = exit_modeler_forecasts.reindex(['Same government type','Change of government type','Dissolution','No exit'], axis=0,level=1)
+	exit_modeler_forecasts = exit_modeler_forecasts.reindex(['Same government type','Change of government type','Dissolution'], axis=0,level=1)
 	exit_modeler_forecasts.columns = custom_forecast_headers
 	exit_modeler_forecasts
-	```
-	                                                         Jul 2020      Aug 2020  ...      Jul 2040      Aug 2040
-	country-leader            Future outcome                                         ...                            
-	Afghanistan: Ashraf Ghani Same government type       8.578190e-01  7.704733e-01  ...  7.762426e-01  7.535799e-01
-	                          Change of government type  1.419008e-01  2.289023e-01  ...  2.237574e-01  2.464201e-01
-	                          Dissolution                2.801606e-04  6.244381e-04  ...  9.282013e-16  9.760585e-16
-	                          No exit                    1.004800e-15  1.110349e-15  ...  9.282013e-16  9.760585e-16
-	Albania: Rama             Same government type       9.911523e-01  9.692952e-01  ...  7.521312e-01  7.186383e-01
-	                                                          ...           ...  ...           ...           ...
-	Zambia: Lungu             No exit                    5.816850e-16  5.342558e-16  ...  9.282013e-16  9.760585e-16
-	Zimbabwe: Mnangagwa       Same government type       9.176592e-01  8.384861e-01  ...  6.396734e-01  7.186383e-01
-	                          Change of government type  8.204236e-02  1.608740e-01  ...  3.603266e-01  2.813617e-01
-	                          Dissolution                2.984380e-04  6.399155e-04  ...  1.069257e-15  1.018499e-15
-	                          No exit                    1.070355e-15  1.137919e-15  ...  1.069257e-15  1.018499e-15
-	```
+
+.. table::
+
+	=========================  =========================  ========  ========  ===  ============  ============
+	country-leader             Future outcome             Aug 2020  Sep 2020  ...  Aug 2040      Sep 2040
+	=========================  =========================  ========  ========  ===  ============  ============
+	Afghanistan: Ashraf Ghani  Same government type       0.805657  0.786539  ...  7.802002e-01  7.515268e-01
+	..                         Change of government type  0.193860  0.212768  ...  2.197998e-01  2.484732e-01
+	..                         Dissolution                0.000483  0.000693  ...  9.222983e-16  9.787801e-16
+	Albania: Rama              Same government type       0.979288  0.971366  ...  7.589446e-01  7.204512e-01
+	..                         Change of government type  0.020524  0.028343  ...  2.410554e-01  2.795488e-01
+	..                         Dissolution                0.000188  0.000291  ...  9.526168e-16  1.016493e-15
+	...                        ...                             ...       ...  ...           ...           ...
+	Zambia: Lungu              Same government type       0.963658  0.971690  ...  7.802002e-01  7.515268e-01
+	..                         Change of government type  0.036084  0.028022  ...  2.197998e-01  2.484732e-01
+	..                         Dissolution                0.000258  0.000288  ...  9.222983e-16  9.787801e-16
+	Zimbabwe: Mnangagwa        Same government type       0.945531  0.860423  ...  6.330001e-01  7.204512e-01
+	..                         Change of government type  0.054162  0.139000  ...  3.669999e-01  2.795488e-01
+	..                         Dissolution                0.000307  0.000577  ...  1.073469e-15  1.016493e-15
+	=========================  =========================  ========  ========  ===  ============  ============
+
 
 ##### Cumulative Incidence Function
 
-It is often of interest to obtain the Cumulative Incidence Function (CIF) defined as :math:`Pr(T_i\leq t,D_i=d|X_{i})` (we omit :math:`\tau` here for conciseness, noting :math:`\tau \eq \T_M` for all forecasts).  The CIF is obtained using the forecasts from `LGBSurvivalModeler` and `LGBExitModeler` using the relationship
+It is often of interest to obtain the Cumulative Incidence Function (CIF). The CIF is the probability of a specific type of terminal event on or before any given time period defined as :math:`Pr(T_i\leq t,D_i=d|X_{i})`. We omit :math:`\tau` here for conciseness.  The CIF is obtained using the forecasts from `LGBSurvivalModeler` and `LGBExitModeler` using the relationship
 
 .. math::
-	Pr(T_i\leq t,D_i=d|X_{i})&=\sum_{l=T_M+1}^{t}Pr(D_i=d|T_i=l,X_{i})Pr(T_i= l|X_{i})\textrm{, where}\\
-	Pr(T_i=l|X_{i})&=Pr(T_i\geq l-1|X_{i})-Pr(T_i\geq l|X_{i}).
+	Pr(T_i\leq t,D_i=d|X_{i})&=\sum_{l=T_{i0}+1}^{t}Pr(D_i=d|T_i=l,X_{i})Pr(T_i= l|X_{i})\textrm{, where}\\
+	Pr(T_i=l|X_{i})&=Pr(T_i\geq l|X_{i})-Pr(T_i\geq l+1|X_{i}).
 
-Note, :math:`Pr(T_i\geq 0 |X_{i})=1`.
+Note, we lose forecasts for the last time period due the differencing in the second line.
 
 .. code-block:: python
 
 	# Obtain Pr(T=l)
-	tmp = concat([DataFrame(ones(survival_modeler_forecasts.shape[0]),index = survival_modeler_forecasts.index),survival_modeler_forecasts.iloc[:,:-1]], axis = 1)
-	Pr_T_eq_l_forecasts = tmp.values - survival_modeler_forecasts
+	Pr_T_eq_l_forecasts = survival_modeler_forecasts.iloc[:,:-1] - survival_modeler_forecasts.iloc[:,1:].values
 	
 	# Obtain the cumulative incidence function 
-	cumulative_incidence_forecasts = exit_modeler_forecasts.copy()
+	cumulative_incidence_forecasts = exit_modeler_forecasts.iloc[:,:-1].copy()
 	cumulative_incidence_forecasts = cumulative_incidence_forecasts * DataFrame(repeat(Pr_T_eq_l_forecasts.values, repeats = mdata['outcome'].nunique(), axis = 0)).values
 	cumulative_incidence_forecasts = cumulative_incidence_forecasts.cumsum(axis = 1)
 	cumulative_incidence_forecasts
-	```
-	                                                         Jul 2020      Aug 2020  ...      Jul 2040      Aug 2040
-	country-leader            Future outcome                                         ...                            
-	Afghanistan: Ashraf Ghani Same government type       1.197189e-02  2.748160e-02  ...  8.427979e-01  8.427992e-01
-	                          Change of government type  1.980397e-03  6.588223e-03  ...  1.549343e-01  1.549348e-01
-	                          Dissolution                3.909978e-06  1.647998e-05  ...  1.994732e-03  1.994732e-03
-	                          No exit                    1.402320e-17  3.637464e-17  ...  9.295344e-16  9.295362e-16
-	Albania: Rama             Same government type       7.641719e-03  1.520875e-02  ...  9.458562e-01  9.458959e-01
-	                                                          ...           ...  ...           ...           ...
-	Zambia: Lungu             No exit                    3.984779e-18  7.635237e-18  ...  6.894410e-16  6.897318e-16
-	Zimbabwe: Mnangagwa       Same government type       6.286339e-03  1.192818e-02  ...  7.680164e-01  7.682909e-01
-	                          Change of government type  5.620235e-04  1.644481e-03  ...  1.741905e-01  1.742979e-01
-	                          Dissolution                2.044422e-06  6.350160e-06  ...  4.357975e-04  4.357975e-04
-	                          No exit                    7.332364e-18  1.498897e-17  ...  1.108881e-15  1.109270e-15
-	
-	[776 rows x 242 columns]
-	```
+
+.. table::
+
+	=========================  =========================  ========  ========  ========  ===  ========  ========  ========
+	country-leader             Future outcome             Aug 2020  Sep 2020  Oct 2020  ...  Jun 2040  Jul 2040  Aug 2040
+	=========================  =========================  ========  ========  ========  ===  ========  ========  ========
+	Afghanistan: Ashraf Ghani  Same government type       0.016218  0.025728  0.035270  ...  0.820455  0.820492  0.820493
+	..                         Change of government type  0.003902  0.006475  0.008134  ...  0.163687  0.163696  0.163697
+	..                         Dissolution                0.000010  0.000018  0.000026  ...  0.001583  0.001583  0.001583
+	Albania: Rama              Same government type       0.007645  0.014763  0.022883  ...  0.938432  0.938476  0.938518
+	..                         Change of government type  0.000160  0.000368  0.000698  ...  0.045388  0.045400  0.045413
+	..                         Dissolution                0.000001  0.000004  0.000007  ...  0.000162  0.000162  0.000162
+	...                        ...                             ...       ...       ...  ...       ...       ...       ...
+	Zambia: Lungu              Same government type       0.006584  0.011123  0.019110  ...  0.914390  0.915102  0.915335
+	..                         Change of government type  0.000247  0.000377  0.000794  ...  0.071899  0.072161  0.072226
+	..                         Dissolution                0.000002  0.000003  0.000006  ...  0.000178  0.000178  0.000178
+	Zimbabwe: Mnangagwa        Same government type       0.006362  0.010205  0.016807  ...  0.764461  0.764745  0.764987
+	..                         Change of government type  0.000364  0.000985  0.001606  ...  0.170554  0.170658  0.170798
+	..                         Dissolution                0.000002  0.000005  0.000009  ...  0.000389  0.000389  0.000389
+	=========================  =========================  ========  ========  ========  ===  ========  ========  ========
+
+.. code-block:: python
 	
 	# Plot cumulative incidence function
 	plotdf = cumulative_incidence_forecasts.loc["USA: Trump",:].transpose()
 	plt.figure()
-	plt.ylim(bottom=0,top=1)
 	plotdf.plot()
+	plt.ylim(bottom=0,top=1)
 
-##### Cause-specific hazard probability
+.. image:: images/CIF_Trump.png
+    :width: 600px
+    :align: center
 
-You can also obtain the cause-specific hazard probability defined as :math:`Pr(T_i=t,D_i=d|T_i\geq t,X_{i})`. The relationship is
+##### Cause-specific hazard
+
+We can also obtain the cause-specific hazard. The cause-specific hazard is the probability of a certain terminal event occuring that time period given that the individual has survived up to the current time period. It is defined as :math:`Pr(T_i=t,D_i=d|T_i\geq t,X_{i})`. The relationship is
 
 .. math::
 
@@ -250,28 +260,43 @@ You can also obtain the cause-specific hazard probability defined as :math:`Pr(T
 
 .. code-block:: python
 
-	# Obtain the cause-specific hazard probability
-	cause_hazard_forecasts = exit_modeler_forecasts.copy()
+	# Obtain the cause-specific hazard probability forecasts
+	cause_hazard_forecasts = exit_modeler_forecasts.iloc[:,:-1].copy()
 	cause_hazard_forecasts = cause_hazard_forecasts * DataFrame(repeat(Pr_T_eq_l_forecasts.values, repeats = mdata['outcome'].nunique(), axis = 0)).values
-	cause_hazard_forecasts = cause_hazard_forecasts / DataFrame(repeat(survival_modeler_forecasts.values, repeats = mdata['outcome'].nunique(), axis = 0)).values
+	cause_hazard_forecasts = cause_hazard_forecasts / DataFrame(repeat(survival_modeler_forecasts.iloc[:,:-1].values, repeats = mdata['outcome'].nunique(), axis = 0)).values
 	cause_hazard_forecasts
-	```
-	                                                         Jul 2020      Aug 2020  ...      Jul 2040      Aug 2040
-	country-leader            Future outcome                                         ...                            
-	Afghanistan: Ashraf Ghani Same government type       1.214134e-02  1.605703e-02  ...  1.323774e-01  5.052472e-03
-	                          Change of government type  2.008427e-03  4.770433e-03  ...  3.815871e-02  1.652154e-03
-	                          Dissolution                3.965319e-06  1.301359e-05  ...  1.582918e-16  6.544107e-18
-	                          No exit                    1.422168e-17  2.314020e-17  ...  1.582918e-16  6.544107e-18
-	Albania: Rama             Same government type       7.701094e-03  7.686298e-03  ...  5.117019e-03  4.839527e-03
-	                                                          ...           ...  ...           ...           ...
-	Zambia: Lungu             No exit                    4.012265e-18  3.701101e-18  ...  1.582918e-16  5.374086e-17
-	Zimbabwe: Mnangagwa       Same government type       6.329700e-03  5.719506e-03  ...  4.332986e-03  4.818201e-03
-	                          Change of government type  5.659002e-04  1.097358e-03  ...  2.440761e-03  1.886425e-03
-	                          Dissolution                2.058524e-06  4.365010e-06  ...  7.242876e-18  6.828658e-18
-	                          No exit                    7.382940e-18  7.762008e-18  ...  7.242876e-18  6.828658e-18
-	
-	[776 rows x 242 columns]
-	```
+
+.. table::
+
+	=========================  =========================  ========  ========  ===  ============  ============
+	country-leader             Future outcome             Aug 2020  Sep 2020  ...  Jul 2040      Aug 2040
+	=========================  =========================  ========  ========  ===  ============  ============
+	Afghanistan: Ashraf Ghani  Same government type       0.016447  0.009846  ...  1.156903e-01  5.196113e-03
+	..                         Change of government type  0.003958  0.002663  ...  3.000035e-02  1.463861e-03
+	..                         Dissolution                0.000010  0.000009  ...  1.312098e-16  6.142482e-18
+	Albania: Rama              Same government type       0.007704  0.007230  ...  5.365918e-03  5.076773e-03
+	..                         Change of government type  0.000161  0.000211  ...  1.391469e-03  1.612481e-03
+	..                         Dissolution                0.000001  0.000002  ...  6.085742e-18  6.372296e-18
+ 	...                        ...                             ...       ...  ...           ...           ...
+   	Zambia: Lungu              Same government type       0.006630  0.004602  ...  1.065741e-01  4.071534e-02
+	..                         Change of government type  0.000248  0.000133  ...  3.911648e-02  1.147042e-02
+	..                         Dissolution                0.000002  0.000001  ...  1.438005e-16  4.813083e-17
+	Zimbabwe: Mnangagwa        Same government type       0.006406  0.003896  ...  4.921725e-03  4.215764e-03
+	..                         Change of government type  0.000367  0.000629  ...  1.806447e-03  2.444209e-03
+	..                         Dissolution                0.000002  0.000003  ...  6.640887e-18  7.149276e-18
+	=========================  =========================  ========  ========  ===  ============  ============
+
+.. code-block:: python
+
+	# Plot cause-specific hazard probabilities
+	plotdf = cause_hazard_forecasts.loc["USA: Trump",:].transpose()
+	plt.figure()
+	plotdf.plot()
+	plt.ylim(bottom=0)
+
+.. image:: images/Hazard_Trump.png
+    :width: 600px
+    :align: center
 
 #### References
 

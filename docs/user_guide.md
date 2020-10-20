@@ -367,7 +367,7 @@ Please cite FIFE as:
 Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2020. Version 1.x.x.
 
 BibTex:
-```
+```bib
 @misc{FIFE,
   author={Institute for Defense Analyses},
   title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
