@@ -15,6 +15,7 @@ from tensorflow.keras.layers import Layer
 
 def surv_likelihood(n_intervals):
     """Create custom Keras loss function for neural network survival model.
+
     Arguments
         n_intervals: the number of survival time intervals
     Returns
@@ -24,6 +25,7 @@ def surv_likelihood(n_intervals):
     def loss(y_true, y_pred):
         """
         Required to have only 2 arguments by Keras.
+
         Arguments
             y_true: Tensor.
               First half of the values is 1 if individual survived that interval, 0 if not.
@@ -33,6 +35,7 @@ def surv_likelihood(n_intervals):
         Returns
             Vector of losses for this minibatch.
         """
+
         cens_uncens = 1.0 + y_true[:, 0:n_intervals] * (
             y_pred - 1.0
         )  # component for all individuals
@@ -69,6 +72,7 @@ def surv_likelihood_rnn(n_intervals):
 
 def make_surv_array(t, f, breaks):
     """Transforms censored survival data into vector format that can be used in Keras.
+
     Arguments
         t: Array of failure/censoring times.
         f: Censoring indicator. 1 if failed, 0 if censored.
@@ -76,6 +80,7 @@ def make_surv_array(t, f, breaks):
     Returns
         Two-dimensional array of survival data, dimensions are number of individuals X number of time intervals*2
     """
+
     n_samples = t.shape[0]
     n_intervals = len(breaks) - 1
     timegap = breaks[1:] - breaks[:-1]
