@@ -1,4 +1,4 @@
-Competing risk forecasts
+Competing Risk Forecasts
 ========================
 
 .. mdinclude:: competing_risks.md
