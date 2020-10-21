@@ -55,7 +55,7 @@ The REIGN data does not natively come with columns indicating the type of termin
 	mdata['country-leader-spell'] = mdata['country-leader'] + array(spells, dtype = 'str')
 	
 	# Create exit status for dissolution, change of government type, and same government type
-	mdata['outcome'] = 'No exit'
+	mdata['outcome'] = "Same government type"
 	
 	for i in mdata['country-leader-spell'].unique():
 	    # Boolean index for the unique country-leader-spell observations
