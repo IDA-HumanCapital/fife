@@ -6,6 +6,10 @@
 
 - Can now use `BY_FEATURE` to produce separate Metrics.csv files for each value of a selected feature
 
+### Fixed
+
+- Number of classes now correctly specified for multiclass outcomes during hyperoptimization
+
 ## 1.3.3 - 2020-09-24
 
 ### Changed
