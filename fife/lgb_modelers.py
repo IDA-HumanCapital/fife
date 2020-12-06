@@ -121,7 +121,11 @@ class LGBModeler(Modeler):
                     raise optuna.exceptions.TrialPruned()
             return validation_loss
 
-        default_params = {"objective": self.objective, "num_iterations": 100}
+        default_params = {
+            "objective": self.objective,
+            "num_iterations": 100,
+            "num_class": self.num_class,
+        }
         if n_trials <= 0:
             return {
                 time_horizon: default_params for time_horizon in range(self.n_intervals)
