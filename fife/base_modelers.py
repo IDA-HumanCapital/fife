@@ -20,7 +20,7 @@ def default_subset_to_all(
 
 
 def compute_metrics_for_binary_outcome(
-    actuals: pd.core.series.Series,
+    actuals: Union[pd.Series, pd.DataFrame],
     predictions: np.ndarray,
     threshold_positive: Union[None, str, float] = 0.5,
     share_positive: Union[None, str, float] = None,
@@ -87,7 +87,7 @@ def compute_metrics_for_binary_outcome(
 def compute_metrics_for_categorical_outcome(
     actuals: pd.DataFrame, predictions: np.ndarray
 ) -> OrderedDict:
-    """Evaluate predicted probabilities against actual binary outcome values.
+    """Evaluate predicted probabilities against actual categorical outcome values.
 
     Args:
         actuals: A DataFrame representing one-hot-encoded actual class membership.
@@ -99,7 +99,10 @@ def compute_metrics_for_categorical_outcome(
         receiver operating characteristic curve (AUROC).
     """
     metrics = OrderedDict()
-    metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
+    if (actuals.all() | ~actuals.any()).any():
+        metrics["AUROC"] = np.nan
+    else:
+        metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
     return metrics
 
 
