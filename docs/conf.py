@@ -9,4 +9,17 @@ release = "1.3.4"
 extensions = ["sphinx.ext.napoleon", "sphinx.ext.autodoc", "m2r"]
 html_theme = "sphinx_rtd_theme"
 source_suffix = [".rst", ".md"]
-autodoc_mock_imports = ["numpy","dask","tensorflow","lifelines","matplotlib","pandas", "seaborn","sklearn","optuna","shap","lightgbm","fife.survival_modeler"]
+autodoc_mock_imports = [
+    "numpy",
+    "dask",
+    "tensorflow",
+    "lifelines",
+    "matplotlib",
+    "pandas",
+    "seaborn",
+    "sklearn",
+    "optuna",
+    "shap",
+    "lightgbm",
+    "fife.survival_modeler",
+]
