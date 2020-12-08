@@ -405,12 +405,13 @@ class SurvivalModeler(Modeler):
         metrics = pd.DataFrame(metrics, index=lead_lengths)
         metrics.index.name = "Lead Length"
         metrics["Other Metrics:"] = ""
-        concordance_index_value = concordance_index(
-            self.data[subset][[self.duration_col, self.max_lead_col]].min(axis=1),
-            np.sum(predictions, axis=-1),
-            self.data[subset][self.event_col],
-        )
-        metrics["C-Index"] = np.where(metrics.index == 1, concordance_index_value, "")
+        if not self.allow_gaps:
+            concordance_index_value = concordance_index(
+                self.data[subset][[self.duration_col, self.max_lead_col]].min(axis=1),
+                np.sum(predictions, axis=-1),
+                self.data[subset][self.event_col],
+            )
+            metrics["C-Index"] = np.where(metrics.index == 1, concordance_index_value, "")
         metrics = metrics.dropna()
         return metrics
 
@@ -536,6 +537,9 @@ class SurvivalModeler(Modeler):
     def label_data(self, time_horizon: int) -> pd.DataFrame:
         """Return data with an indicator for survival for each observation."""
         data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
         ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]]
         ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
         ids["label"] = True
@@ -684,6 +688,8 @@ class StateModeler(Modeler):
         self, data: pd.DataFrame, time_horizon: int
     ) -> pd.DataFrame:
         """Return only observations where the future state is observed."""
+        if self.allow_gaps:
+            return data[data[self.max_lead_col] > time_horizon]
         return data[(data[self.duration_col] > time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.Series:
