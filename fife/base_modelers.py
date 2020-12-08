@@ -148,6 +148,10 @@ class Modeler(ABC):
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast
+        allow_gaps (bool): Whether or not observations should be included for
+            training and evaluation if there is a period without an observation
+            between the period of observations and the last period of the
+            given time horizon.
     """
 
     def __init__(
@@ -161,6 +165,7 @@ class Modeler(ABC):
         validation_col: str = "_validation",
         period_col: str = "_period",
         max_lead_col: str = "_maximum_lead",
+        allow_gaps: bool = False
     ) -> None:
         """Characterize data for modelling.
 
@@ -185,6 +190,10 @@ class Modeler(ABC):
                 periods since the earliest period in the data.
             max_lead_col (str): Name of the column representing the number of
                 observable future periods.
+            allow_gaps (bool): Whether or not observations should be included for
+                training and evaluation if there is a period without an observation
+                between the period of observations and the last period of the
+                given time horizon.
         """
         if (config.get("TIME_IDENTIFIER", "") == "") and data is not None:
             config["TIME_IDENTIFIER"] = data.columns[1]
@@ -207,6 +216,7 @@ class Modeler(ABC):
         self.validation_col = validation_col
         self.period_col = period_col
         self.max_lead_col = max_lead_col
+        self.allow_gaps = allow_gaps
         self.reserved_cols = [
             self.duration_col,
             self.event_col,
@@ -327,6 +337,10 @@ class SurvivalModeler(Modeler):
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
+        allow_gaps (bool): Whether or not observations should be included for
+            training and evaluation if there is a period without an observation
+            between the period of observations and the last period of the
+            given time horizon.
     """
 
     def __init__(self, **kwargs):
@@ -515,15 +529,18 @@ class SurvivalModeler(Modeler):
         self, data: pd.DataFrame, time_horizon: int
     ) -> pd.DataFrame:
         """Return only observations where survival would be observed."""
+        if self.allow_gaps:
+            return data[data[self.max_lead_col] > time_horizon]
         return data[(data[self.duration_col] + data[self.event_col] > time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.DataFrame:
         """Return data with an indicator for survival for each observation."""
         data = self.data.copy()
-        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
-            axis=1
-        )
-        data["label"] = data[self.duration_col] > time_horizon
+        ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]]
+        ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+        ids["label"] = True
+        data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
+        data["label"] = data["label"].fillna(0)
         return data
 
 
