@@ -554,7 +554,7 @@ class SurvivalModeler(Modeler):
             how="left",
             on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
         )
-        data["label"] = data["label"].fillna(0)
+        data["label"] = data["label"].fillna(False)
         return data
 
 
