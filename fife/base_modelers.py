@@ -165,7 +165,7 @@ class Modeler(ABC):
         validation_col: str = "_validation",
         period_col: str = "_period",
         max_lead_col: str = "_maximum_lead",
-        allow_gaps: bool = False
+        allow_gaps: bool = False,
     ) -> None:
         """Characterize data for modelling.
 
@@ -411,7 +411,9 @@ class SurvivalModeler(Modeler):
                 np.sum(predictions, axis=-1),
                 self.data[subset][self.event_col],
             )
-            metrics["C-Index"] = np.where(metrics.index == 1, concordance_index_value, "")
+            metrics["C-Index"] = np.where(
+                metrics.index == 1, concordance_index_value, ""
+            )
         metrics = metrics.dropna()
         return metrics
 
@@ -540,10 +542,18 @@ class SurvivalModeler(Modeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]]
-        ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+        ids = data[
+            [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
+        ]
+        ids[self.config["TIME_IDENTIFIER"]] = (
+            ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+        )
         ids["label"] = True
-        data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
+        data = data.merge(
+            ids,
+            how="left",
+            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+        )
         data["label"] = data["label"].fillna(0)
         return data
 
@@ -698,12 +708,21 @@ class StateModeler(Modeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]], self.state_col]
-        ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
-        ids = ids.rename{self.state_col: "label"}
+        ids = data[
+            [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+            self.state_col,
+        ]
+        ids[self.config["TIME_IDENTIFIER"]] = (
+            ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+        )
+        ids = ids.rename({self.state_col: "label"})
         if self.objective == "multiclass":
             ids["label"] = ids["label"].cat.codes
-        data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
+        data = data.merge(
+            ids,
+            how="left",
+            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+        )
         return data
 
 
@@ -730,10 +749,21 @@ class ExitModeler(StateModeler):
     ) -> pd.DataFrame:
         """Return only observations where exit is observed at the given time horizon."""
         if self.allow_gaps:
-            ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]]
-            ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+            ids = data[
+                [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
+            ]
+            ids[self.config["TIME_IDENTIFIER"]] = (
+                ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+            )
             ids["exit"] = False
-            data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
+            data = data.merge(
+                ids,
+                how="left",
+                on=[
+                    self.config["INDIVIDUAL_IDENTIFIER"],
+                    self.config["TIME_IDENTIFIER"],
+                ],
+            )
             data = data[data["exit"].isna() & (data[self.max_lead_col] > time_horizon)]
             data = data.drop("exit", axis=1)
             return data
