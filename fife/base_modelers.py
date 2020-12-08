@@ -689,7 +689,7 @@ class StateModeler(Modeler):
     ) -> pd.DataFrame:
         """Return only observations where the future state is observed."""
         if self.allow_gaps:
-            return data[data[self.max_lead_col] > time_horizon]
+            return data[data[self.max_lead_col] > time_horizon].dropna("label")
         return data[(data[self.duration_col] > time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.Series:
@@ -698,11 +698,12 @@ class StateModeler(Modeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = data.groupby(self.config["INDIVIDUAL_IDENTIFIER"])[
-            self.state_col
-        ].shift(-time_horizon - 1)
+        ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]], self.state_col]
+        ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+        ids = ids.rename{self.state_col: "label"}
         if self.objective == "multiclass":
-            data["label"] = data["label"].cat.codes
+            ids["label"] = ids["label"].cat.codes
+        data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
         return data
 
 
@@ -728,8 +729,21 @@ class ExitModeler(StateModeler):
         self, data: pd.DataFrame, time_horizon: int
     ) -> pd.DataFrame:
         """Return only observations where exit is observed at the given time horizon."""
+        if self.allow_gaps:
+            ids = data[[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]]
+            ids[self.config["TIME_IDENTIFIER"]] = ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+            ids["exit"] = False
+            data = data.merge(ids, how="left", on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]])
+            data = data[data["exit"].isna() & (data[self.max_lead_col] > time_horizon)]
+            data = data.drop("exit", axis=1)
+            return data
         return data[data[self.event_col] & (data[self.duration_col] == time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.Series:
         """Return data with the exit circumstance for each observation."""
-        return super().label_data(time_horizon - 1)
+        data = self.data.copy()
+        data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
+            axis=1
+        )
+        data["label"] = data[self.exit_col]
+        return data
