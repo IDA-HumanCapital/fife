@@ -360,6 +360,7 @@ class PanelDataProcessor(DataProcessor):
         self.data["_duration"] = spells.groupby(
             [self.data[self.config["INDIVIDUAL_IDENTIFIER"]], spells]
         ).cumcount(ascending=False)
+        self.data["_spells"] = spells
         self.data["_event_observed"] = (
             self.data["_duration"] < self.data["_maximum_lead"]
         )

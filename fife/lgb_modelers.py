@@ -41,6 +41,8 @@ class LGBModeler(Modeler):
             periods since the earliest period in the data.
         max_lead_col (str): Name of the column representing the number of
             observable future periods.
+        spell_col (str): Name of the column representing the number of
+            previous spells of consecutive observations of the same individual.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.

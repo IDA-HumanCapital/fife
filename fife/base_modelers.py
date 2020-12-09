@@ -165,6 +165,7 @@ class Modeler(ABC):
         validation_col: str = "_validation",
         period_col: str = "_period",
         max_lead_col: str = "_maximum_lead",
+        spell_col: str = "_spell",
         allow_gaps: bool = False,
     ) -> None:
         """Characterize data for modelling.
@@ -190,6 +191,8 @@ class Modeler(ABC):
                 periods since the earliest period in the data.
             max_lead_col (str): Name of the column representing the number of
                 observable future periods.
+            spell_col (str): Name of the column representing the number of
+                previous spells of consecutive observations of the same individual.
             allow_gaps (bool): Whether or not observations should be included for
                 training and evaluation if there is a period without an observation
                 between the period of observations and the last period of the
@@ -216,6 +219,7 @@ class Modeler(ABC):
         self.validation_col = validation_col
         self.period_col = period_col
         self.max_lead_col = max_lead_col
+        self.spell_col = spell_col
         self.allow_gaps = allow_gaps
         self.reserved_cols = [
             self.duration_col,
@@ -224,7 +228,8 @@ class Modeler(ABC):
             self.test_col,
             self.validation_col,
             self.period_col,
-            self.max_lead_col,
+            self.max_lead_col
+            self.spell_col
         ]
         if self.config:
             self.reserved_cols.append(self.config["INDIVIDUAL_IDENTIFIER"])
@@ -334,6 +339,8 @@ class SurvivalModeler(Modeler):
             periods since the earliest period in the data.
         max_lead_col (str): Name of the column representing the number of
             observable future periods.
+        spell_col (str): Name of the column representing the number of
+            previous spells of consecutive observations of the same individual.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
@@ -580,6 +587,8 @@ class StateModeler(Modeler):
             periods since the earliest period in the data.
         max_lead_col (str): Name of the column representing the number of
             observable future periods.
+        spell_col (str): Name of the column representing the number of
+            previous spells of consecutive observations of the same individual.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
