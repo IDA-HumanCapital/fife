@@ -228,7 +228,7 @@ class Modeler(ABC):
             self.test_col,
             self.validation_col,
             self.period_col,
-            self.max_lead_col
+            self.max_lead_col,
             self.spell_col
         ]
         if self.config:
