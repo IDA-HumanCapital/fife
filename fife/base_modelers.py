@@ -388,7 +388,7 @@ class SurvivalModeler(Modeler):
                 self.data[self.period_col]
                 == self.data[self.data[self.test_col]][self.period_col].min()
             )
-        predictions = self.predict(subset=subset, cumulative=True)
+        predictions = self.predict(subset=subset, cumulative=(not self.allow_gaps))
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
@@ -423,7 +423,7 @@ class SurvivalModeler(Modeler):
             str(i + 1) + "-period Survival Probability" for i in range(self.n_intervals)
         ]
         return pd.DataFrame(
-            self.predict(subset=self.data[self.predict_col], cumulative=True),
+            self.predict(subset=self.data[self.predict_col], cumulative=(not self.allow_gaps)),
             columns=columns,
             index=(
                 self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
@@ -451,7 +451,7 @@ class SurvivalModeler(Modeler):
             survived for each combination of lead length and group.
         """
         subset = default_subset_to_all(subset, self.data)
-        predictions = self.predict(subset=subset, cumulative=True)
+        predictions = self.predict(subset=subset, cumulative=(not self.allow_gaps))
         actual_durations = self.data[subset][
             [self.duration_col, self.max_lead_col]
         ].min(axis=1)
