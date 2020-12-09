@@ -699,7 +699,7 @@ class StateModeler(Modeler):
     ) -> pd.DataFrame:
         """Return only observations where the future state is observed."""
         if self.allow_gaps:
-            return data[data[self.max_lead_col] > time_horizon].dropna("label")
+            return data[data[self.max_lead_col] > time_horizon].dropna(subset=["label"])
         return data[(data[self.duration_col] > time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.Series:
