@@ -551,19 +551,22 @@ class SurvivalModeler(Modeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        ids = data[
-            [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
-        ]
-        ids[self.config["TIME_IDENTIFIER"]] = (
-            ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
-        )
-        ids["label"] = True
-        data = data.merge(
-            ids,
-            how="left",
-            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
-        )
-        data["label"] = data["label"].fillna(False)
+        if self.allow_gaps:
+            ids = data[
+                [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]]
+            ]
+            ids[self.config["TIME_IDENTIFIER"]] = (
+                ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
+            )
+            ids["label"] = True
+            data = data.merge(
+                ids,
+                how="left",
+                on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+            )
+            data["label"] = data["label"].fillna(False)
+        else:
+            data["label"] = data[self.duration_col] > time_horizon
         return data
 
 
@@ -780,8 +783,9 @@ class ExitModeler(StateModeler):
             )
             data = data[data["exit"].isna() & (data[self.max_lead_col] > time_horizon)]
             data = data.drop("exit", axis=1)
-            return data
-        return data[data[self.event_col] & (data[self.duration_col] == time_horizon)]
+        else:
+            data = [data[self.event_col] & (data[self.duration_col] == time_horizon)]
+        return data
 
     def label_data(self, time_horizon: int) -> pd.Series:
         """Return data with the exit circumstance for each observation."""
@@ -789,5 +793,7 @@ class ExitModeler(StateModeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = data.groupby([self.config["INDIVIDUAL_IDENTIFIER"], self.spell_col])[self.exit_col].transform("last")
+        data["label"] = data.groupby(
+            [self.config["INDIVIDUAL_IDENTIFIER"], self.spell_col]
+        )[self.exit_col].transform("last")
         return data

@@ -4,7 +4,7 @@ from inspect import getfullargspec
 from typing import List, Union
 from warnings import warn
 
-from fife.base_modelers import default_subset_to_all, Modeler
+from fife.base_modelers import default_subset_to_all, Modeler, SurvivalModeler
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
 import optuna
@@ -563,7 +563,23 @@ class TFModeler(Modeler):
         return predictions
 
 
-class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
+class TFSurvivalModeler(TFModeler, SurvivalModeler):
+    """Use TensorFlow to forecast probabilities of being observed in future periods."""
+
+    pass
+
+
+class FeedForwardNeuralNetworkModeler(TFSurvivalModeler):
+    """Deprecated alias for TFSurvivalModeler"""
+
+    warn(
+        "The name 'FeedForwardNeuralNetworkModeler' is deprecated. "
+        "Please use 'TFSurvivalModeler' instead.",
+        DeprecationWarning,
+    )
+
+
+class ProportionalHazardsModeler(TFSurvivalModeler):
     """Train a proportional hazards model with embeddings for categorical features using Keras."""
 
     def construct_embedding_network(self) -> keras.Model:
@@ -622,22 +638,6 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
             "Warning: ProportionalHazardsModeler does not have hyperparameters to optimize."
         )
         return None
-
-
-class TFSurvivalModeler(TFModeler, SurvivalModeler):
-    """Use TensorFlow to forecast probabilities of being observed in future periods."""
-
-    pass
-
-
-class FeedForwardNeuralNetworkModeler(TFSurvivalModeler):
-    """Deprecated alias for TFSurvivalModeler"""
-
-    warn(
-        "The name 'FeedForwardNeuralNetworkModeler' is deprecated. "
-        "Please use 'TFSurvivalModeler' instead.",
-        DeprecationWarning,
-    )
 
 
 class ProportionalHazardsEncodingModeler(TFSurvivalModeler):
