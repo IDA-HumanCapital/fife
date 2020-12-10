@@ -13,5 +13,4 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU Affero General Public License for more details
 (a copy is included in the LICENSE file).
 """
-
-__version__ = "1.3.4"
+__version__ = open("VERSION.txt").read()
