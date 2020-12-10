@@ -229,7 +229,7 @@ class Modeler(ABC):
             self.validation_col,
             self.period_col,
             self.max_lead_col,
-            self.spell_col
+            self.spell_col,
         ]
         if self.config:
             self.reserved_cols.append(self.config["INDIVIDUAL_IDENTIFIER"])
@@ -430,7 +430,9 @@ class SurvivalModeler(Modeler):
             str(i + 1) + "-period Survival Probability" for i in range(self.n_intervals)
         ]
         return pd.DataFrame(
-            self.predict(subset=self.data[self.predict_col], cumulative=(not self.allow_gaps)),
+            self.predict(
+                subset=self.data[self.predict_col], cumulative=(not self.allow_gaps)
+            ),
             columns=columns,
             index=(
                 self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
@@ -718,7 +720,11 @@ class StateModeler(Modeler):
             axis=1
         )
         ids = data[
-            [self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"], self.state_col]
+            [
+                self.config["INDIVIDUAL_IDENTIFIER"],
+                self.config["TIME_IDENTIFIER"],
+                self.state_col,
+            ]
         ]
         ids[self.config["TIME_IDENTIFIER"]] = (
             ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
@@ -783,5 +789,5 @@ class ExitModeler(StateModeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
-        data["label"] = data[self.exit_col]
+        data["label"] = data.groupby([self.config["INDIVIDUAL_IDENTIFIER"], self.spell_col])[self.exit_col].transform("last")
         return data
