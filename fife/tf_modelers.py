@@ -4,7 +4,7 @@ from inspect import getfullargspec
 from typing import List, Union
 from warnings import warn
 
-from fife import base_modelers
+from fife.base_modelers import default_subset_to_all, Modeler
 from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
 import optuna
@@ -103,8 +103,8 @@ class CumulativeProduct(Layer):
         return K.cumprod(inputs, axis=1)
 
 
-class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
-    """Train a neural network model using Keras.
+class TFModeler(Modeler):
+    """Train a neural network model using Keras with TensorFlow backend.
 
     Attributes:
         config (dict): User-provided configuration parameters.
@@ -372,7 +372,7 @@ class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
         """List each categorical feature for input to own embedding layer."""
         if data is None:
             data = self.data
-        subset = base_modelers.default_subset_to_all(subset, data)
+        subset = default_subset_to_all(subset, data)
         return split_categorical_features(
             data[subset], self.categorical_features, self.numeric_features
         )
@@ -508,7 +508,7 @@ class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
         )
         return None
         model = make_predictions_marginal(self.model)
-        subset = base_modelers.default_subset_to_all(subset, self.data)
+        subset = default_subset_to_all(subset, self.data)
         shap_subset = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         )
@@ -550,7 +550,7 @@ class FeedforwardNeuralNetworkModeler(base_modelers.SurvivalModeler):
             A numpy array of predictions by observation, lead length, and
             iteration.
         """
-        subset = base_modelers.default_subset_to_all(subset, self.data)
+        subset = default_subset_to_all(subset, self.data)
         model_inputs = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
         ) + [1.0]
@@ -624,7 +624,23 @@ class ProportionalHazardsModeler(FeedforwardNeuralNetworkModeler):
         return None
 
 
-class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
+class TFSurvivalModeler(TFModeler, SurvivalModeler):
+    """Use TensorFlow to forecast probabilities of being observed in future periods."""
+
+    pass
+
+
+class FeedForwardNeuralNetworkModeler(TFSurvivalModeler):
+    """Deprecated alias for TFSurvivalModeler"""
+
+    warn(
+        "The name 'FeedForwardNeuralNetworkModeler' is deprecated. "
+        "Please use 'TFSurvivalModeler' instead.",
+        DeprecationWarning,
+    )
+
+
+class ProportionalHazardsEncodingModeler(TFSurvivalModeler):
     """Train a proportional hazards model with binary-encoded categorical features using Keras."""
 
     def build_model(self, n_intervals: Union[None, int] = None) -> None:
@@ -652,7 +668,7 @@ class ProportionalHazardsEncodingModeler(FeedforwardNeuralNetworkModeler):
         """Keep only the features and observations desired for model input."""
         if data is None:
             data = self.data
-        subset = base_modelers.default_subset_to_all(subset, data)
+        subset = default_subset_to_all(subset, data)
         formatted_data = data.drop(self.reserved_cols, axis=1)[subset]
         for col in self.categorical_features:
             formatted_data[col] = formatted_data[col].cat.codes
