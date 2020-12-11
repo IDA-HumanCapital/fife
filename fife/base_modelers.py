@@ -562,7 +562,10 @@ class SurvivalModeler(Modeler):
             data = data.merge(
                 ids,
                 how="left",
-                on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+                on=[
+                    self.config["INDIVIDUAL_IDENTIFIER"],
+                    self.config["TIME_IDENTIFIER"],
+                ],
             )
             data["label"] = data["label"].fillna(False)
         else:

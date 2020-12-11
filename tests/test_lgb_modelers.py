@@ -179,6 +179,7 @@ def test_gbtm_predict(setup_config, setup_dataframe):
         "_event_observed",
         "_period",
         "_maximum_lead",
+        "_spell",
         "SSNSCR",
     ]
     cat_features_list = setup_dataframe.select_dtypes(

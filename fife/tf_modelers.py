@@ -569,14 +569,17 @@ class TFSurvivalModeler(TFModeler, SurvivalModeler):
     pass
 
 
-class FeedForwardNeuralNetworkModeler(TFSurvivalModeler):
+class FeedforwardNeuralNetworkModeler(TFSurvivalModeler):
     """Deprecated alias for TFSurvivalModeler"""
 
     warn(
-        "The name 'FeedForwardNeuralNetworkModeler' is deprecated. "
+        "The name 'FeedforwardNeuralNetworkModeler' is deprecated. "
         "Please use 'TFSurvivalModeler' instead.",
         DeprecationWarning,
     )
+
+
+FeedForwardNeuralNetworkModeler = FeedforwardNeuralNetworkModeler
 
 
 class ProportionalHazardsModeler(TFSurvivalModeler):

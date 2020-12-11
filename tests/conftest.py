@@ -249,6 +249,9 @@ def setup_dataframe():
         < data["FILE_DATE"].max()
     )
 
+    # Add spell column
+    data["_spell"] = 0
+
     return data
 
 
@@ -362,6 +365,9 @@ def setup_ffnnm_dataframe():
         data.groupby(data["SSNSCR"])["FILE_DATE"].transform("max")
         < data["FILE_DATE"].max()
     )
+
+    # Add spell column
+    data["_spell"] = 0
 
     # Factorize categorical features
     data["nonmixed_categorical_var"], _ = pd.factorize(
