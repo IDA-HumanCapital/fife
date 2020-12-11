@@ -41,11 +41,17 @@ class LGBModeler(Modeler):
             periods since the earliest period in the data.
         max_lead_col (str): Name of the column representing the number of
             observable future periods.
+        spell_col (str): Name of the column representing the number of
+            previous spells of consecutive observations of the same individual.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
         model (list): A trained LightGBM model (lgb.basic.Booster) for each
             lead length.
+        objective (str): The LightGBM model objective appropriate for the
+            outcome type, which is "binary" for binary classification.
+        num_class (int): The num_class LightGBM parameter, which is 1 for
+            binary classification.
     """
 
     def hyperoptimize(

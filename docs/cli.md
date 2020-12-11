@@ -46,6 +46,7 @@ Input data may not contain any of the following feature names:
 -	`_maximum_lead`
 -	`_period`
 -	`_predict_obs`
+-   `_spell`
 -	`_test`
 -	`_validation`
 

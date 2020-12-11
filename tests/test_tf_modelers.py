@@ -20,12 +20,12 @@ def test_binary_encode_feature(setup_config, setup_dataframe):
         )
         if col_is_categorical:
             binary_cols = tf_modelers.binary_encode_feature(df_numeric_vars[col])
-            if len(binary_cols.columns) != int(np.log2(df_numeric_vars[col].max()) + 1):
+            if len(binary_cols.columns) != int(np.log2(max(df_numeric_vars[col].max(), 1)) + 1):
                 errors_list.append(
                     f"Incorrect number of encoded columns returned for {col}."
                 )
             binary_cols["sum"] = binary_cols.sum(axis=1)
-            if binary_cols["sum"].max() > int(np.log2(df_numeric_vars[col].max()) + 1):
+            if binary_cols["sum"].max() > int(np.log2(max(df_numeric_vars[col].max(), 1)) + 1):
                 errors_list.append(f"Returned columns encoded incorrectly for {col}.")
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
