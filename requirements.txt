@@ -26,9 +26,9 @@ colorlog==4.6.2
 cryptography @ file:///C:/ci/cryptography_1601046913206/work
 cycler==0.10.0
 cytoolz==0.11.0
-dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1602029610262/work
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1607657054678/work
 decorator==4.4.2
-fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.3.4-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.0-py3-none-any.whl
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1601995530934/work
@@ -48,7 +48,7 @@ Keras==2.4.3
 Keras-Applications @ file:///tmp/build/80754af9/keras-applications_1594366238411/work
 Keras-Preprocessing==1.1.0
 kiwisolver @ file:///D:/bld/kiwisolver_1604322456418/work
-lifelines==0.25.6
+lifelines==0.25.7
 lightgbm==3.1.1
 llvmlite==0.35.0
 Mako==1.1.3
@@ -112,7 +112,7 @@ tensorflow==2.1.0
 tensorflow-estimator==2.1.0
 termcolor==1.1.0
 threadpoolctl @ file:///tmp/tmp79xdzxkt/threadpoolctl-2.1.0-py3-none-any.whl
-tifffile @ file:///home/conda/feedstock_root/build_artifacts/tifffile_1607119082696/work
+tifffile @ file:///home/conda/feedstock_root/build_artifacts/tifffile_1607552325200/work
 toml==0.10.2
 toolz @ file:///home/conda/feedstock_root/build_artifacts/toolz_1600973991856/work
 tornado @ file:///D:/bld/tornado_1604105307492/work
