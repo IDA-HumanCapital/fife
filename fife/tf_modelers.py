@@ -39,7 +39,7 @@ def binary_encode_feature(col: pd.core.series.Series) -> pd.core.frame.DataFrame
         A pandas DataFrame of Boolean values, each combination of values unique
         to each unique value in the given Series.
     """
-    bits = int(np.log2(np.max(col)) + 1)
+    bits = int(max(np.log2(np.max(col)), 0) + 1)
     binary_columns = pd.DataFrame()
     for i in reversed(range(bits)):
         digit_value = 2 ** i
