@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="fife",
-    version="1.3.4",
+    version="1.4.0",
     description=(
         "Finite-Interval Forecasting Engine: Machine learning models "
         "for discrete-time survival analysis and multivariate time series "

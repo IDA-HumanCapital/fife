@@ -1,3 +1,15 @@
+## 1.4.0 - 2020-12-11
+
+### Added
+
+<u>Modelers</u>
+
+- Can now specify `allow_gaps=True` to remove the restriction that individuals be observed in every future period over the given time horizon. For example, for a time horizon of 2, the default behavior of the StateModeler is to train and evaluate only on observations where the same individual was observed in the next 2 periods. `allow_gaps=True` will instead only require that the same individual be observed 2 periods into the future, thereby allowing a gap where the individual is not observed 1 period into the future.
+
+<u>PanelDataProcessor</u>
+
+- Now produces "_spell" column, which reports the number of gaps in observing the given individual up to the observed time period.
+
 ## 1.3.4 - 2020-12-09
 
 ### Added
