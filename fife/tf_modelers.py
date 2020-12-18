@@ -142,7 +142,9 @@ class TFModeler(Modeler):
             y_train: np.array,
             x_valid: List[np.array],
             y_valid: np.array,
-            max_epochs: int,
+            train_weights: np.array,
+            valid_weights: np.array,
+            max_epochs: int
         ) -> Union[None, dict]:
             """Compute out-of-sample performance for a parameter set."""
             params = {}
@@ -184,8 +186,8 @@ class TFModeler(Modeler):
                 loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
             )
             for step in range(params["PRE_FREEZE_EPOCHS"]):
-                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1)
-                validation_loss = model.evaluate(x_valid, y_valid)
+                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1, sample_weight=train_weights)
+                validation_loss = model.evaluate(x_valid, y_valid, sample_weight=valid_weights)
                 trial.report(validation_loss, step)
                 if trial.should_prune():
                     raise optuna.exceptions.TrialPruned()
@@ -194,8 +196,8 @@ class TFModeler(Modeler):
                 loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
             )
             for step in range(params["POST_FREEZE_EPOCHS"]):
-                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1)
-                validation_loss = model.evaluate(x_valid, y_valid)
+                model.fit(x_train, y_train, batch_size=params["BATCH_SIZE"], epochs=1, sample_weight=train_weights)
+                validation_loss = model.evaluate(x_valid, y_valid, sample_weight=valid_weights)
                 trial.report(validation_loss, step + max_pre_freeze_epochs)
                 if trial.should_prune():
                     raise optuna.exceptions.TrialPruned()
@@ -209,24 +211,28 @@ class TFModeler(Modeler):
         params = {}
         if subset is None:
             subset = ~self.data[self.test_col] & ~self.data[self.predict_col]
+        train_subset = subset & ~self.data[self.validation_col]
+        valid_subset = subset & self.data[self.validation_col]
         x_train = self.format_input_data(
-            subset=subset & ~self.data[self.validation_col]
+            subset=train_subset
         )
-        x_valid = self.format_input_data(subset=subset & self.data[self.validation_col])
+        x_valid = self.format_input_data(subset=valid_subset)
         y_surv = make_surv_array(
             self.data[[self.duration_col, self.max_lead_col]].min(axis=1),
             self.data[self.event_col],
             np.arange(self.n_intervals + 1),
         )
-        y_train = y_surv[[subset & ~self.data[self.validation_col]]]
-        y_valid = y_surv[[subset & self.data[self.validation_col]]]
+        y_train = y_surv[train_subset]
+        y_valid = y_surv[valid_subset]
+        train_weights = data[train_subset][self.weight_col] if self.weight_col else None
+        valid_weights = data[valid_subset][self.weight_col] if self.weight_col else None
         study = optuna.create_study(
             pruner=optuna.pruners.MedianPruner(),
             sampler=optuna.samplers.TPESampler(seed=self.config.get("SEED", 9999)),
         )
         study.optimize(
             lambda trial: evaluate_params(
-                trial, x_train, y_train, x_valid, y_valid, max_epochs
+                trial, x_train, y_train, x_valid, y_valid, train_weights, valid_weights, max_epochs
             ),
             n_trials=n_trials,
         )
@@ -251,6 +257,7 @@ class TFModeler(Modeler):
             y_train,
             batch_size=default_params["BATCH_SIZE"],
             epochs=default_params["PRE_FREEZE_EPOCHS"],
+            sample_weight=train_weights
         )
         default_model = freeze_embedding_layers(default_model)
         default_model.compile(
@@ -261,8 +268,9 @@ class TFModeler(Modeler):
             y_train,
             batch_size=default_params["BATCH_SIZE"],
             epochs=default_params["POST_FREEZE_EPOCHS"],
+            sample_weight=train_weights
         )
-        default_validation_loss = default_model.evaluate(x_valid, y_valid)
+        default_validation_loss = default_model.evaluate(x_valid, y_valid, sample_weight=valid_weights)
         if default_validation_loss <= study.best_value:
             params = default_params
         return params
@@ -409,6 +417,8 @@ class TFModeler(Modeler):
             self.data[self.event_col],
             np.arange(self.n_intervals + 1),
         )
+        train_weights = data[train_subset][self.weight_col] if self.weight_col else None
+        valid_weights = data[valid_subset][self.weight_col] if self.weight_col else None
         model = Model(self.model.inputs, self.model.outputs)
         model.compile(
             loss=surv_likelihood(self.n_intervals), optimizer=Adam(amsgrad=True)
@@ -432,9 +442,10 @@ class TFModeler(Modeler):
                 train_subset.sum(),
             ),
             epochs=params.get("MAX_EPOCHS", self.config.get("MAX_EPOCHS", 256)),
-            validation_data=(x_valid, y_surv[valid_subset]),
+            validation_data=(x_valid, y_surv[valid_subset], valid_weights),
             verbose=2,
             callbacks=callbacks,
+            sample_weight=train_weights
         )
         return model
 
