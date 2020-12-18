@@ -96,13 +96,16 @@ def compute_metrics_for_categorical_outcome(
 
     Returns:
         An ordered dictionary containing a key-value pair for area under the
-        receiver operating characteristic curve (AUROC).
+        receiver operating characteristic curve (AUROC). Classes with no positive values are not included in AUROC calculation.
     """
     metrics = OrderedDict()
-    if (actuals.all() | ~actuals.any()).any():
+    if actuals.all().any():
         metrics["AUROC"] = np.nan
     else:
-        metrics["AUROC"] = roc_auc_score(actuals, predictions, multi_class="ovr")
+        positive_cols = actuals.any()
+        metrics["AUROC"] = roc_auc_score(actuals.loc[:, positive_cols],
+                                         predictions[:, positive_cols],
+                                         multi_class="ovr")
     return metrics
 
 

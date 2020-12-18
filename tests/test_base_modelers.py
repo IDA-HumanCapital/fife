@@ -40,6 +40,34 @@ def test_compute_metrics_for_binary_outcome(fabricate_forecasts):
         errors_list.append(f"Condition 7 failed for False Positives.")
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
+def test_compute_metrics_for_categorical_outcome():
+    """Test that FIFE produces correct example AUROC and confusion matrices."""
+    errors_list = []
+    metrics = {}
+    actuals = pd.DataFrame([[False,  True, False],
+                            [False, False,  True],
+                            [False, False,  True],
+                            [False,  True, False]])
+    predictions = np.array([[0.1,   0.7,   0.2],
+                            [0.01,  0.6,   0.39],
+                            [0.01,  0.4,   0.59],
+                            [0.0,   0.6,   0.4]])
+    metrics["one negative class"] = base_modelers.compute_metrics_for_binary_outcome(
+        actuals, predictions
+    )
+    actuals = pd.DataFrame([[False,  True, False],
+                            [False,  True, False],
+                            [False,  True, False],
+                            [False,  True, False]])
+    metrics["one positive class"] = base_modelers.compute_metrics_for_binary_outcome(
+        fabricate_forecasts["AUROC=0"][0], fabricate_forecasts["AUROC=0"][1]
+    )
+    if not isnumber(metrics["one negative class"]["AUROC"]):
+        errors_list.append(f"Condition 1 failed for AUROC=1.")
+    if not np.isnan(metrics["AUROC=0"]["AUROC"]):
+        errors_list.append(f"Returns an AUROC of {metrics['AUROC=0']['AUROC']} instead of np.nan if all actual outcome values are identical.")
+    assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
+
 
 SEED = 9999
 np.random.seed(SEED)
