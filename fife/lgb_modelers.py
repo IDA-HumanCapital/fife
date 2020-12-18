@@ -43,6 +43,7 @@ class LGBModeler(Modeler):
             observable future periods.
         spell_col (str): Name of the column representing the number of
             previous spells of consecutive observations of the same individual.
+        weight_col (str): Name of the column representing observation weights.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
@@ -171,12 +172,18 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~validation_subset]["label"],
+                weight=data[~validation_subset][self.weight_col]
+                if self.weight_col
+                else None,
             )
             validation_data = train_data.create_valid(
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[validation_subset]["label"],
+                weight=data[validation_subset][self.weight_col]
+                if self.weight_col
+                else None,
             )
             study = optuna.create_study(
                 pruner=optuna.pruners.MedianPruner(),
@@ -274,12 +281,18 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~data[self.validation_col]]["label"],
+                weight=data[~data[self.validation_col]][self.weight_col]
+                if self.weight_col
+                else None,
             )
             validation_data = train_data.create_valid(
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[data[self.validation_col]]["label"],
+                weight=data[data[self.validation_col]][self.weight_col]
+                if self.weight_col
+                else None,
             )
             model = lgb.train(
                 params[time_horizon],
@@ -294,6 +307,7 @@ class LGBModeler(Modeler):
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
                 label=data["label"],
+                weight=data[self.weight_col] if self.weight_col else None,
             )
             model = lgb.train(
                 params[time_horizon],

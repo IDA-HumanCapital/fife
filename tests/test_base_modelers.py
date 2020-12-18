@@ -60,6 +60,11 @@ def test_compute_metrics_for_categorical_outcome():
     metrics[
         "one negative class"
     ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
+    metrics[
+        "positive weights for correct only"
+    ] = base_modelers.compute_metrics_for_categorical_outcome(
+        actuals, predictions, weights=np.array([1, 0, 1, 1])
+    )
     actuals = pd.DataFrame(
         [
             [False, True, False],
@@ -72,7 +77,13 @@ def test_compute_metrics_for_categorical_outcome():
         "one positive class"
     ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
     if not isinstance(metrics["one negative class"]["AUROC"], float):
-        errors_list.append(f"Condition 1 failed for AUROC=1.")
+        errors_list.append(
+            f"AUROC not a float with one of three classes entirely negative."
+        )
+    if metrics["positive weights for correct only"]["AUROC"] != 1:
+        errors_list.append(
+            f"AUROC not equal to 1 with only correct classifications having positive weight."
+        )
     if not np.isnan(metrics["one positive class"]["AUROC"]):
         errors_list.append(
             f"Returns an AUROC of {metrics['one positive class']['AUROC']} instead of np.nan if all actual outcome values are identical."
