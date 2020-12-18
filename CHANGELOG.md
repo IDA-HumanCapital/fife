@@ -1,3 +1,9 @@
+## 1.4.1 - 2020-12-18
+
+### Fixed
+
+- Area under the receiver operating characteristic curve (AUROC) now computed for multiclass if no class is entirely positive. Classes with no positive values are excluded.
+
 ## 1.4.0 - 2020-12-11
 
 ### Added
