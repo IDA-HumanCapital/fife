@@ -57,9 +57,9 @@ def test_compute_metrics_for_categorical_outcome():
     predictions = np.array(
         [[0.1, 0.7, 0.2], [0.01, 0.6, 0.39], [0.01, 0.4, 0.59], [0.0, 0.6, 0.4]]
     )
-    metrics["one negative class"] = base_modelers.compute_metrics_for_categorical_outcome(
-        actuals, predictions
-    )
+    metrics[
+        "one negative class"
+    ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
     actuals = pd.DataFrame(
         [
             [False, True, False],
@@ -68,9 +68,9 @@ def test_compute_metrics_for_categorical_outcome():
             [False, True, False],
         ]
     )
-    metrics["one positive class"] = base_modelers.compute_metrics_for_categorical_outcome(
-        actuals, predictions
-    )
+    metrics[
+        "one positive class"
+    ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
     if not isinstance(metrics["one negative class"]["AUROC"], float):
         errors_list.append(f"Condition 1 failed for AUROC=1.")
     if not np.isnan(metrics["one positive class"]["AUROC"]):
