@@ -362,6 +362,7 @@ class SurvivalModeler(Modeler):
             observable future periods.
         spell_col (str): Name of the column representing the number of
             previous spells of consecutive observations of the same individual.
+        weight_col (str): Name of the column representing observation weights.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
@@ -618,6 +619,7 @@ class StateModeler(Modeler):
             observable future periods.
         spell_col (str): Name of the column representing the number of
             previous spells of consecutive observations of the same individual.
+        weight_col (str): Name of the column representing observation weights.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast.
