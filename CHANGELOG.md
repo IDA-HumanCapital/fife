@@ -1,5 +1,11 @@
 ## 1.4.1 - 2020-12-18
 
+### Added
+
+<u>Modelers</u>
+
+- Can now specify observation weights through the argument `weight_col`. The specified column will not be used as a feature, but will be used to weight observations during training and evaluation.
+
 ### Fixed
 
 - Area under the receiver operating characteristic curve (AUROC) now computed for multiclass if no class is entirely positive. Classes with no positive values are excluded.
