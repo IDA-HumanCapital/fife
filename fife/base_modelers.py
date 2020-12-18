@@ -696,7 +696,7 @@ class StateModeler(Modeler):
                     compute_metrics_for_categorical_outcome(
                         actuals,
                         predictions[:, :, lead_length - 1].T[actuals.index],
-                        weights=weights
+                        weights=weights,
                     )
                 )
             else:
@@ -704,7 +704,7 @@ class StateModeler(Modeler):
                     compute_metrics_for_numeric_outcome(
                         actuals,
                         predictions[:, lead_length - 1][actuals.index],
-                        weights=weights
+                        weights=weights,
                     )
                 )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
