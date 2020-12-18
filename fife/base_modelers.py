@@ -103,9 +103,11 @@ def compute_metrics_for_categorical_outcome(
         metrics["AUROC"] = np.nan
     else:
         positive_cols = actuals.any()
-        metrics["AUROC"] = roc_auc_score(actuals.loc[:, positive_cols],
-                                         predictions[:, positive_cols],
-                                         multi_class="ovr")
+        metrics["AUROC"] = roc_auc_score(
+            actuals.loc[:, positive_cols],
+            predictions[:, positive_cols],
+            multi_class="ovr",
+        )
     return metrics
 
 
