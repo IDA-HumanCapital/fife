@@ -172,14 +172,18 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~validation_subset]["label"],
-                weight=data[~validation_subset][self.weight_col] if self.weight_col else None
+                weight=data[~validation_subset][self.weight_col]
+                if self.weight_col
+                else None,
             )
             validation_data = train_data.create_valid(
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[validation_subset]["label"],
-                weight=data[validation_subset][self.weight_col] if self.weight_col else None
+                weight=data[validation_subset][self.weight_col]
+                if self.weight_col
+                else None,
             )
             study = optuna.create_study(
                 pruner=optuna.pruners.MedianPruner(),
@@ -277,14 +281,18 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~data[self.validation_col]]["label"],
-                weight=data[~data[self.validation_col]][self.weight_col] if self.weight_col else None
+                weight=data[~data[self.validation_col]][self.weight_col]
+                if self.weight_col
+                else None,
             )
             validation_data = train_data.create_valid(
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[data[self.validation_col]]["label"],
-                weight=data[data[self.validation_col]][self.weight_col] if self.weight_col else None
+                weight=data[data[self.validation_col]][self.weight_col]
+                if self.weight_col
+                else None,
             )
             model = lgb.train(
                 params[time_horizon],
@@ -299,7 +307,7 @@ class LGBModeler(Modeler):
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
                 label=data["label"],
-                weight=data[self.weight_col] if self.weight_col else None
+                weight=data[self.weight_col] if self.weight_col else None,
             )
             model = lgb.train(
                 params[time_horizon],

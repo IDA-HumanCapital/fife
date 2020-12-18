@@ -24,7 +24,7 @@ def compute_metrics_for_binary_outcome(
     predictions: np.ndarray,
     threshold_positive: Union[None, str, float] = 0.5,
     share_positive: Union[None, str, float] = None,
-    weights: Union[None, np.ndarray] = None
+    weights: Union[None, np.ndarray] = None,
 ) -> OrderedDict:
     """Evaluate predicted probabilities against actual binary outcome values.
 
@@ -79,7 +79,10 @@ def compute_metrics_for_binary_outcome(
             metrics["True Negatives"],
         ) = (
             confusion_matrix(
-                actuals, predictions >= threshold_positive, labels=[True, False], sample_weight=weights
+                actuals,
+                predictions >= threshold_positive,
+                labels=[True, False],
+                sample_weight=weights,
             )
             .ravel()
             .tolist()
@@ -88,8 +91,9 @@ def compute_metrics_for_binary_outcome(
 
 
 def compute_metrics_for_categorical_outcome(
-    actuals: pd.DataFrame, predictions: np.ndarray,
-    weights: Union[None, np.ndarray] = None
+    actuals: pd.DataFrame,
+    predictions: np.ndarray,
+    weights: Union[None, np.ndarray] = None,
 ) -> OrderedDict:
     """Evaluate predicted probabilities against actual categorical outcome values.
 
@@ -113,14 +117,15 @@ def compute_metrics_for_categorical_outcome(
             actuals.loc[:, positive_cols],
             predictions[:, positive_cols],
             multi_class="ovr",
-            sample_weight=weights
+            sample_weight=weights,
         )
     return metrics
 
 
 def compute_metrics_for_numeric_outcome(
-    actuals: pd.core.series.Series, predictions: np.ndarray,
-    weights: Union[None, np.ndarray] = None
+    actuals: pd.core.series.Series,
+    predictions: np.ndarray,
+    weights: Union[None, np.ndarray] = None,
 ) -> OrderedDict:
     """Evaluate predicted numeric values against actual outcome values.
 
@@ -431,7 +436,7 @@ class SurvivalModeler(Modeler):
                     predictions[:, lead_length - 1][actuals.index],
                     threshold_positive=threshold_positive,
                     share_positive=share_positive,
-                    weights=weights
+                    weights=weights,
                 )
             )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
@@ -679,7 +684,9 @@ class StateModeler(Modeler):
         for lead_length in lead_lengths:
             actuals = self.subset_for_training_horizon(
                 self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
-            )["label"]
+            )
+            weights = actuals[self.weight_col] if self.weight_col else None
+            actuals = actuals["label"]
             if self.objective == "multiclass":
                 actuals = pd.DataFrame(
                     {label: actuals == label for label in range(self.num_class)},
@@ -689,6 +696,7 @@ class StateModeler(Modeler):
                     compute_metrics_for_categorical_outcome(
                         actuals,
                         predictions[:, :, lead_length - 1].T[actuals.index],
+                        weights=weights
                     )
                 )
             else:
@@ -696,6 +704,7 @@ class StateModeler(Modeler):
                     compute_metrics_for_numeric_outcome(
                         actuals,
                         predictions[:, lead_length - 1][actuals.index],
+                        weights=weights
                     )
                 )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
