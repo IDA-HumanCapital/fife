@@ -422,19 +422,22 @@ class SurvivalModeler(Modeler):
         lead_lengths = np.arange(self.n_intervals) + 1
         for lead_length in lead_lengths:
             actuals = self.label_data(lead_length - 1)[subset].reset_index()
-            actuals = actuals[actuals[self.max_lead_col] >= lead_length]["label"]
+            actuals = actuals[actuals[self.max_lead_col] >= lead_length]
+            weights = actuals[self.weight_col] if self.weight_col else None
+            actuals = actuals["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
                     predictions[:, lead_length - 1][actuals.index],
                     threshold_positive=threshold_positive,
                     share_positive=share_positive,
+                    weights=weights
                 )
             )
         metrics = pd.DataFrame(metrics, index=lead_lengths)
         metrics.index.name = "Lead Length"
         metrics["Other Metrics:"] = ""
-        if not self.allow_gaps:
+        if (not self.allow_gaps) and (self.weight_col is None):
             concordance_index_value = concordance_index(
                 self.data[subset][[self.duration_col, self.max_lead_col]].min(axis=1),
                 np.sum(predictions, axis=-1),
