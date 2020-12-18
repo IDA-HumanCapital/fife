@@ -24,6 +24,7 @@ def compute_metrics_for_binary_outcome(
     predictions: np.ndarray,
     threshold_positive: Union[None, str, float] = 0.5,
     share_positive: Union[None, str, float] = None,
+    weights: Union[None, np.ndarray] = None
 ) -> OrderedDict:
     """Evaluate predicted probabilities against actual binary outcome values.
 
@@ -41,6 +42,8 @@ def compute_metrics_for_binary_outcome(
             the predicted share positive in each time horizon. Probability ties
             may cause share of positives in output to exceed given value.
             Overrides threshold_positive.
+        weights: A 1-D array of weights with the same length as actuals and predictions.
+        Each prediction contributes to metrics in proportion to its weight. If None, each prediction has the same weight.
 
     Returns:
         An ordered dictionary containing key-value pairs for area under the
@@ -50,11 +53,11 @@ def compute_metrics_for_binary_outcome(
     """
     metrics = OrderedDict()
     if actuals.any() and not actuals.all():
-        metrics["AUROC"] = roc_auc_score(actuals, predictions)
+        metrics["AUROC"] = roc_auc_score(actuals, predictions, sample_weight=weights)
     else:
         metrics["AUROC"] = np.nan
-    metrics["Predicted Share"] = predictions.mean()
-    metrics["Actual Share"] = actuals.mean()
+    metrics["Predicted Share"] = np.average(predictions, weights=weights)
+    metrics["Actual Share"] = np.average(actuals, weights=weights)
     if actuals.empty:
         (
             metrics["True Positives"],
@@ -64,11 +67,11 @@ def compute_metrics_for_binary_outcome(
         ) = [0, 0, 0, 0]
     else:
         if share_positive == "predicted":
-            share_positive = predictions.mean()
+            share_positive = metrics["Predicted Share"]
         if share_positive is not None:
             threshold_positive = np.quantile(predictions, 1 - share_positive)
         elif threshold_positive == "predicted":
-            threshold_positive = predictions.mean()
+            threshold_positive = metrics["Predicted Share"]
         (
             metrics["True Positives"],
             metrics["False Negatives"],
@@ -76,7 +79,7 @@ def compute_metrics_for_binary_outcome(
             metrics["True Negatives"],
         ) = (
             confusion_matrix(
-                actuals, predictions >= threshold_positive, labels=[True, False]
+                actuals, predictions >= threshold_positive, labels=[True, False], sample_weight=weights
             )
             .ravel()
             .tolist()
@@ -85,7 +88,8 @@ def compute_metrics_for_binary_outcome(
 
 
 def compute_metrics_for_categorical_outcome(
-    actuals: pd.DataFrame, predictions: np.ndarray
+    actuals: pd.DataFrame, predictions: np.ndarray,
+    weights: Union[None, np.ndarray] = None
 ) -> OrderedDict:
     """Evaluate predicted probabilities against actual categorical outcome values.
 
@@ -93,6 +97,8 @@ def compute_metrics_for_categorical_outcome(
         actuals: A DataFrame representing one-hot-encoded actual class membership.
         predictions: A DataFrame of predicted probabilities of class membership
             for the respective observations represented in actuals.
+        weights: A 1-D array of weights with the same length as actuals and predictions.
+        Each prediction contributes to metrics in proportion to its weight. If None, each prediction has the same weight.
 
     Returns:
         An ordered dictionary containing a key-value pair for area under the
@@ -107,12 +113,14 @@ def compute_metrics_for_categorical_outcome(
             actuals.loc[:, positive_cols],
             predictions[:, positive_cols],
             multi_class="ovr",
+            sample_weight=weights
         )
     return metrics
 
 
 def compute_metrics_for_numeric_outcome(
-    actuals: pd.core.series.Series, predictions: np.ndarray
+    actuals: pd.core.series.Series, predictions: np.ndarray,
+    weights: Union[None, np.ndarray] = None
 ) -> OrderedDict:
     """Evaluate predicted numeric values against actual outcome values.
 
@@ -124,7 +132,7 @@ def compute_metrics_for_numeric_outcome(
         An ordered dictionary containing a key-value pair for R-squared.
     """
     metrics = OrderedDict()
-    metrics["R-squared"] = r2_score(actuals, predictions)
+    metrics["R-squared"] = r2_score(actuals, predictions, sample_weight=weights)
     return metrics
 
 
@@ -150,6 +158,9 @@ class Modeler(ABC):
             periods since the earliest period in the data.
         max_lead_col (str): Name of the column representing the number of
             observable future periods.
+        spell_col (str): Name of the column representing the number of
+            previous spells of consecutive observations of the same individual.
+        weight_col (str): Name of the column representing observation weights.
         reserved_cols (list): Column names of non-features.
         numeric_features (list): Column names of numeric features.
         n_intervals (int): The largest number of periods ahead to forecast
@@ -171,6 +182,7 @@ class Modeler(ABC):
         period_col: str = "_period",
         max_lead_col: str = "_maximum_lead",
         spell_col: str = "_spell",
+        weight_col: Union[None, str] = None,
         allow_gaps: bool = False,
     ) -> None:
         """Characterize data for modelling.
@@ -198,6 +210,7 @@ class Modeler(ABC):
                 observable future periods.
             spell_col (str): Name of the column representing the number of
                 previous spells of consecutive observations of the same individual.
+            weight_col (str): Name of the column representing observation weights.
             allow_gaps (bool): Whether or not observations should be included for
                 training and evaluation if there is a period without an observation
                 between the period of observations and the last period of the
@@ -225,6 +238,7 @@ class Modeler(ABC):
         self.period_col = period_col
         self.max_lead_col = max_lead_col
         self.spell_col = spell_col
+        self.weight_col = weight_col
         self.allow_gaps = allow_gaps
         self.reserved_cols = [
             self.duration_col,
@@ -238,6 +252,8 @@ class Modeler(ABC):
         ]
         if self.config:
             self.reserved_cols.append(self.config["INDIVIDUAL_IDENTIFIER"])
+        if self.weight_col:
+            self.reserved_cols.append(self.weight_col)
         if self.data is not None:
             self.categorical_features = [
                 col for col in self.data.select_dtypes("category")
