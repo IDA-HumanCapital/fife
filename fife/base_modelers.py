@@ -429,7 +429,7 @@ class SurvivalModeler(Modeler):
         for lead_length in lead_lengths:
             actuals = self.label_data(lead_length - 1)[subset].reset_index()
             actuals = actuals[actuals[self.max_lead_col] >= lead_length]
-            weights = actuals[self.weight_col] if self.weight_col else None
+            weights = actuals[self.weight_col].values if self.weight_col else None
             actuals = actuals["label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
@@ -686,7 +686,7 @@ class StateModeler(Modeler):
             actuals = self.subset_for_training_horizon(
                 self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
             )
-            weights = actuals[self.weight_col] if self.weight_col else None
+            weights = actuals[self.weight_col].values if self.weight_col else None
             actuals = actuals["label"]
             if self.objective == "multiclass":
                 actuals = pd.DataFrame(
