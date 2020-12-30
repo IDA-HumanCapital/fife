@@ -10,6 +10,11 @@
 
 - Area under the receiver operating characteristic curve (AUROC) now computed for multiclass if no class is entirely positive. Classes with no positive values are excluded.
 - ExitModeler outcome labeling
+- Two hyperparameter prior distribution lower bounds now 2 ** -5 instead of 2e-5.
+
+### Changed
+
+- Multiclass AUROC now weighted by class share (`average="weighted"` in call to [sklearn.metrics.roc_auc_score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html)).
 
 ## 1.4.0 - 2020-12-11
 
