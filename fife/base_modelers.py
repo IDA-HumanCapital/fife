@@ -118,7 +118,7 @@ def compute_metrics_for_categorical_outcome(
             predictions[:, positive_cols],
             multi_class="ovr",
             average="weighted",
-            sample_weight=weights
+            sample_weight=weights,
         )
     return metrics
 

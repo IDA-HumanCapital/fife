@@ -87,12 +87,14 @@ class LGBModeler(Modeler):
             """Compute out-of-sample performance for a parameter set."""
             params = {}
             params["num_iterations"] = trial.suggest_int("num_iterations", 8, 128)
-            params["learning_rate"] = trial.suggest_uniform("learning_rate", 2**-5, 0.5)
+            params["learning_rate"] = trial.suggest_uniform(
+                "learning_rate", 2 ** -5, 0.5
+            )
             params["num_leaves"] = trial.suggest_int("num_leaves", 8, 256)
             params["max_depth"] = trial.suggest_int("max_depth", 4, 32)
             params["min_data_in_leaf"] = trial.suggest_int("min_data_in_leaf", 4, 512)
             params["min_sum_hessian_in_leaf"] = trial.suggest_uniform(
-                "min_sum_hessian_in_leaf", 2**-5, 0.25
+                "min_sum_hessian_in_leaf", 2 ** -5, 0.25
             )
             params["bagging_freq"] = trial.suggest_int("bagging_freq", 0, 1)
             params["bagging_fraction"] = trial.suggest_uniform(
@@ -352,7 +354,12 @@ class LGBModeler(Modeler):
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
-            for col in data.select_dtypes("datetime"):
+            date_cols = data.select_dtypes("datetime").columns + [
+                col
+                for col in data.select_dtypes("category")
+                if np.issubdtype(data[col].cat.categories.dtype, np.datetime64)
+            ]
+            for col in date_cols:
                 data[col] = (
                     data[col].dt.year * 10000
                     + data[col].dt.month * 100
@@ -362,6 +369,9 @@ class LGBModeler(Modeler):
             data[data.select_dtypes("datetime")] = pd.to_numeric(
                 data[data.select_dtypes("datetime")]
             )
+            for col in data.select_dtypes("category"):
+                if np.issubdtype(data[col].cat.categories.dtype, np.datetime64):
+                    data[col] = data[col].astype(int)
         return data
 
     def save_model(self, file_name: str = "GBT_Model", path: str = "") -> None:
