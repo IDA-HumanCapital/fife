@@ -822,7 +822,9 @@ class ExitModeler(StateModeler):
             data = data[data["exit"].isna() & (data[self.max_lead_col] > time_horizon)]
             data = data.drop("exit", axis=1)
         else:
-            data = data[data[self.event_col] & (data[self.duration_col] == time_horizon)]
+            data = data[
+                data[self.event_col] & (data[self.duration_col] == time_horizon)
+            ]
         return data
 
     def label_data(self, time_horizon: int) -> pd.Series:
