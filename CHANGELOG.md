@@ -9,6 +9,7 @@
 ### Fixed
 
 - Area under the receiver operating characteristic curve (AUROC) now computed for multiclass if no class is entirely positive. Classes with no positive values are excluded.
+- ExitModeler outcome labeling
 - Two hyperparameter prior distribution lower bounds now 2 ** -5 instead of 2e-5.
 
 ### Changed

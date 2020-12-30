@@ -44,11 +44,15 @@ class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
                 > time_horizon
             )
             if self.weight_col:
-                train_data["survived"] = train_data["survived"] * train_data[self.weight_col]
-                grouped_sums = train_data.groupby(
-                    self.categorical_features
-                )[["survived", self.weight_col]].sum()
-                cell_rates[time_horizon + 1] = grouped_sums["survived"] / grouped_sums[self.weight_col]
+                train_data["survived"] = (
+                    train_data["survived"] * train_data[self.weight_col]
+                )
+                grouped_sums = train_data.groupby(self.categorical_features)[
+                    ["survived", self.weight_col]
+                ].sum()
+                cell_rates[time_horizon + 1] = (
+                    grouped_sums["survived"] / grouped_sums[self.weight_col]
+                )
             else:
                 cell_rates[time_horizon + 1] = train_data.groupby(
                     self.categorical_features

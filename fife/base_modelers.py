@@ -823,7 +823,9 @@ class ExitModeler(StateModeler):
             data = data[data["exit"].isna() & (data[self.max_lead_col] > time_horizon)]
             data = data.drop("exit", axis=1)
         else:
-            data = [data[self.event_col] & (data[self.duration_col] == time_horizon)]
+            data = data[
+                data[self.event_col] & (data[self.duration_col] == time_horizon)
+            ]
         return data
 
     def label_data(self, time_horizon: int) -> pd.Series:
@@ -832,7 +834,12 @@ class ExitModeler(StateModeler):
         data[self.duration_col] = data[[self.duration_col, self.max_lead_col]].min(
             axis=1
         )
+        if self.objective == "multiclass":
+            temp_exit_col = data[self.exit_col]
+            data[self.exit_col] = data[self.exit_col].cat.codes
         data["label"] = data.groupby(
             [self.config["INDIVIDUAL_IDENTIFIER"], self.spell_col]
         )[self.exit_col].transform("last")
+        if self.objective == "multiclass":
+            data[self.exit_col] = temp_exit_col
         return data
