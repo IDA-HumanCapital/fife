@@ -9,6 +9,7 @@
 ### Fixed
 
 - Area under the receiver operating characteristic curve (AUROC) now computed for multiclass if no class is entirely positive. Classes with no positive values are excluded.
+- ExitModeler outcome labeling
 
 ## 1.4.0 - 2020-12-11
 
