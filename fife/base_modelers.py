@@ -652,7 +652,8 @@ class StateModeler(Modeler):
         if self.data is not None:
             if self.state_col in self.categorical_features:
                 self.objective = "multiclass"
-                self.num_class = len(self.data[self.state_col].cat.categories)
+                self.class_values = self.data[self.state_col].cat.categories
+                self.num_class = len(self.class_values)
             elif self.state_col in self.numeric_features:
                 self.objective = "regression"
                 self.num_class = None
@@ -727,7 +728,7 @@ class StateModeler(Modeler):
                 forecasts.shape[0],
             )
             states = np.tile(
-                self.data[self.state_col].cat.categories, forecasts.shape[1]
+                self.class_values, forecasts.shape[1]
             )
             forecasts = np.reshape(
                 forecasts,
@@ -793,6 +794,8 @@ class ExitModeler(StateModeler):
             **kwargs: Arguments to Modeler.__init__().
         """
         super().__init__(exit_col, **kwargs)
+        self.class_values = self.data[(self.data['_duration']==0) & (self.data['_event_observed']==True)][self.state_col].unique()
+        self.num_class = len(self.class_values)
         self.exit_col = self.state_col
         if self.data is not None:
             if self.state_col in self.categorical_features:
