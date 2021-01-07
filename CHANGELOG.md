@@ -1,3 +1,17 @@
+## 1.4.2 - 2021-01-07
+
+### Added
+
+<u>StateModeler and ExitModeler</u>
+
+- Outcome categories now accessible through class_values attribute
+
+### Fixed
+
+<u>ExitModeler</u>
+
+- If the outcome is categorical, only labels associated with an exit (i.e., that appear in the last observation of a spell) are used for training
+
 ## 1.4.1 - 2020-12-30
 
 ### Added
