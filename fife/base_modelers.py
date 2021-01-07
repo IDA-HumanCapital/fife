@@ -728,9 +728,7 @@ class StateModeler(Modeler):
                 ],
                 forecasts.shape[0],
             )
-            states = np.tile(
-                self.class_values, forecasts.shape[1]
-            )
+            states = np.tile(self.class_values, forecasts.shape[1])
             forecasts = np.reshape(
                 forecasts,
                 (forecasts.shape[0] * forecasts.shape[1], forecasts.shape[2]),
@@ -795,7 +793,9 @@ class ExitModeler(StateModeler):
             **kwargs: Arguments to Modeler.__init__().
         """
         super().__init__(exit_col, **kwargs)
-        self.class_values = self.data[(self.data['_duration']==0) & (self.data['_event_observed']==True)][self.state_col].unique()
+        self.class_values = self.data[
+            (self.data["_duration"] == 0) & (self.data["_event_observed"] == True)
+        ][self.state_col].unique()
         self.num_class = len(self.class_values)
         self.exit_col = self.state_col
         if self.data is not None:
