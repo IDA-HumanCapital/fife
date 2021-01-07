@@ -636,6 +636,7 @@ class StateModeler(Modeler):
         objective (str): The model objective appropriate for the outcome type;
             "multiclass" for categorical states and "regression" for numeric
             states.
+        class_values (pd.Int64Index): The state categories.
         num_class (int): The number of state categories or, if the state is
             numeric, None.
     """

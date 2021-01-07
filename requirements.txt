@@ -27,7 +27,7 @@ cycler==0.10.0
 cytoolz==0.11.0
 dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1607657054678/work
 decorator==4.4.2
-fife @ file:///C:/Users/jbishop/Desktop/fife/dist/fife-1.4.1-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.1-py3-none-any.whl
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1600960338579/work
@@ -118,7 +118,7 @@ toolz @ file:///home/conda/feedstock_root/build_artifacts/toolz_1600973991856/wo
 tornado @ file:///D:/bld/tornado_1604105307492/work
 tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1608900042843/work
 traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1602771532708/work
-typed-ast==1.4.1
+typed-ast==1.4.2
 typing-extensions==3.7.4.3
 urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1605225765842/work
 wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1600965781394/work
