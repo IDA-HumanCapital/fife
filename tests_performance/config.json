@@ -1,0 +1,39 @@
+{
+    "NOTES_FOR_LOG": "No config notes specified",
+    "RESULTS_PATH": "//Pii_zippy/d/DoN_FIFE_pilot/Results/2020-11-09/100pct_fife1_3_3_rpm_excl_demog",
+    "SHAP_VAL_PATH": "//Pii_zippy/d/DoN_FIFE_pilot/Results/2020-11-09/100pct_fife1_3_3_rpm_excl_demog/Intermediate/shap_values",
+    "LOG_RESULTS": false,
+    "SAMPLE_SIZE": 100,
+
+    "SEED": 9999,
+
+    "MIN_SVC_YRS": 0,
+
+    "INDIVIDUAL_IDENTIFIER": "SSNSCR",
+    "TIME_IDENTIFIER": "FILE_DATE",
+
+    "CATEGORICAL_SUFFIXES": [],
+	"DATETIME_AS_DATE": true,
+    "MAX_NULL_SHARE": 0.999,
+    "MAX_UNIQUE_NUMERIC_CATS": 1024,
+
+    "MIN_SURVIVORS_IN_TRAIN": 20,
+    "TEST_INTERVALS": -1,
+    "VALIDATION_SHARE": 0,
+    "TEST_SHARE": 0,
+
+    "PARALLELIZE": true,
+
+    "INCLUDE_DEMOGRAPHICS": false,
+
+	"HYPER_TRIALS": 0,
+    "MAX_EPOCHS": 256,
+    "PATIENCE": 4,
+
+    "NON_CAT_MISSING_VALUE": -1,
+
+    "QUANTILES": 5,
+    "RETENTION_INTERVAL": 1,
+    "SHAP_PLOT_ALPHA": 0.5,
+    "SHAP_SAMPLE_SIZE": 99999999
+}
