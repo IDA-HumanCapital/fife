@@ -17,15 +17,14 @@ def make_person(i, N_PERIODS, k=0, exit_prob=.5, exit_type_prob=None):
     cols = ['ID', 'period', 'exit_type', 'X1', 'X2', 'X3'] + [''.join('X' + str(i)) for i in range(4, k+4) if k > 0]
     exit_type = 'No_exit'
     exit_prob_base = exit_prob
-    while (date <= N_PERIODS):
-        # print([i, date, x1, x2])
-        df.append([i, date, exit_type, x1, x2, x3] + X)
-        if exit_type != 'No_exit':
-            break
-        ### could make this part, below, its own function, or put the whole while loop in its own function
-        # this part handles characteristics that change over time
-        x1 += 0.1
-        x3 = np.random.normal()
+
+    # DMDC data only gives each person one exit type - if they exit, they exit in one way. Therefore,
+    # each created person should be assigned if they will exit or not and then what type if they do exit. If they
+    # don't, they must stay until the final period.
+
+    if date == N_PERIODS:
+        exit_type = 'No_exit'
+    else:
         if x2 == 'A':
             exit_prob = exit_prob_base + .2
             exit_type_prob = [.4, .3, .1, .1, .1]
@@ -35,12 +34,29 @@ def make_person(i, N_PERIODS, k=0, exit_prob=.5, exit_type_prob=None):
             x1 += 0.1
         ###
         exit_type = make_exit_type(exit_prob=exit_prob, p=exit_type_prob)
+
+    if exit_type != 'No_exit':
+        if date == N_PERIODS-1:
+            n_periods = N_PERIODS-1
+        else:
+            n_periods = np.random.randint(date, N_PERIODS-1)
+    else: # A individual that doesn't exit must stay to the last period
+        n_periods = N_PERIODS
+
+    while (date <= n_periods):
+        # Fill up rows with changing data types
+        df.append([i, date, exit_type, x1, x2, x3] + X)
+        x1 += 0.1
+        x3 = np.random.normal()
+        if x2 == 'C':
+            x1 += 0.1
         date += 1
     df = pd.DataFrame(df, columns=cols)
+
     return df
 
 
-def make_exit_type(df=None, exit_prob=.5, p=None):
+def make_exit_type(exit_prob=.5, p=None):
     if p is not None:
         assert round(sum(p)) == 1
     if exit_prob > 1:
