@@ -19,7 +19,6 @@
 
     "MIN_SURVIVORS_IN_TRAIN": 20,
     "TEST_INTERVALS": -1,
-    "VALIDATION_SHARE": 0,
     "TEST_SHARE": 0,
 
     "PARALLELIZE": true,
