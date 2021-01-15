@@ -5,8 +5,12 @@ This script runs a Monte Carlo experiment to test the performance of FIFE's exit
 import json
 import math
 import os
-import random
+import sys
+
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from datetime import date
 
 from fife import utils
 from fife.lgb_modelers import LGBSurvivalModeler, LGBStateModeler, LGBExitModeler
@@ -44,11 +48,12 @@ def run_FIFE(df, seed, model, test_intervals):
     return forecasts, evaluations
 
 
-def run_simulation(PATH, N_SIMULATIONS, MODEL= 'exit', N_PERSONS=400, N_PERIODS=40, N_EXTRA_FEATURES=0, EXIT_PROB=.2, SEED=None):
+def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0, EXIT_PROB=.2,
+                   SEED=None):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
     are saved in csvs.
-    :param PATH: The file-path where forecasting and evaluation .csvs will be saved
+    :param PATH: The file-path where forecasting and evaluation file with .csvs will be saved
     :param MODEL: 'base', 'state', or 'exit'; the type of FIFE model to run
     :param N_SIMULATIONS: The number of simulations to run
     :param N_PERSONS: The number of people created in the dataset
@@ -58,6 +63,9 @@ def run_simulation(PATH, N_SIMULATIONS, MODEL= 'exit', N_PERSONS=400, N_PERIODS=
     :param SEED: A number to set the random seed
     :return: None, but saves 3 .csvs: The forecasts, evaluations, and created datasets.
     """
+
+    today = str(date.today())
+    PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today))
 
     if SEED is not None:
         np.random.seed(SEED)
@@ -70,13 +78,13 @@ def run_simulation(PATH, N_SIMULATIONS, MODEL= 'exit', N_PERSONS=400, N_PERIODS=
     datas = []
 
     # Create a list of random seeds so that all of the data isn't the same.
-    random_seeds = np.random.randint(N_SIMULATIONS*10, size=N_SIMULATIONS)
+    random_seeds = np.random.randint(N_SIMULATIONS * 10, size=N_SIMULATIONS)
 
-    for i in range(N_SIMULATIONS):
+    for i in tqdm(range(N_SIMULATIONS)):
         data = fabricate_data(N_PERSONS=N_PERSONS,
                               N_PERIODS=N_PERIODS,
                               k=N_EXTRA_FEATURES,
-                              SEED= random_seeds[i],
+                              SEED=random_seeds[i],
                               exit_prob=EXIT_PROB)
         numeric_suffixes = ['X1', 'X3']
         if N_EXTRA_FEATURES > 0:
@@ -90,26 +98,42 @@ def run_simulation(PATH, N_SIMULATIONS, MODEL= 'exit', N_PERSONS=400, N_PERIODS=
                                                     'TEST_INTERVALS': math.ceil(N_PERIODS / 3)}, data=data)
         data_processor.build_processed_data()
 
-        forecast, evaluation = run_FIFE(data_processor.data, SEED, MODEL, math.ceil(N_PERIODS / 3))
+        try:
+            forecast, evaluation = run_FIFE(data_processor.data, SEED, MODEL, math.ceil(N_PERIODS / 3))
 
-        # Append this information to a df for forecasts, evaluations, and data
-        forecast['model_type'] = MODEL
-        forecast['run'] = i
+            # Append this information to a df for forecasts, evaluations, and data
+            forecast['run'] = i
+            evaluation['run'] = i
+            data_processor.data['run'] = i
 
-        evaluation['model_type'] = MODEL
-        evaluation['run'] = i
+            forecasts.append(forecast)
+            evaluations.append(evaluation)
+            datas.append(data_processor.data)
 
-        data_processor.data['run'] = i
+        except ValueError:
+            # Fix for if there is a problem with the validation set being empty for some periods of time until the bug
+            # is removed
+            continue
 
-        forecasts.append(forecast)
-        evaluations.append(evaluation)
-        datas.append(data_processor.data)
+    # Save information about this run in the provided path
+    os.makedirs(os.path.join(PATH), exist_ok=True)
+    forecasts = pd.concat(forecasts).reset_index()
+    evaluations = pd.concat(evaluations).reset_index()
+    datas = pd.concat(datas).reset_index()
 
+    forecasts.to_csv(os.path.join(PATH, 'forecasts.csv'.format(MODEL)), index=False)
+    evaluations.to_csv(os.path.join(PATH, 'evaluations_{}.csv'.format(MODEL)), index=False)
+    datas.to_csv(os.path.join(PATH, 'data_{}.csv'.format(MODEL)), index=False)
 
-
-
-
+    original_stdout = sys.stdout
+    with open(os.path.join(PATH, 'run_information.txt'), 'w') as f:
+        sys.stdout = f  # Change the standard output to the file we created.
+        print(
+            'Run information: \nModel: {}\nN_SIMULATIONS: {}\n N_PERSONS: {}\n N_PERIODS: {}\nEXIT_PROB: {}'.format(
+                    MODEL, N_SIMULATIONS, N_PERSONS, N_PERIODS, EXIT_PROB))
+        sys.stdout = original_stdout  # Reset the standard output to its original value
 
 
 if __name__ == '__main__':
-    run_simulation('something', N_SIMULATIONS= 100, N_PERSONS=100, N_PERIODS=30, SEED=999)
+    PATH = r'X:\Human Capital Group\Sponsored Projects\4854 DoN FIFE Extensions\Code\FIFE_Testing'
+    run_simulation(PATH=PATH, SEED=999)
