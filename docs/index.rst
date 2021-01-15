@@ -19,34 +19,36 @@ Installation
 Details
 --------
 
-- Install an `Anaconda distribution <https://www.anaconda.com/distribution/>`_ of Python version 3.7.6 or later
-- From pip (with no firewall):
+-  Install an `Anaconda distribution <https://www.anaconda.com/distribution/>`_ of Python version 3.7.6 or later
+-  From pip (with no firewall):
 
-    - Open Anaconda Prompt
-    - Execute ``pip install fife``
-    - If that results in an error for installing the SHAP dependency, try ``conda install -c conda-forge shap`` before ``pip install fife``
-    - If that results in an error for installing the TensorFlow dependency, try ``conda install -c anaconda tensorflow`` before ``pip install fife``
+    -  Open Anaconda Prompt
+    -  Execute ``pip install fife``
+    -  If that results in an error for installing the SHAP dependency, try ``conda install -c conda-forge shap`` before ``pip install fife``
+    -  If that results in an error for installing the TensorFlow dependency, try ``conda install -c anaconda tensorflow`` before ``pip install fife``
 
 Alternatives
 ------------
 
-- From pypi.org (https://pypi.org/project/fife/):
+-  From pypi.org (https://pypi.org/project/fife/):
 
-    - Download the ``.whl`` or ``.tar.gz`` file
-    - Open Anaconda Prompt
-    - Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.
-        Example: ``cd C:\Users\insert-user-name\Downloads``
-    - Pip install the name of the ``.whl`` or ``.tar.gz`` file.
-        Example: ``pip install fife-1.3.4-py3-none-any.whl``
+    -  Download the ``.whl`` or ``.tar.gz`` file
+    -  Open Anaconda Prompt
+    -  Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.
 
-- From GitHub (https://github.com/IDA-HumanCapital/fife):
+       -  Example: ``cd C:\Users\insert-user-name\Downloads``
 
-    - Clone the FIFE repository
-    - Open Anaconda Prompt
-    - Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
-    - Execute ``python setup.py sdist bdist_wheel``
-    - Execute ``pip install dist/fife-1.3.4-py3-none-any.whl``
+    -  Pip install the name of the ``.whl`` or ``.tar.gz`` file.
 
+       -  Example: ``pip install fife-1.3.4-py3-none-any.whl``
+
+-  From GitHub (https://github.com/IDA-HumanCapital/fife):
+
+    -  Clone the FIFE repository
+    -  Open Anaconda Prompt
+    -  Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
+    -  Execute ``python setup.py sdist bdist_wheel``
+    -  Execute ``pip install dist/fife-1.3.4-py3-none-any.whl``
 
 Documentation
 ==============
@@ -65,12 +67,16 @@ Python User Guide
     faq
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Command Line Interface
 
+    cli_link
+
 .. toctree::
-    :maxdepth:
+    :maxdepth: 1
     :caption: Modules
+
+    Modules <source/fife>
 
 Project Information
 ===================
