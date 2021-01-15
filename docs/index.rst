@@ -16,30 +16,37 @@ Installation
 
     pip install fife
 
-**Details**
+Details
+--------
 
 - Install an `Anaconda distribution <https://www.anaconda.com/distribution/>`_ of Python version 3.7.6 or later
 - From pip (with no firewall):
+
     - Open Anaconda Prompt
     - Execute ``pip install fife``
     - If that results in an error for installing the SHAP dependency, try ``conda install -c conda-forge shap`` before ``pip install fife``
     - If that results in an error for installing the TensorFlow dependency, try ``conda install -c anaconda tensorflow`` before ``pip install fife``
 
-**Alternatives**
+Alternatives
+------------
 
 - From pypi.org (https://pypi.org/project/fife/):
+
     - Download the ``.whl`` or ``.tar.gz`` file
     - Open Anaconda Prompt
     - Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.
         Example: ``cd C:\Users\insert-user-name\Downloads``
     - Pip install the name of the ``.whl`` or ``.tar.gz`` file.
         Example: ``pip install fife-1.3.4-py3-none-any.whl``
+
 - From GitHub (https://github.com/IDA-HumanCapital/fife):
+
     - Clone the FIFE repository
     - Open Anaconda Prompt
     - Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
     - Execute ``python setup.py sdist bdist_wheel``
     - Execute ``pip install dist/fife-1.3.4-py3-none-any.whl``
+
 
 Documentation
 ==============
@@ -90,12 +97,14 @@ BibTex:
 
 .. code-block:: latex
 
-    @misc{FIFE,
-    author={Institute for Defense Analyses},
-    title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
-    howpublished={https://github.com/IDA-HumanCapital/fife},
-    note={Version 1.x.x},
-    year={2020}}
+    @misc{
+        FIFE,
+        author={Institute for Defense Analyses},
+        title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
+        howpublished={https://github.com/IDA-HumanCapital/fife},
+        note={Version 1.x.x},
+        year={2020}
+    }
 
 Contributing
 -------------
