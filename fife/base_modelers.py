@@ -793,12 +793,19 @@ class ExitModeler(StateModeler):
             **kwargs: Arguments to Modeler.__init__().
         """
         super().__init__(exit_col, **kwargs)
-		if self.objective == "multiclass":
-			self.class_values = self.data[
-				(self.data["_duration"] == 0) & (self.data["_event_observed"] == True)
-			][self.state_col].unique()
-			self.data[state_col].cat.reorder_categories(self.class_values + [cat for cat in self.data[state_col].cat.categories if cat not in self.class_values])
-			self.num_class = len(self.class_values)
+        if self.objective == "multiclass":
+            self.class_values = self.data[
+                (self.data["_duration"] == 0) & (self.data["_event_observed"] == True)
+            ][self.state_col].unique()
+            self.data[state_col].cat.reorder_categories(
+                self.class_values
+                + [
+                    cat
+                    for cat in self.data[state_col].cat.categories
+                    if cat not in self.class_values
+                ]
+            )
+            self.num_class = len(self.class_values)
         self.exit_col = self.state_col
         if self.data is not None:
             if self.state_col in self.categorical_features:
