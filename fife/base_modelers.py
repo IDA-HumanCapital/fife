@@ -797,7 +797,9 @@ class ExitModeler(StateModeler):
             self.class_values = self.data[
                 (self.data["_duration"] == 0) & (self.data["_event_observed"] == True)
             ][self.state_col].unique()
-            self.data[self.state_col] = self.data[self.state_col].cat.reorder_categories(
+            self.data[self.state_col] = self.data[
+                self.state_col
+            ].cat.reorder_categories(
                 list(self.class_values)
                 + [
                     cat
