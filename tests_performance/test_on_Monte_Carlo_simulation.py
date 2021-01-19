@@ -18,7 +18,7 @@ from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
 
-def run_FIFE(df, seed, model, test_intervals):
+def run_FIFE(df, model, test_intervals):
     """
     :param df: Data frame created before
     :param seed: seed for replication
@@ -28,7 +28,6 @@ def run_FIFE(df, seed, model, test_intervals):
     """
     assert model in ['base', 'state', 'exit'], "Model must be 'base', 'state', or 'exit'!"
 
-    utils.make_results_reproducible(seed)
     if model == 'base':
         df = df.drop('exit_type', axis='columns')
         modeler = LGBSurvivalModeler(config={'MIN_SURVIVORS_IN_TRAIN': 5}, data=df)
@@ -46,15 +45,6 @@ def run_FIFE(df, seed, model, test_intervals):
     forecasts = modeler.forecast()
 
     return forecasts, evaluations
-
-def run2(seed=1234):
-    np.random.seed(seed)
-    dfs = []
-    for n in range(100):
-        df = fabricate_data(N_PERSONS=1, N_PERIODS=1)
-        dfs.append(df)
-    #observe each df in the list is different.
-    return dfs
 
 def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0, EXIT_PROB=.2,
                    SEED=None):
@@ -85,14 +75,10 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERI
     evaluations = []
     datas = []
 
-    # Create a list of random seeds so that all of the data isn't the same.
-    random_seeds = np.random.randint(N_SIMULATIONS * 10, size=N_SIMULATIONS)
-
     for i in tqdm(range(N_SIMULATIONS)):
         data = fabricate_data(N_PERSONS=N_PERSONS,
                               N_PERIODS=N_PERIODS,
                               k=N_EXTRA_FEATURES,
-                              SEED=random_seeds[i],
                               exit_prob=EXIT_PROB)
         numeric_suffixes = ['X1', 'X3']
         if N_EXTRA_FEATURES > 0:
@@ -107,7 +93,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERI
         data_processor.build_processed_data()
 
         try:
-            forecast, evaluation = run_FIFE(data_processor.data, SEED, MODEL, math.ceil(N_PERIODS / 3))
+            forecast, evaluation = run_FIFE(data_processor.data, MODEL, math.ceil(N_PERIODS / 3))
 
             # Append this information to a df for forecasts, evaluations, and data
             forecast['run'] = i
