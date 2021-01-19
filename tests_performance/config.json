@@ -1,7 +1,5 @@
 {
     "NOTES_FOR_LOG": "No config notes specified",
-    "RESULTS_PATH": "//Pii_zippy/d/DoN_FIFE_pilot/Results/2020-11-09/100pct_fife1_3_3_rpm_excl_demog",
-    "SHAP_VAL_PATH": "//Pii_zippy/d/DoN_FIFE_pilot/Results/2020-11-09/100pct_fife1_3_3_rpm_excl_demog/Intermediate/shap_values",
     "LOG_RESULTS": false,
     "SAMPLE_SIZE": 100,
 
@@ -17,13 +15,7 @@
     "MAX_NULL_SHARE": 0.999,
     "MAX_UNIQUE_NUMERIC_CATS": 1024,
 
-    "MIN_SURVIVORS_IN_TRAIN": 20,
-    "TEST_INTERVALS": -1,
-    "TEST_SHARE": 0,
-
     "PARALLELIZE": true,
-
-    "INCLUDE_DEMOGRAPHICS": false,
 
 	"HYPER_TRIALS": 0,
     "MAX_EPOCHS": 256,
