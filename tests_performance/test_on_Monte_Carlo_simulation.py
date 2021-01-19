@@ -47,6 +47,14 @@ def run_FIFE(df, seed, model, test_intervals):
 
     return forecasts, evaluations
 
+def run2(seed=1234):
+    np.random.seed(seed)
+    dfs = []
+    for n in range(100):
+        df = fabricate_data(N_PERSONS=1, N_PERIODS=1)
+        dfs.append(df)
+    #observe each df in the list is different.
+    return dfs
 
 def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0, EXIT_PROB=.2,
                    SEED=None):
