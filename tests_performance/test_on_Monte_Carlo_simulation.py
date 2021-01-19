@@ -94,7 +94,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERI
                               k=N_EXTRA_FEATURES,
                               SEED=random_seeds[i],
                               exit_prob=EXIT_PROB)
-        numeric_suffixes = ['X1', 'X3']
+        numeric_suffixes = ['X2', 'X3']
         if N_EXTRA_FEATURES > 0:
             for items in range(4, N_EXTRA_FEATURES + 4):
                 temp = 'X{}'.format(items)
