@@ -28,7 +28,7 @@ def make_person(i, N_PERIODS, k=0, exit_prob=.5, exit_type_prob=None):
         x2 = np.random.normal()
         if x1 == 'A':
             exit_prob = exit_prob_base + .2
-            exit_type_prob = [.4, .3, .1, .1, .1]
+            exit_type_prob = [.6, .3, .1]
         if x1 == 'B':
             exit_prob += .1
         else:
@@ -50,7 +50,7 @@ def make_exit_type(exit_prob=.5, p=None):
         exit_prob = 0
     exit_flag = np.random.binomial(1, exit_prob)
     if exit_flag == 1:
-        exit_type = np.random.choice(['A', 'B', 'C', 'D', 'E'], p=p)
+        exit_type = np.random.choice(['X', 'Y', 'Z'], p=p)
     else:
         exit_type = 'No_exit'
     return exit_type
