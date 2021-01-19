@@ -6,13 +6,12 @@ import json
 import math
 import os
 import sys
+from datetime import date
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from datetime import date
 
-from fife import utils
 from fife.lgb_modelers import LGBSurvivalModeler, LGBStateModeler, LGBExitModeler
 from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
@@ -46,7 +45,9 @@ def run_FIFE(df, model, test_intervals):
 
     return forecasts, evaluations
 
-def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0, EXIT_PROB=.2,
+
+def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0,
+                   EXIT_PROB=.2,
                    SEED=None):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
@@ -79,7 +80,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERI
         data = fabricate_data(N_PERSONS=N_PERSONS,
                               N_PERIODS=N_PERIODS,
                               k=N_EXTRA_FEATURES,
-                              exit_prob=EXIT_PROB)
+                              exit_prob=EXIT_PROB).reset_index(drop=True)
         numeric_suffixes = ['X2', 'X3']
         if N_EXTRA_FEATURES > 0:
             for items in range(4, N_EXTRA_FEATURES + 4):
