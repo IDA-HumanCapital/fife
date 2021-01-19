@@ -9,30 +9,30 @@ import pandas as pd
 def make_person(i, N_PERIODS, k=0, exit_prob=.5, exit_type_prob=None):
     df = []
     date = np.random.randint(N_PERIODS)
-    x1 = np.random.uniform()  # trending variable
-    x2 = np.random.choice(['A', 'B', 'C'])  # categorical variable
-    x3 = np.random.normal()  # and a stationary continuous variable
+    x1 = np.random.choice(['A', 'B', 'C'])  # categorical variable
+    x2 = np.random.normal()  # and a stationary continuous variable
+    x3 = np.random.uniform()  # trending variable
     # initialize any other characteristics here
     X = [np.random.normal() for i in range(k) if k > 0]
     cols = ['ID', 'period', 'X1', 'X2', 'X3'] + [''.join('X' + str(i)) for i in range(4, k+4) if k > 0]
     exit_type = 'No_exit'
     exit_prob_base = exit_prob
     while (date <= N_PERIODS):
-        # print([i, date, x1, x2])
+        # print([i, date, x3, x1])
         df.append([i, date, x1, x2, x3] + X)
         if exit_type != 'No_exit':
             break
         ### could make this part, below, its own function, or put the whole while loop in its own function
         # this part handles characteristics that change over time
-        x1 += 0.1
-        x3 = np.random.normal()
-        if x2 == 'A':
+        x3 += 0.1
+        x2 = np.random.normal()
+        if x1 == 'A':
             exit_prob = exit_prob_base + .2
             exit_type_prob = [.4, .3, .1, .1, .1]
-        if x2 == 'B':
+        if x1 == 'B':
             exit_prob += .1
         else:
-            x1 += 0.1
+            x3 += 0.1
         ###
         exit_type = make_exit_type(exit_prob=exit_prob, p=exit_type_prob)
         date += 1
