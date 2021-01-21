@@ -47,8 +47,7 @@ def run_FIFE(df, model, test_intervals):
 
 
 def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0,
-                   EXIT_PROB=.2,
-                   SEED=None):
+                   EXIT_PROB=0.2, SEED=None):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
     are saved in csvs.
@@ -116,6 +115,11 @@ def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PER
     evaluations = pd.concat(evaluations).reset_index()
     datas = pd.concat(datas).reset_index()
 
+    # Concat true probabilities for use in chi-squared calculation based on rules in DGP
+    datas['prob_X'] = np.where(datas['X1'] == 'A', 0.6, 1/3)
+    datas['prob_Y'] = np.where(datas['X1'] == 'A', 0.3, 1/3)
+    datas['prob_Z'] = np.where(datas['X1'] == 'A', 0.1, 1/3)
+
     forecasts.to_csv(os.path.join(PATH, 'forecasts.csv'.format(MODEL)), index=False)
     evaluations.to_csv(os.path.join(PATH, 'evaluations_{}.csv'.format(MODEL)), index=False)
     datas.to_csv(os.path.join(PATH, 'data_{}.csv'.format(MODEL)), index=False)
@@ -125,7 +129,7 @@ def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PER
         sys.stdout = f  # Change the standard output to the file we created.
         print(
             'Run information: \nModel: {}\nN_SIMULATIONS: {}\n N_PERSONS: {}\n N_PERIODS: {}\nEXIT_PROB: {}'.format(
-                    MODEL, N_SIMULATIONS, N_PERSONS, N_PERIODS, EXIT_PROB))
+                MODEL, N_SIMULATIONS, N_PERSONS, N_PERIODS, EXIT_PROB))
         sys.stdout = original_stdout  # Reset the standard output to its original value
 
 
