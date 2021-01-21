@@ -71,6 +71,7 @@ def fabricate_data(
             i, N_PERIODS, k=k, exit_prob=exit_prob, exit_type_prob=exit_type_prob
         )
         df = df.append(temp)
+        df = df.reset_index()
     return df
 
 
