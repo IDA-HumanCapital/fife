@@ -1,6 +1,6 @@
 absl-py @ file:///C:/ci/absl-py_1600290345082/work
 aiohttp @ file:///C:/ci/aiohttp_1602530358780/work
-alembic==1.4.3
+alembic==1.5.1
 appdirs==1.4.4
 astor==0.8.1
 async-timeout==3.0.1
@@ -18,18 +18,18 @@ certifi==2020.6.20
 cffi @ file:///C:/ci/cffi_1600699250966/work
 chardet==3.0.4
 click==7.1.2
-cliff==3.5.0
+cliff==3.6.0
 cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1598400192773/work
 cmaes==0.7.0
 cmd2==1.4.0
 colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1602866480661/work
-colorlog==4.6.2
+colorlog==4.7.2
 cryptography @ file:///C:/ci/cryptography_1601046913206/work
 cycler==0.10.0
 cytoolz==0.11.0
-dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1607657054678/work
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1610760008122/work
 decorator==4.4.2
-fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.1-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.2-py3-none-any.whl
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1601995530934/work
@@ -41,18 +41,18 @@ idna @ file:///tmp/build/80754af9/idna_1593446292537/work
 imageio @ file:///home/conda/feedstock_root/build_artifacts/imageio_1594044661732/work
 importlib-metadata @ file:///tmp/build/80754af9/importlib-metadata_1602276842396/work
 iniconfig @ file:///home/conda/feedstock_root/build_artifacts/iniconfig_1603384189793/work
-ipython @ file:///D:/bld/ipython_1604159743325/work
+ipython==7.12.0
 ipython-genutils==0.2.0
-jedi @ file:///D:/bld/jedi_1609162589707/work
+jedi @ file:///D:/bld/jedi_1610146981085/work
 joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1607956439537/work
 Keras==2.4.3
 Keras-Applications @ file:///tmp/build/80754af9/keras-applications_1594366238411/work
 Keras-Preprocessing==1.1.0
-kiwisolver @ file:///D:/bld/kiwisolver_1604322456418/work
+kiwisolver @ file:///D:/bld/kiwisolver_1610099949969/work
 lifelines==0.25.7
 lightgbm==3.1.1
 llvmlite==0.35.0
-Mako==1.1.3
+Mako==1.1.4
 Markdown @ file:///C:/ci/markdown_1603216569530/work
 MarkupSafe==1.1.1
 matplotlib @ file:///D:/bld/matplotlib-suite_1605180495775/work
@@ -60,28 +60,28 @@ multidict @ file:///C:/ci/multidict_1600456486794/work
 mypy-extensions==0.4.3
 networkx @ file:///home/conda/feedstock_root/build_artifacts/networkx_1598210780226/work
 numba @ file:///D:/bld/numba_1607010622162/work
-numpy @ file:///D:/bld/numpy_1609881245947/work
+numpy @ file:///D:/bld/numpy_1610324712085/work
 oauthlib==3.1.0
 olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
 opt-einsum==3.1.0
-optuna==2.3.0
+optuna==2.4.0
 packaging==20.8
-pandas @ file:///D:/bld/pandas_1609079442779/work
+pandas @ file:///D:/bld/pandas_1610610248933/work
 parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1607618318316/work
 pathspec==0.8.1
 patsy==0.5.1
 pbr==5.5.1
 pickleshare @ file:///home/conda/feedstock_root/build_artifacts/pickleshare_1602536217715/work
-Pillow @ file:///D:/bld/pillow_1609628021887/work
+Pillow @ file:///D:/bld/pillow_1610407628862/work
 pluggy==0.13.1
 prettytable==0.7.2
-prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1609920610344/work
+prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1610127285153/work
 protobuf==3.13.0
 py==1.10.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser @ file:///tmp/build/80754af9/pycparser_1594388511720/work
-Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1607352093725/work
+Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1610742651773/work
 PyJWT==1.7.1
 pyOpenSSL @ file:///tmp/build/80754af9/pyopenssl_1594392929924/work
 pyparsing==2.4.7
@@ -99,7 +99,7 @@ requests @ file:///tmp/build/80754af9/requests_1592841827918/work
 requests-oauthlib==1.3.0
 rsa @ file:///tmp/build/80754af9/rsa_1596998415516/work
 scikit-image==0.16.2
-scikit-learn @ file:///D:/bld/scikit-learn_1608656375159/work
+scikit-learn @ file:///D:/bld/scikit-learn_1611079929791/work
 scipy==1.4.1
 seaborn==0.11.1
 shap @ file:///D:/bld/shap_1608143594060/work
@@ -115,8 +115,8 @@ termcolor==1.1.0
 threadpoolctl @ file:///tmp/tmp79xdzxkt/threadpoolctl-2.1.0-py3-none-any.whl
 toml==0.10.2
 toolz @ file:///home/conda/feedstock_root/build_artifacts/toolz_1600973991856/work
-tornado @ file:///D:/bld/tornado_1604105307492/work
-tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1609612933698/work
+tornado @ file:///D:/bld/tornado_1610094878337/work
+tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1610419111160/work
 traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1602771532708/work
 typed-ast==1.4.2
 typing-extensions==3.7.4.3
