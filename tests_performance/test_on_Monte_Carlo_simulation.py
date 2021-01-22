@@ -54,7 +54,7 @@ def eval_chi_square(true_df, forecasts, type_test='vector'):
 
         # Now, find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
         for i in period_cols:
-            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 1)
+            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 2)
 
     else:
         num_people = len(comparison['ID'].unique())
@@ -67,7 +67,7 @@ def eval_chi_square(true_df, forecasts, type_test='vector'):
 
         for i in period_cols:
             test_stat[i] = test_stat[i].astype(float)
-            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 1)
+            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 2)
 
     return test_stat
 
