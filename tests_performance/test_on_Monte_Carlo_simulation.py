@@ -10,6 +10,7 @@ from datetime import date
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 from tqdm import tqdm
 
 from fife.lgb_modelers import LGBSurvivalModeler, LGBStateModeler, LGBExitModeler
@@ -17,7 +18,16 @@ from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
 
-def eval_chi_square(true_df, forecasts):
+def eval_chi_square(true_df, forecasts, type_test='vector'):
+    '''
+    Return chi^2 information comparing forecasts with the actual probabilities.
+    :param true_df: Pandas DF, the data on which the model's forecasts are created.
+    :param forecasts: Pandas DF, forecasts from model.forecast() in FIFE
+    :param type_test: str, 'vector' or 'single'. Represents method of calculating Chi^2.
+    :return: A pandas df with
+    '''
+
+    assert (type_test == 'vector' or type_test == 'single'), 'type_test must be vector or single!'
     # Add information about true values based on rules of the DGP to the true_df
     true_df = true_df[['ID', 'X1']]
     true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.6, 1 / 3)
@@ -36,8 +46,28 @@ def eval_chi_square(true_df, forecasts):
     for i in period_cols:
         comparison[i] = (comparison[i] - comparison['prob_exit']) ** 2 / comparison[i]
 
-    # Sum by individual over time periods
-    test_stat = comparison[period_cols].groupby(comparison['ID']).sum() * 3
+    if type_test == 'vector':
+        # We want to return the distribution of chi^2 probabilities for each individual by time period
+
+        # Sum by individual over time periods
+        test_stat = comparison[period_cols].groupby(comparison['ID']).sum() * 3
+
+        # Now, find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
+        for i in period_cols:
+            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 1)
+
+    else:
+        num_people = len(comparison['ID'].unique())
+        # We want to get one chi^2 per time period by averaging all individuals over outcomes
+        test_stat = comparison[period_cols].groupby(comparison['Future exit_type']).sum() / num_people
+        test_stat= pd.DataFrame(test_stat.sum(axis=0)*3).reset_index().T
+        cols = test_stat.iloc[0]
+        test_stat = test_stat[1:]
+        test_stat.columns = cols
+
+        for i in period_cols:
+            test_stat[i] = test_stat[i].astype(float)
+            test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 1)
 
     return test_stat
 
