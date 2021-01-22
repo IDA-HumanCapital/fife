@@ -17,6 +17,31 @@ from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
 
+def eval_chi_square(true_df, forecasts):
+    # Add information about true values based on rules of the DGP to the true_df
+    true_df = true_df[['ID', 'X1']]
+    true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.6, 1 / 3)
+    true_df['prob_exit_Y'] = np.where(true_df['X1'] == 'A', 0.3, 1 / 3)
+    true_df['prob_exit_Z'] = np.where(true_df['X1'] == 'A', 0.1, 1 / 3)
+    true_df = true_df.drop('X1', axis=1).rename({'prob_exit_X': 'X', 'prob_exit_Y': 'Y', 'prob_exit_Z': 'Z'}, axis=1)
+    true_df = pd.melt(true_df, id_vars='ID', value_vars=['X', 'Y', 'Z'], var_name='Future exit_type',
+                      value_name='prob_exit')
+
+    # In this dgp, the probability of exit stays the same at each period, so it doesn't matter which period we're at.
+    forecasts = forecasts.reset_index()
+    comparison = forecasts.merge(true_df, how='left', on=['ID', 'Future exit_type'])
+    period_cols = [i for i in comparison.columns if '-period' in i]
+
+    # Calculate Chi-Squared test statistic for each period and individual
+    for i in period_cols:
+        comparison[i] = (comparison[i] - comparison['prob_exit']) ** 2 / comparison[i]
+
+    # Sum by individual over time periods
+    test_stat = comparison[period_cols].groupby(comparison['ID']).sum() * 3
+
+    return test_stat
+
+
 def run_FIFE(df, model, test_intervals):
     """
     :param df: Data frame created before
@@ -42,6 +67,7 @@ def run_FIFE(df, model, test_intervals):
     )
     evaluations = modeler.evaluate(evaluation_subset)
     forecasts = modeler.forecast()
+    chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts)
 
     return forecasts, evaluations
 
@@ -116,9 +142,9 @@ def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PER
     datas = pd.concat(datas).reset_index()
 
     # Concat true probabilities for use in chi-squared calculation based on rules in DGP
-    datas['prob_X'] = np.where(datas['X1'] == 'A', 0.6, 1/3)
-    datas['prob_Y'] = np.where(datas['X1'] == 'A', 0.3, 1/3)
-    datas['prob_Z'] = np.where(datas['X1'] == 'A', 0.1, 1/3)
+    datas['prob_X'] = np.where(datas['X1'] == 'A', 0.6, 1 / 3)
+    datas['prob_Y'] = np.where(datas['X1'] == 'A', 0.3, 1 / 3)
+    datas['prob_Z'] = np.where(datas['X1'] == 'A', 0.1, 1 / 3)
 
     forecasts.to_csv(os.path.join(PATH, 'forecasts.csv'.format(MODEL)), index=False)
     evaluations.to_csv(os.path.join(PATH, 'evaluations_{}.csv'.format(MODEL)), index=False)
