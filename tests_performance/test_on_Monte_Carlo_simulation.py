@@ -17,6 +17,11 @@ from fife.lgb_modelers import LGBSurvivalModeler, LGBStateModeler, LGBExitModele
 from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
+def multiclass_aucroc(modeler):
+    preds = modeler.forecast()
+
+
+
 
 def eval_chi_square(true_df, forecasts, type_test='vector'):
     '''
@@ -97,12 +102,15 @@ def run_FIFE(df, model, test_intervals):
     )
     evaluations = modeler.evaluate(evaluation_subset)
     forecasts = modeler.forecast()
-    chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts)
+   # chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts, 'vector')
+   # modeler.data['_predict_obs'] = np.where(modeler.data["_period"] == (
+  #          modeler.data["_period"].max() - test_intervals
+  #  ), True, False)
 
     return forecasts, evaluations
 
 
-def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0,
+def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
                    EXIT_PROB=0.2, SEED=None):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
