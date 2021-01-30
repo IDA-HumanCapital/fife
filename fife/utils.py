@@ -374,6 +374,11 @@ class FIFEArgParser(argparse.ArgumentParser):
             help="Optional list of suffixes denoting that columns ending with such a suffix should be treated as numeric.",
         )
         self.add_argument(
+            "--TIME_ID_AS_FEATURE",
+            type=bool,
+            help="Whether or not the time identifier will be included as a feature.",
+        )
+        self.add_argument(
             "--MIN_SURVIVORS_IN_TRAIN",
             type=int,
             help="The minimum number of training set observations surviving a given time horizon for the model to be trained to make predictions for that time horizon.",

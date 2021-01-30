@@ -259,6 +259,10 @@ MAX_UNIQUE_NUMERIC_CATS; default: 1024; type: Integer
 	The maximum number of unique values for a feature of a numeric type to be considered categorical. Larger values may increase or decrease performance and/or increase run time.
 NUMERIC_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as numeric. Useful for flagging columns that have a numeric data type and fewer than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
+TIME_ID_AS_FEATURE; default: `true`; type: Boolean
+	Whether or not the time identifier will be included as a feature.
+
+Whether or not the time identifier will be included as a feature.
 
 ##### Training set
 
