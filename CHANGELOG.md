@@ -1,3 +1,11 @@
+## 1.5.0 - 2021-01-30
+
+### Changed
+
+<u>StateModeler and ExitModeler</u>
+
+- Prediction DataFrames for categorical outcomes now include future state in the index
+
 ## 1.4.2 - 2021-01-21
 
 ### Added

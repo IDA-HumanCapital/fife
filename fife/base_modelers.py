@@ -722,7 +722,7 @@ class StateModeler(Modeler):
                 str(i + 1) + "-period State Probabilities"
                 for i in range(self.n_intervals)
             ]
-            index = np.repeat(
+            ids = np.repeat(
                 self.data[self.config["INDIVIDUAL_IDENTIFIER"]][
                     self.data[self.predict_col]
                 ],
@@ -734,8 +734,14 @@ class StateModeler(Modeler):
                 (forecasts.shape[0] * forecasts.shape[1], forecasts.shape[2]),
                 order="F",
             )
+            index = pd.MultiIndex.from_arrays(
+                [ids, states],
+                names=[
+                    self.config["INDIVIDUAL_IDENTIFIER"],
+                    f"Future {self.state_col}",
+                ],
+            )
             forecasts = pd.DataFrame(forecasts, columns=columns, index=index)
-            forecasts[f"Future {self.state_col}"] = states
         else:
             columns = [
                 str(i + 1) + f"-period {self.state_col} Forecast"
