@@ -1,6 +1,6 @@
 absl-py @ file:///C:/ci/absl-py_1600290345082/work
 aiohttp @ file:///C:/ci/aiohttp_1602530358780/work
-alembic==1.5.1
+alembic==1.5.3
 appdirs==1.4.4
 astor==0.8.1
 async-timeout==3.0.1
@@ -8,7 +8,6 @@ atomicwrites==1.4.0
 attrs @ file:///tmp/build/80754af9/attrs_1600298409949/work
 autograd==1.3
 autograd-gamma==0.5.0
-backcall @ file:///home/conda/feedstock_root/build_artifacts/backcall_1592338393461/work
 backports.functools-lru-cache==1.6.1
 black==20.8b1
 blinker==1.4
@@ -27,9 +26,10 @@ colorlog==4.7.2
 cryptography @ file:///C:/ci/cryptography_1601046913206/work
 cycler==0.10.0
 cytoolz==0.11.0
-dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1610760008122/work
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1611349541186/work
 decorator==4.4.2
 fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.2-py3-none-any.whl
+formulaic==0.2.1
 future==0.18.2
 gast==0.2.2
 google-auth @ file:///tmp/build/80754af9/google-auth_1601995530934/work
@@ -41,21 +41,21 @@ idna @ file:///tmp/build/80754af9/idna_1593446292537/work
 imageio @ file:///home/conda/feedstock_root/build_artifacts/imageio_1594044661732/work
 importlib-metadata @ file:///tmp/build/80754af9/importlib-metadata_1602276842396/work
 iniconfig @ file:///home/conda/feedstock_root/build_artifacts/iniconfig_1603384189793/work
-ipython==7.12.0
+interface-meta==1.2.2
+ipython==5.8.0
 ipython-genutils==0.2.0
-jedi @ file:///D:/bld/jedi_1610146981085/work
 joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1607956439537/work
 Keras==2.4.3
 Keras-Applications @ file:///tmp/build/80754af9/keras-applications_1594366238411/work
 Keras-Preprocessing==1.1.0
 kiwisolver @ file:///D:/bld/kiwisolver_1610099949969/work
-lifelines==0.25.7
+lifelines==0.25.8
 lightgbm==3.1.1
 llvmlite==0.35.0
 Mako==1.1.4
 Markdown @ file:///C:/ci/markdown_1603216569530/work
 MarkupSafe==1.1.1
-matplotlib @ file:///D:/bld/matplotlib-suite_1605180495775/work
+matplotlib @ file:///D:/bld/matplotlib-suite_1611858873832/work
 multidict @ file:///C:/ci/multidict_1600456486794/work
 mypy-extensions==0.4.3
 networkx @ file:///home/conda/feedstock_root/build_artifacts/networkx_1598210780226/work
@@ -65,17 +65,15 @@ oauthlib==3.1.0
 olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
 opt-einsum==3.1.0
 optuna==2.4.0
-packaging==20.8
-pandas @ file:///D:/bld/pandas_1610610248933/work
-parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1607618318316/work
+packaging==20.9
+pandas @ file:///D:/bld/pandas_1611163649619/work
 pathspec==0.8.1
-patsy==0.5.1
 pbr==5.5.1
 pickleshare @ file:///home/conda/feedstock_root/build_artifacts/pickleshare_1602536217715/work
 Pillow @ file:///D:/bld/pillow_1610407628862/work
 pluggy==0.13.1
 prettytable==0.7.2
-prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1610127285153/work
+prompt-toolkit==1.0.15
 protobuf==3.13.0
 py==1.10.0
 pyasn1==0.4.8
@@ -88,12 +86,12 @@ pyparsing==2.4.7
 pyperclip==1.8.1
 pyreadline==2.1
 PySocks @ file:///C:/ci/pysocks_1594394709107/work
-pytest==6.2.1
+pytest==6.2.2
 python-dateutil==2.8.1
 python-editor==1.0.4
 pytz @ file:///home/conda/feedstock_root/build_artifacts/pytz_1608904108784/work
 PyWavelets @ file:///D:/bld/pywavelets_1607290963729/work
-PyYAML==5.3.1
+PyYAML==5.4.1
 regex==2020.11.13
 requests @ file:///tmp/build/80754af9/requests_1592841827918/work
 requests-oauthlib==1.3.0
@@ -103,6 +101,7 @@ scikit-learn @ file:///D:/bld/scikit-learn_1611079929791/work
 scipy==1.4.1
 seaborn==0.11.1
 shap @ file:///D:/bld/shap_1608143594060/work
+simplegeneric==0.8.1
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1590081179328/work
 slicer==0.0.3
 SQLAlchemy==1.3.22
