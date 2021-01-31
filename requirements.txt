@@ -24,7 +24,7 @@ cycler==0.10.0
 cytoolz==0.11.0
 dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1611349541186/work
 decorator==4.4.2
-fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.4.2-py3-none-any.whl
+fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.5.0-py3-none-any.whl
 flatbuffers==1.12
 formulaic==0.2.1
 future==0.18.2

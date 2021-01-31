@@ -91,5 +91,17 @@ def test_compute_metrics_for_categorical_outcome():
     assert not errors_list, "Errors occurred: \n{}".format("\n".join(errors_list))
 
 
+def test_compute_metrics_for_numeric_outcome():
+    """Test that FIFE produces correct example AUROC and confusion matrices."""
+    errors_list = []
+    actuals = pd.Series([1, 2, 3, 4, np.nan])
+    predictions = np.array([1.2, 1.7, -0.5, 5.1, 2.0])
+    metrics = base_modelers.compute_metrics_for_numeric_outcome(actuals, predictions)
+    if not isinstance(metrics["R-squared"], float):
+        errors_list.append(f"R-squared not a float.")
+    if not (0 < metrics["R-squared"] < 1):
+        errors_list.append(f"R-squared not between 0 and 1.")
+
+
 SEED = 9999
 np.random.seed(SEED)
