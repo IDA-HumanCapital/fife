@@ -60,7 +60,7 @@ FIFE is even simpler to use [from the command line](cli_link.html) (but currentl
 
 <u>Details</u>
 
-* Install an [Anaconda distribution](https://www.anaconda.com/distribution/) of Python version 3.7.6 or later
+* Install an [Anaconda distribution](https://www.anaconda.com/distribution/) of Python version 3.8.5 or later
 * From pip (with no firewall):
 	* Open Anaconda Prompt
 	* Execute `pip install fife`
@@ -75,13 +75,13 @@ FIFE is even simpler to use [from the command line](cli_link.html) (but currentl
 	* Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.<br/>
 		Example: `cd C:\Users\insert-user-name\Downloads`
 	* Pip install the name of the `.whl` or `.tar.gz` file.<br/>
-		Example: `pip install fife-1.4.2-py3-none-any.whl`
+		Example: `pip install fife-1.5.0-py3-none-any.whl`
 * From GitHub (https://github.com/IDA-HumanCapital/fife):
 	*	Clone the FIFE repository
 	* Open Anaconda Prompt
 	* Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
 	* Execute `python setup.py sdist bdist_wheel`
-	* Execute `pip install dist/fife-1.4.2-py3-none-any.whl`
+	* Execute `pip install dist/fife-1.5.0-py3-none-any.whl`
 
 ### Usage
 
