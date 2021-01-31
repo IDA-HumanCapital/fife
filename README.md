@@ -4,23 +4,23 @@ Suppose you have a dataset that looks like this:
 
 | ID | period | feature_1 | feature_2 | feature_3 | ... |
 |----|--------|-----------|-----------|-----------|-----|
-| 0  | 2016   | 7.2       | A         | 2AX       | ... |
-| 0  | 2017   | 6.4       | A         | 2AX       | ... |
-| 0  | 2018   | 6.6       | A         | 1FX       | ... |
-| 0  | 2019   | 7.1       | A         | 1FX       | ... |
-| 1  | 2016   | 5.3       | B         | 1RM       | ... |
-| 1  | 2017   | 5.4       | B         | 1RM       | ... |
-| 2  | 2017   | 6.7       | A         | 1FX       | ... |
-| 2  | 2018   | 6.9       | A         | 1RM       | ... |
-| 2  | 2019   | 6.9       | A         | 1FX       | ... |
-| 3  | 2017   | 4.3       | B         | 2AX       | ... |
-| 3  | 2018   | 4.1       | B         | 2AX       | ... |
-| 4  | 2019   | 7.4       | B         | 1RM       | ... |
+| 0  | 2017   | 7.2       | A         | 2AX       | ... |
+| 0  | 2018   | 6.4       | A         | 2AX       | ... |
+| 0  | 2019   | 6.6       | A         | 1FX       | ... |
+| 0  | 2020   | 7.1       | A         | 1FX       | ... |
+| 1  | 2017   | 5.3       | B         | 1RM       | ... |
+| 1  | 2018   | 5.4       | B         | 1RM       | ... |
+| 2  | 2018   | 6.7       | A         | 1FX       | ... |
+| 2  | 2019   | 6.9       | A         | 1RM       | ... |
+| 2  | 2020   | 6.9       | A         | 1FX       | ... |
+| 3  | 2018   | 4.3       | B         | 2AX       | ... |
+| 3  | 2019   | 4.1       | B         | 2AX       | ... |
+| 4  | 2020   | 7.4       | B         | 1RM       | ... |
 | ...| ...    | ...       | ...       |...        | ... |
 
-The entities with IDs 0, 2, and 4 are observed in the dataset in 2019.
+The entities with IDs 0, 2, and 4 are observed in the dataset in 2020.
 
-* What are each of their probabilities of being observed in 2020? 2021? 2022?
+* What are each of their probabilities of being observed in 2021? 2022? 2023?
 * Given that they will be observed, what will be the value of feature_1? feature_3?
 * Suppose entities can exit the dataset under a variety of circumstances. If entities 0, 2, or 4 exit in a given year, what will their circumstances be?
 * How reliable can we expect these forecasts to be?

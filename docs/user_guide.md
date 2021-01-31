@@ -4,23 +4,23 @@ Suppose you have a dataset that looks like this:
 
 | ID   | period | feature_1 | feature_2 | feature_3 | ...  |
 | ---- | ------ | --------- | --------- | --------- | ---- |
-| 0    | 2016   | 7.2       | A         | 2AX       | ...  |
-| 0    | 2017   | 6.4       | A         | 2AX       | ...  |
-| 0    | 2018   | 6.6       | A         | 1FX       | ...  |
-| 0    | 2019   | 7.1       | A         | 1FX       | ...  |
-| 1    | 2016   | 5.3       | B         | 1RM       | ...  |
-| 1    | 2017   | 5.4       | B         | 1RM       | ...  |
-| 2    | 2017   | 6.7       | A         | 1FX       | ...  |
-| 2    | 2018   | 6.9       | A         | 1RM       | ...  |
-| 2    | 2019   | 6.9       | A         | 1FX       | ...  |
-| 3    | 2017   | 4.3       | B         | 2AX       | ...  |
-| 3    | 2018   | 4.1       | B         | 2AX       | ...  |
-| 4    | 2019   | 7.4       | B         | 1RM       | ...  |
+| 0    | 2017   | 7.2       | A         | 2AX       | ...  |
+| 0    | 2018   | 6.4       | A         | 2AX       | ...  |
+| 0    | 2019   | 6.6       | A         | 1FX       | ...  |
+| 0    | 2020   | 7.1       | A         | 1FX       | ...  |
+| 1    | 2017   | 5.3       | B         | 1RM       | ...  |
+| 1    | 2018   | 5.4       | B         | 1RM       | ...  |
+| 2    | 2018   | 6.7       | A         | 1FX       | ...  |
+| 2    | 2019   | 6.9       | A         | 1RM       | ...  |
+| 2    | 2020   | 6.9       | A         | 1FX       | ...  |
+| 3    | 2018   | 4.3       | B         | 2AX       | ...  |
+| 3    | 2019   | 4.1       | B         | 2AX       | ...  |
+| 4    | 2020   | 7.4       | B         | 1RM       | ...  |
 | ...  | ...    | ...       | ...       | ...       | ...  |
 
-The entities with IDs 0, 2, and 4 are observed in the dataset in 2019.
+The entities with IDs 0, 2, and 4 are observed in the dataset in 2020.
 
-* What are each of their probabilities of being observed in 2020? 2021? 2022?
+* What are each of their probabilities of being observed in 2021? 2022? 2023?
 * Given that they will be observed, what will be the value of feature_1? feature_3?
 * Suppose entities can exit the dataset under a variety of circumstances. If entities 0, 2, or 4 exit in a given year, what will their circumstances be?
 * How reliable can we expect these forecasts to be?
@@ -259,6 +259,10 @@ MAX_UNIQUE_NUMERIC_CATS; default: 1024; type: Integer
 	The maximum number of unique values for a feature of a numeric type to be considered categorical. Larger values may increase or decrease performance and/or increase run time.
 NUMERIC_SUFFIXES; default: `[]` (empty list); type: List of strings
 	Optional list of suffixes denoting that columns ending with such a suffix should be treated as numeric. Useful for flagging columns that have a numeric data type and fewer than MAX_NUM_CAT unique values. Column names with a categorical suffix and a numeric suffix will be identified as categorical.
+TIME_ID_AS_FEATURE; default: `true`; type: Boolean
+	Whether or not the time identifier will be included as a feature.
+
+Whether or not the time identifier will be included as a feature.
 
 ##### Training set
 
@@ -356,7 +360,7 @@ If firewall, air gap, or other issues prevent you from installing FIFE, please c
 
 ### License
 
-Copyright (c) 2018 - 2020, Institute for Defense Analyses (IDA).
+Copyright (c) 2018 - 2021, Institute for Defense Analyses (IDA).
 All rights reserved.
 
 FIFE is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
@@ -366,7 +370,7 @@ FIFE is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY
 ### Citation
 Please cite FIFE as:
 
-Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2020. Version 1.x.x.
+Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2021. Version 1.x.x.
 
 BibTex:
 ```bib
@@ -375,8 +379,8 @@ BibTex:
   title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
   howpublished={https://github.com/IDA-HumanCapital/fife},
   note={Version 1.x.x},
-  year={2020}
+  year={2021}
 }
 ```
 
-This document was most recently updated 25 August 2020.
+This document was most recently updated 30 Jan 2021.

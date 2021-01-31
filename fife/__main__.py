@@ -71,6 +71,8 @@ def main():
     modeler.n_intervals = (
         test_intervals if test_intervals > 0 else modeler.set_n_intervals()
     )
+    if not config.get("TIME_ID_AS_FEATURE"):
+        modeler.numeric_features.remove(config["TIME_IDENTIFIER"])
     if config.get("HYPER_TRIALS", 0) > 0:
         params = modeler.hyperoptimize(config["HYPER_TRIALS"])
     else:
