@@ -1,5 +1,13 @@
 ## 1.5.0 - 2021-01-30
 
+### Added
+
+- [Hyperparameter search documentation](https://fife.readthedocs.io/en/latest/hyperparameter_search_link.html)
+
+<u>Command-line Interface</u>
+
+- Can now specify `TIME_ID_AS_FEATURE` as false to exclude the time identifier from the set of features
+
 ### Changed
 
 <u>StateModeler and ExitModeler</u>
