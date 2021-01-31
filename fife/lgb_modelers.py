@@ -67,7 +67,7 @@ class LGBModeler(Modeler):
             n_trials: The number of hyperparameter sets to evaluate for each
                 time horizon. Return None if non-positive.
             rolling_validation: Whether or not to evaluate performance on the
-                most recent possible period instead of the validation set
+                most recent possible periods instead of the validation set
                 labeled by self.validation_col. Ignored for a given time horizon
                 if there is only one possible period for training and evaluation.
             subset:  A Boolean Series that is True for observations on which
