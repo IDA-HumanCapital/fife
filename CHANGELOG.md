@@ -8,6 +8,12 @@
 
 - Can now specify `TIME_ID_AS_FEATURE` as false to exclude the time identifier from the set of features
 
+### Fixed
+
+<u>StateModeler and ExitModeler</u>
+
+- Observations with NaN outcome values now excluded from R-squared calculation
+
 ### Changed
 
 - build_packages.bat and requirements.txt updated to Python 3.8
