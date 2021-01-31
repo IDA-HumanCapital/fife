@@ -10,6 +10,8 @@
 
 ### Changed
 
+- build_packages.bat and requirements.txt updated to Python 3.8
+
 <u>StateModeler and ExitModeler</u>
 
 - Prediction DataFrames for categorical outcomes now include future state in the index

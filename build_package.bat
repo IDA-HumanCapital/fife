@@ -7,7 +7,7 @@ rem | You may need to specify your local path to activate.bat
 setlocal enabledelayedexpansion
 call C:/Users/%username%/Miniconda3/Scripts/activate.bat
 call C:/Users/%username%/AppData/Local/Continuum/anaconda3/Scripts/activate.bat
-call conda create -y -n fife_env python=3.7
+call conda create -y -n fife_env python=3.8
 call C:/Users/%username%/Miniconda3/Scripts/activate.bat fife_env
 call C:/Users/%username%/AppData/Local/Continuum/anaconda3/Scripts/activate.bat fife_env
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade setuptools wheel
