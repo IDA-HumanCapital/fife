@@ -139,7 +139,11 @@ def compute_metrics_for_numeric_outcome(
     """
     metrics = OrderedDict()
     non_null_obs = actuals.notnull()
-    metrics["R-squared"] = r2_score(actuals[non_null_obs], predictions[non_null_obs], sample_weight=weights[non_null_obs])
+    metrics["R-squared"] = r2_score(
+        actuals[non_null_obs],
+        predictions[non_null_obs],
+        sample_weight=weights[non_null_obs] if weights else None,
+    )
     return metrics
 
 
