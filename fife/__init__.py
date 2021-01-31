@@ -14,4 +14,4 @@ PARTICULAR PURPOSE. See the GNU Affero General Public License for more details
 (a copy is included in the LICENSE file).
 """
 
-__version__ = "1.4.2"
+__version__ = "1.5.0"
