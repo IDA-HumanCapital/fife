@@ -138,7 +138,8 @@ def compute_metrics_for_numeric_outcome(
         An ordered dictionary containing a key-value pair for R-squared.
     """
     metrics = OrderedDict()
-    metrics["R-squared"] = r2_score(actuals, predictions, sample_weight=weights)
+    non_null_obs = actuals.notnull()
+    metrics["R-squared"] = r2_score(actuals[non_null_obs], predictions[non_null_obs], sample_weight=weights[non_null_obs])
     return metrics
 
 
