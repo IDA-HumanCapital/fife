@@ -1,4 +1,4 @@
-Hyperparameter Optimization
+Hyperparameter Search
 ===========================
 
-.. mdinclude:: hyperparameter_optimization.md
+.. mdinclude:: hyperparameter_search.md
