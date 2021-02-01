@@ -109,7 +109,7 @@ def run_FIFE(df, model, test_intervals, dgp):
     return forecasts, evaluations, chi_squared
 
 
-def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=1000, N_PERIODS=40, N_EXTRA_FEATURES=0,
+def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
                    EXIT_PROB=0.2, SEED=None, dgp=1):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts

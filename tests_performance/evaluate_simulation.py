@@ -34,6 +34,8 @@ def generate_plots(df, PATH, type='auroc'):
     plt.close()
     sns.lineplot(x='Lead Length', y=col, data=df, units='run', estimator=None).set_ylabel(col)
     sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
+    if col=='Chi Squared':
+        sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
     plt.tight_layout()
     plt.savefig(os.path.join(PATH, 'all_runs_{}.png'.format(col)))
 
@@ -63,7 +65,7 @@ def run_evaluations(PATH=None, MODEL='exit'):
 
     # Create AUROC evaluation plots
     generate_plots(evals, PATH, type='auroc')
-    generate_plots(evals, PATH, type='chi_square')
+    generate_plots(chi_square, PATH, type='chi_squared')
 
 
 if __name__ == '__main__':
