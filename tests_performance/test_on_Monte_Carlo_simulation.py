@@ -18,12 +18,13 @@ from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
 
-def eval_chi_square(true_df, forecasts, dgp=1):
+def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
     '''
     Return chi^2 information comparing forecasts with the actual probabilities.
     :param true_df: Pandas DF, the data on which the model's forecasts are created.
     :param forecasts: Pandas DF, forecasts from model.forecast() in FIFE
     :param type_test: str, 'vector' or 'single'. Represents method of calculating Chi^2.
+    :param num_exits: The number of possible types of exit
     :param dgp: 1 or 2. The type of data generation we did.
     :return: A pandas df with
     '''
@@ -40,12 +41,14 @@ def eval_chi_square(true_df, forecasts, dgp=1):
         true_df['prob_exit_Y'] = np.select(conditions, values_y)
         true_df['prob_exit_Z'] = np.select(conditions, values_z)
         true_df['groups'] = np.select(conditions, groups)
+        degrees_freedom = len(groups)*(num_exits-1) # 2 = num of possible exits -1
     else:
-        true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.6, 1 / 3)
-        true_df['prob_exit_Y'] = np.where(true_df['X1'] == 'A', 0.3, 1 / 3)
+        true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.7, 1 / 3)
+        true_df['prob_exit_Y'] = np.where(true_df['X1'] == 'A', 0.2, 1 / 3)
         true_df['prob_exit_Z'] = np.where(true_df['X1'] == 'A', 0.1, 1 / 3)
         groups = [1, 2]
         true_df['groups'] = np.select(true_df['X1'] == 'A', groups)
+        degrees_freedom = len(groups)*(num_exits-1)
 
     true_df = true_df.drop('X1', axis=1).rename({'prob_exit_X': 'X', 'prob_exit_Y': 'Y', 'prob_exit_Z': 'Z'}, axis=1)
     true_df = pd.melt(true_df, id_vars=['ID', 'groups'], value_vars=['X', 'Y', 'Z'], var_name='Future exit_type',
@@ -60,20 +63,22 @@ def eval_chi_square(true_df, forecasts, dgp=1):
     # Calculate Chi-Squared test statistic for each period and individual
     test_stat[period_cols] = test_stat[period_cols].sub(test_stat['prob_exit'], axis=0)
 
-    # Calculate mean by original groups (whether X1 is A, B, or C) and the values. This will be the 9 groups
+    # Calculate mean by original groups (whether X1 is A, B, or C) and the values. This will be the 9 or 6 groups
     # representing the combinations of I_m and d in the formula
     test_stat = test_stat.groupby(['groups', 'prob_exit'])[period_cols].mean().reset_index()
 
     for i in period_cols:
         test_stat[i] = (test_stat[i] ** 2) / test_stat['prob_exit']
 
-    test_stat = test_stat.groupby('groups')[period_cols].mean().reset_index()
+    counts = test_stat.groupby('groups')[period_cols].count()
+    test_stat = test_stat.groupby('groups')[period_cols].sum().reset_index() # This needs to be a multiplication, not an inverse
 
     # Now, sum the values and then find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
     test_stat = (test_stat[period_cols].sum(axis=0)).reset_index().rename({'index': 'Lead Length', 0: 'Chi Squared'},
                                                                           axis=1)
     test_stat['Lead Length'] = test_stat['Lead Length'].str.split('-', expand=True)[0]
-    test_stat['Chi Squared'] = 1 - stats.chi2.cdf(test_stat['Chi Squared'], 2)
+    test_stat['test_statistic'] = test_stat['Chi Squared']
+    test_stat['Chi Squared'] = 1 - stats.chi2.cdf(test_stat['Chi Squared'], degrees_freedom)
 
     return test_stat
 
