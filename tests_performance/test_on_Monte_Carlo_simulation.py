@@ -102,16 +102,16 @@ def run_FIFE(df, model, test_intervals):
     )
     evaluations = modeler.evaluate(evaluation_subset)
     forecasts = modeler.forecast()
-   # chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts, 'vector')
-   # modeler.data['_predict_obs'] = np.where(modeler.data["_period"] == (
-  #          modeler.data["_period"].max() - test_intervals
-  #  ), True, False)
+    # chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts, 'vector')
+    # modeler.data['_predict_obs'] = np.where(modeler.data["_period"] == (
+    #          modeler.data["_period"].max() - test_intervals
+    #  ), True, False)
 
     return forecasts, evaluations
 
 
 def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
-                   EXIT_PROB=0.2, SEED=None):
+                   EXIT_PROB=0.2, SEED=None, dgp=1):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
     are saved in csvs.
@@ -123,6 +123,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PER
     :param N_EXTRA_FEATURES: How many features over 3 to include. If more are included, they are random.
     :param EXIT_PROB: The probability an individual exits at the end of each time period
     :param SEED: A number to set the random seed
+    :param dgp: data fabrication dgp (see Data_Fabrication.py)
     :return: None, but saves 3 .csvs: The forecasts, evaluations, and created datasets.
     """
 
@@ -143,7 +144,8 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PER
         data = fabricate_data(N_PERSONS=N_PERSONS,
                               N_PERIODS=N_PERIODS,
                               k=N_EXTRA_FEATURES,
-                              exit_prob=EXIT_PROB).reset_index(drop=True)
+                              exit_prob=EXIT_PROB,
+                              dgp=dgp)
         numeric_suffixes = ['X2', 'X3']
         if N_EXTRA_FEATURES > 0:
             for items in range(4, N_EXTRA_FEATURES + 4):
@@ -200,3 +202,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PER
 if __name__ == '__main__':
     PATH = r'X:\Human Capital Group\Sponsored Projects\4854 DoN FIFE Extensions\Code\FIFE_Testing'
     run_simulation(PATH=PATH, SEED=999)
+
+    # PATH = '../'
+    # run_simulation(PATH, N_SIMULATIONS=3, MODEL='exit', N_PERSONS=1000, N_PERIODS=10, N_EXTRA_FEATURES=0,
+    #                EXIT_PROB=0.3, SEED=1234, dgp=2)
