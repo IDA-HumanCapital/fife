@@ -46,7 +46,8 @@ def make_person(i, N_PERIODS, k=0, exit_prob=0.5, exit_type_prob=None, dgp=1):
         if exit_type != "No_exit":
             break
         # this part handles characteristics that change over time
-        x1, x2, x3, exit_prob, exit_type_prob = update_person(x1, x2, x3, exit_prob=exit_prob, exit_type_prob=exit_type_prob, dgp=dgp)
+        x1, x2, x3, exit_prob, exit_type_prob = update_person(x1, x2, x3, exit_prob=exit_prob,
+                                                              exit_type_prob=exit_type_prob, dgp=dgp)
         exit_type = make_exit_type(exit_prob=exit_prob, p=exit_type_prob)
         date += 1
     df = pd.DataFrame(df, columns=cols)
@@ -70,7 +71,7 @@ def make_exit_type(exit_prob=0.5, p=None):
 
 
 def fabricate_data(
-    N_PERSONS=100, N_PERIODS=10, SEED=None, k=0, exit_prob=0.5, exit_type_prob=None, dgp=1
+        N_PERSONS=100, N_PERIODS=10, SEED=None, k=0, exit_prob=0.5, exit_type_prob=None, dgp=1
 ):
     if SEED is not None:
         np.random.seed(SEED)
