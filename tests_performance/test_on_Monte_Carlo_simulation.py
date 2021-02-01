@@ -17,12 +17,6 @@ from fife.lgb_modelers import LGBSurvivalModeler, LGBStateModeler, LGBExitModele
 from fife.processors import PanelDataProcessor
 from tests_performance.Data_Fabrication import fabricate_data
 
-def multiclass_aucroc(modeler):
-    preds = modeler.forecast()
-
-
-
-
 def eval_chi_square(true_df, forecasts, type_test='vector'):
     '''
     Return chi^2 information comparing forecasts with the actual probabilities.
@@ -46,25 +40,33 @@ def eval_chi_square(true_df, forecasts, type_test='vector'):
     forecasts = forecasts.reset_index()
     comparison = forecasts.merge(true_df, how='left', on=['ID', 'Future exit_type'])
     period_cols = [i for i in comparison.columns if '-period' in i]
-
-    # Calculate Chi-Squared test statistic for each period and individual
-    for i in period_cols:
-        comparison[i] = (comparison[i] - comparison['prob_exit']) ** 2 / comparison[i]
+    num_people = len(comparison['ID'].unique())
 
     if type_test == 'vector':
-        # We want to return the distribution of chi^2 probabilities for each individual by time period
+        # We want to return the average chi^2 probability over individuals by time period
+
+        # Calculate Chi-Squared test statistic for each period and individual
+        for i in period_cols:
+            comparison[i] = (comparison[i] - comparison['prob_exit']) ** 2 / comparison['prob_exit']
 
         # Sum by individual over time periods
         test_stat = comparison[period_cols].groupby(comparison['ID']).sum() * 3
 
-        # Now, find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
+        # Now, average the values and then find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
+        test_stat = (test_stat.sum(axis=0)/num_people).reset_index().T
+        cols = test_stat.iloc[0]
+        test_stat = test_stat[1:]
+        test_stat.columns = cols
         for i in period_cols:
+            test_stat[i] = test_stat[i].astype(float)
             test_stat[i] = 1 - stats.chi2.cdf(test_stat[i], 2)
 
     else:
-        num_people = len(comparison['ID'].unique())
         # We want to get one chi^2 per time period by averaging all individuals over outcomes
-        test_stat = comparison[period_cols].groupby(comparison['Future exit_type']).sum() / num_people
+        for i in period_cols:
+            comparison[i] = (comparison[i] - comparison['prob_exit'])
+        test_stat = ((comparison[period_cols].groupby(comparison['Future exit_type']).sum() / num_people) ** 2)
+
         test_stat= pd.DataFrame(test_stat.sum(axis=0)*3).reset_index().T
         cols = test_stat.iloc[0]
         test_stat = test_stat[1:]
@@ -103,9 +105,6 @@ def run_FIFE(df, model, test_intervals):
     evaluations = modeler.evaluate(evaluation_subset)
     forecasts = modeler.forecast()
    # chi_squared = eval_chi_square(df[modeler.data['_predict_obs']], forecasts, 'vector')
-   # modeler.data['_predict_obs'] = np.where(modeler.data["_period"] == (
-  #          modeler.data["_period"].max() - test_intervals
-  #  ), True, False)
 
     return forecasts, evaluations
 
