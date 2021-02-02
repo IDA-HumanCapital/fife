@@ -23,7 +23,7 @@ def generate_plots(df, PATH, type='auroc'):
     if type == 'auroc':
         col = 'AUROC'
     else:
-        col = 'Chi Squared'
+        col = 'Chi-square'
 
     # Look at average at each lead length and graph this.
     plt.close()
@@ -34,7 +34,7 @@ def generate_plots(df, PATH, type='auroc'):
     plt.close()
     sns.lineplot(x='Lead Length', y=col, data=df, units='run', estimator=None).set_ylabel(col)
     sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
-    if col=='Chi Squared':
+    if col == 'Chi-square':
         sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
     plt.tight_layout()
     plt.savefig(os.path.join(PATH, 'all_runs_{}.png'.format(col)))
@@ -59,6 +59,9 @@ def run_evaluations(PATH=None, MODEL='exit'):
 
     evals = pd.read_csv(os.path.join(PATH, 'evaluations_{}.csv'.format(MODEL)))
     chi_square = pd.read_csv(os.path.join(PATH, 'chi_squared_{}.csv'.format(MODEL)))
+    # Rework chi_squared to get the right format
+    chi_square = chi_square.loc[chi_square.Group == 'Combined'][['p-value', 'Lead Length', 'run']].rename(
+        columns={'p-value': 'Chi-square'})
 
     PATH = os.path.join(PATH, 'plots')
     os.makedirs(PATH, exist_ok=True)

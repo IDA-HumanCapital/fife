@@ -7,6 +7,8 @@ import math
 import os
 import sys
 from datetime import date
+import warnings
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import pandas as pd
@@ -19,18 +21,6 @@ from tests_performance.Data_Fabrication import fabricate_data
 
 
 def chi_square(df):
-    # df = []
-    # p = [.6, .3, .1]
-    # for i in range(100):
-    #     p1 = min(max(round(p[0] + np.random.normal()/5,2)-.1 ,0),1)
-    #     p2 = min(max(round(p[1] + np.random.normal()/5,2) ,0),1)
-    #     p3 = 1 - p1 - p2
-    #     df.append([i, 'A', p1, p[0]])
-    #     df.append([i, 'B', p2, p[1]])
-    #     df.append([i, 'C', p3, p[2]])
-    # df = pd.DataFrame(df, columns=['ID', 'outcome', 'p_hat', 'p'])
-    # df['groups'] = 1
-    # # df = [ID, outcome, p_hat, p, groups]
     ts = []
     ps = []
     Ns = []
@@ -42,12 +32,12 @@ def chi_square(df):
         K = len(df2['outcome'].unique())
         df2['N'] = 1
         temp = df2.groupby(['outcome']).sum().reset_index()
-        test_stat = N * sum( ( (temp['p_hat'] - temp['p']) / temp['N'] )**2 / ( temp['p'] / temp['N'] ) )
-        pval = 1 - stats.chi2.cdf(test_stat, K-1)
+        test_stat = N * sum(((temp['p_hat'] - temp['p']) / temp['N']) ** 2 / (temp['p'] / temp['N']))
+        pval = 1 - stats.chi2.cdf(test_stat, K - 1)
         ts.append(test_stat)
         ps.append(pval)
         Ns.append(N)
-        dofs.append(K-1)
+        dofs.append(K - 1)
     test_stat = sum(ts)
     ts.append(test_stat)
     N = sum(Ns)
@@ -56,26 +46,22 @@ def chi_square(df):
     ps.append(pval)
     dofs.append((len(groups) * (K - 1)))
     groups.append('Combined')
-    out = pd.DataFrame({'Group':groups, 'Chi-square':ts, 'p-value':ps, 'N':Ns, 'dof':dofs}, columns=['Group', 'Chi-square', 'p-value', 'N', 'dof'])
+    out = pd.DataFrame({'Group': groups, 'Chi-square': ts, 'p-value': ps, 'N': Ns, 'dof': dofs},
+                       columns=['Group', 'Chi-square', 'p-value', 'N', 'dof'])
     return out
 
 
-def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
+def eval_chi_square(true_df, forecasts, dgp=1):
     '''
     Return chi^2 information comparing forecasts with the actual probabilities.
     :param true_df: Pandas DF, the data on which the model's forecasts are created.
     :param forecasts: Pandas DF, forecasts from model.forecast() in FIFE
-    :param type_test: str, 'vector' or 'single'. Represents method of calculating Chi^2.
-    :param num_exits: The number of possible types of exit # need to get this from the df
-    :param dgp: 1 or 2. The type of data generation we did.
+    :param dgp: 1, 2 or 3. The type of data generation we did.
     :return: A pandas df with test statistics and probabilities based on Chi squared measurement.
     '''
 
     # Add information about true values based on rules of the DGP to the true_df
-    # num_exits = len(true_df['exit_type'].unique())-1  # subtract out no exit
-    # groups = [i for i in true_df['X1'].unique()]
     true_df = true_df[['ID', 'X1']]
-    # original line above might keep duplicates
     if dgp == 1:
         conditions = [(true_df['X1'] == 'A'), (true_df['X1'] == 'B'), (true_df['X1'] == 'C')]
         values_x = [0.7, 0.2, 0.1]
@@ -86,69 +72,42 @@ def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
         true_df['prob_exit_Y'] = np.select(conditions, values_y)
         true_df['prob_exit_Z'] = np.select(conditions, values_z)
         true_df['groups'] = np.select(conditions, groups)
-        degrees_freedom = len(groups)*(num_exits-1) # 2 = num of possible exits -1
     elif dgp == 2:
         true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.7, 1 / 3)
         true_df['prob_exit_Y'] = np.where(true_df['X1'] == 'A', 0.2, 1 / 3)
         true_df['prob_exit_Z'] = np.where(true_df['X1'] == 'A', 0.1, 1 / 3)
+        conditions= [(true_df['X1'] == 'A'), (true_df['X1'] != 'A')]
         groups = [1, 2]
-        true_df['groups'] = np.select(true_df['X1'] == 'A', groups)
-        degrees_freedom = len(groups)*(num_exits-1)
+        true_df['groups'] = np.select(conditions, groups)
     elif dgp == 3:
         conditions = [(true_df['X1'] == 'A'), (true_df['X1'] == 'B'), (true_df['X1'] == 'C')]
-        values_x = [0.95, 0.025, 0.025]  # [0.7, 0.2, 0.1]
-        values_y = [0.025, 0.95, 0.025]  # [0.2, 0.7, 0.2]
-        values_z = [0.025, 0.025, 0.95]  # [0.1, 0.1, 0.7]
+        values_x = [0.95, 0.025, 0.025]
+        values_y = [0.025, 0.95, 0.025]
+        values_z = [0.025, 0.025, 0.95]
         groups = [1, 2, 3]
         true_df['prob_exit_X'] = np.select(conditions, values_x)
         true_df['prob_exit_Y'] = np.select(conditions, values_y)
         true_df['prob_exit_Z'] = np.select(conditions, values_z)
         true_df['groups'] = np.select(conditions, groups)
-        degrees_freedom = len(groups)*(num_exits-1) # 2 = num of possible exits -1
     else:
         raise NameError('Invalid DGP')
 
     true_df = true_df.drop('X1', axis=1).rename({'prob_exit_X': 'X', 'prob_exit_Y': 'Y', 'prob_exit_Z': 'Z'}, axis=1)
-    true_df = pd.melt(true_df, id_vars=['ID', 'groups'], value_vars=['X', 'Y', 'Z'], var_name='Future exit_type', value_name='prob_exit')
+    true_df = pd.melt(true_df, id_vars=['ID', 'groups'], value_vars=['X', 'Y', 'Z'], var_name='Future exit_type',
+                      value_name='prob_exit')
 
     # In this dgp, the probability of exit stays the same at each period, so it doesn't matter which period we're at.
     forecasts = forecasts.reset_index()
     test_stat = forecasts.merge(true_df, how='left', on=['ID', 'Future exit_type'])
-    # Get number of people for each group
-    counts = test_stat.groupby('groups')['ID'].count().reset_index()
     period_cols = [i for i in test_stat.columns if '-period' in i]
 
-    out = pd.DataFrame({'Group':[], 'Chi-square':[], 'p-value':[], 'N':[], 'dof':[], 'Lead Length':[]})
+    out = pd.DataFrame({'Group': [], 'Chi-square': [], 'p-value': [], 'N': [], 'dof': [], 'Lead Length': []})
     for i in period_cols:
         temp = test_stat[['ID', i, 'prob_exit', 'Future exit_type', 'groups']].copy()
         temp = temp.rename(columns={i: 'p_hat', 'prob_exit': 'p', 'Future exit_type': 'outcome'})
         temp2 = chi_square(temp)
         temp2['Lead Length'] = i.split('-')[0]
         out = out.append(temp2)
-
-
-    # We want to return the average chi^2 probability over individuals by time period
-    # Calculate Chi-Squared test statistic for each period and individual
-    test_stat[period_cols] = test_stat[period_cols].sub(test_stat['prob_exit'], axis=0)
-
-    # Calculate mean by original groups (whether X1 is A, B, or C) and the values. This will be the 9 or 6 groups
-    # representing the combinations of I_m and d in the formula
-    test_stat = test_stat.groupby(['groups', 'prob_exit', 'Future exit_type'])[period_cols].mean().reset_index()
-    # problem with line above - only finds unique values of group prob_exit pairs
-    # corrected to also group with Future exit_type
-
-    for i in period_cols:
-        test_stat[i] = (test_stat[i] ** 2) / test_stat['prob_exit']
-
-    test_stat = test_stat.groupby('groups')[period_cols].sum().reset_index()
-    test_stat = test_stat.merge(counts, on=['groups'])
-    test_stat = test_stat[period_cols].multiply(test_stat['ID'], axis='index')
-
-    # Now, sum the values and then find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
-    test_stat = (test_stat[period_cols].sum(axis=0)).reset_index().rename({'index': 'Lead Length', 0: 'Chi Squared'}, axis=1)
-    test_stat['Lead Length'] = test_stat['Lead Length'].str.split('-', expand=True)[0]
-    test_stat['test_statistic'] = test_stat['Chi Squared']
-    test_stat['Chi Squared'] = 1 - stats.chi2.cdf(test_stat['Chi Squared'], degrees_freedom)
 
     return out
 
@@ -184,7 +143,7 @@ def run_FIFE(df, model, test_intervals, dgp):
     return forecasts, evaluations, chi_squared
 
 
-def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
+def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=500, N_PERIODS=40, N_EXTRA_FEATURES=0,
                    EXIT_PROB=0.2, SEED=None, dgp=1):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
@@ -204,7 +163,8 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PER
     assert MODEL in ['base', 'state', 'exit'], "MODEL must be of type 'base', 'state', or 'exit'!"
 
     today = str(date.today())
-    PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today), '{}sims_{}persons'.format(N_SIMULATIONS, N_PERSONS))
+    PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today),
+                        '{}_simulations'.format(N_SIMULATIONS), '{}_persons'.format(N_PERSONS), '{}_dgp'.format(dgp))
 
     if SEED is not None:
         np.random.seed(SEED)
@@ -271,10 +231,7 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PER
 
 
 if __name__ == '__main__':
-    # PATH = r'X:\Human Capital Group\Sponsored Projects\4854 DoN FIFE Extensions\Code\FIFE_Testing'
-    # run_simulation(PATH=PATH, SEED=999)
-
-    PATH = '../temp'
-    run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=500, N_PERIODS=5, EXIT_PROB=0.3, dgp=1)
-
-
+    PATH = r'X:\Human Capital Group\Sponsored Projects\4854 DoN FIFE Extensions\Code\FIFE_Testing'
+    for i in tqdm(range(3)):
+        run_simulation(PATH=PATH, SEED=999, N_SIMULATIONS=5, N_PERSONS=500, N_PERIODS=5, EXIT_PROB=0.3, dgp=(i + 1))
+        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=5, N_PERSONS=1000, N_PERIODS=10, EXIT_PROB=0.2, dgp=(i + 1))
