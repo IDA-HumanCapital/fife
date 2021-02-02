@@ -117,7 +117,7 @@ def run_FIFE(df, model, test_intervals, dgp):
     return forecasts, evaluations, chi_squared
 
 
-def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
+def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=10000, N_PERIODS=40, N_EXTRA_FEATURES=0,
                    EXIT_PROB=0.2, SEED=None, dgp=1):
     """
     This script runs a Monte Carlo simulation of various FIFE models. The results of the evaluations and forecasts
@@ -137,7 +137,7 @@ def run_simulation(PATH, N_SIMULATIONS=1000, MODEL='exit', N_PERSONS=10000, N_PE
     assert MODEL in ['base', 'state', 'exit'], "MODEL must be of type 'base', 'state', or 'exit'!"
 
     today = str(date.today())
-    PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today))
+    PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today), '{}sims_{}persons'.format(N_SIMULATIONS, N_PERSONS))
 
     if SEED is not None:
         np.random.seed(SEED)
