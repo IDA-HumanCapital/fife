@@ -6,8 +6,9 @@ import json
 import math
 import os
 import sys
-from datetime import date
 import warnings
+from datetime import date
+
 warnings.filterwarnings("ignore")
 
 import numpy as np
@@ -76,7 +77,7 @@ def eval_chi_square(true_df, forecasts, dgp=1):
         true_df['prob_exit_X'] = np.where(true_df['X1'] == 'A', 0.7, 1 / 3)
         true_df['prob_exit_Y'] = np.where(true_df['X1'] == 'A', 0.2, 1 / 3)
         true_df['prob_exit_Z'] = np.where(true_df['X1'] == 'A', 0.1, 1 / 3)
-        conditions= [(true_df['X1'] == 'A'), (true_df['X1'] != 'A')]
+        conditions = [(true_df['X1'] == 'A'), (true_df['X1'] != 'A')]
         groups = [1, 2]
         true_df['groups'] = np.select(conditions, groups)
     elif dgp == 3:
@@ -164,7 +165,8 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=500, N_PERIO
 
     today = str(date.today())
     PATH = os.path.join(PATH, '{}_{}'.format(MODEL, today),
-                        '{}_simulations'.format(N_SIMULATIONS), '{}_persons'.format(N_PERSONS), '{}_dgp'.format(dgp))
+                        '{}_simulations'.format(N_SIMULATIONS), '{}_persons'.format(N_PERSONS),
+                        '{}_periods'.format(N_PERIODS), '{}_dgp'.format(dgp))
 
     if SEED is not None:
         np.random.seed(SEED)
@@ -233,5 +235,8 @@ def run_simulation(PATH, N_SIMULATIONS=100, MODEL='exit', N_PERSONS=500, N_PERIO
 if __name__ == '__main__':
     PATH = r'X:\Human Capital Group\Sponsored Projects\4854 DoN FIFE Extensions\Code\FIFE_Testing'
     for i in tqdm(range(3)):
-        run_simulation(PATH=PATH, SEED=999, N_SIMULATIONS=5, N_PERSONS=500, N_PERIODS=5, EXIT_PROB=0.3, dgp=(i + 1))
-        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=5, N_PERSONS=1000, N_PERIODS=10, EXIT_PROB=0.2, dgp=(i + 1))
+        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=1000, N_PERSONS=500, N_PERIODS=5, EXIT_PROB=0.3, dgp=(i + 1))
+        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=1000, N_PERSONS=1000, N_PERIODS=10, EXIT_PROB=0.15, dgp=(i + 1))
+        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=1000, N_PERSONS=500, N_PERIODS=10, EXIT_PROB=0.15, dgp=(i + 1))
+        run_simulation(PATH=PATH, SEED=1234, N_SIMULATIONS=1000, N_PERSONS=1000, N_PERIODS=20, EXIT_PROB=0.075,
+                       dgp=(i + 1))
