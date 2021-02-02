@@ -26,7 +26,7 @@ def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
     :param type_test: str, 'vector' or 'single'. Represents method of calculating Chi^2.
     :param num_exits: The number of possible types of exit
     :param dgp: 1 or 2. The type of data generation we did.
-    :return: A pandas df with
+    :return: A pandas df with test statistics and probabilities based on Chi squared measurement.
     '''
 
     # Add information about true values based on rules of the DGP to the true_df
@@ -57,6 +57,8 @@ def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
     # In this dgp, the probability of exit stays the same at each period, so it doesn't matter which period we're at.
     forecasts = forecasts.reset_index()
     test_stat = forecasts.merge(true_df, how='left', on=['ID', 'Future exit_type'])
+    # Get number of people for each group
+    counts = test_stat.groupby('groups')['ID'].count().reset_index()
     period_cols = [i for i in test_stat.columns if '-period' in i]
 
     # We want to return the average chi^2 probability over individuals by time period
@@ -70,8 +72,9 @@ def eval_chi_square(true_df, forecasts, num_exits=3, dgp=1):
     for i in period_cols:
         test_stat[i] = (test_stat[i] ** 2) / test_stat['prob_exit']
 
-    counts = test_stat.groupby('groups')[period_cols].count()
-    test_stat = test_stat.groupby('groups')[period_cols].sum().reset_index() # This needs to be a multiplication, not an inverse
+    test_stat = test_stat.groupby('groups')[period_cols].sum().reset_index()
+    test_stat = test_stat.merge(counts, on=['groups'])
+    test_stat = test_stat[period_cols].multiply(test_stat['ID'], axis='index')
 
     # Now, sum the values and then find the $\chi^{2}$ probabilities from the CDF of $\chi^{2}$
     test_stat = (test_stat[period_cols].sum(axis=0)).reset_index().rename({'index': 'Lead Length', 0: 'Chi Squared'},
