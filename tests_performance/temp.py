@@ -4,7 +4,7 @@ from tests_performance.Data_Fabrication import fabricate_data
 
 N_PERIODS = 6
 
-d0 = fabricate_data(N_PERSONS=10000, N_PERIODS=N_PERIODS, SEED=1234, exit_prob=0.2)
+d0 = fabricate_data(N_PERSONS=1000, N_PERIODS=N_PERIODS, SEED=1234, exit_prob=0.3)
 d1 = d0.copy()
 for i in d1["ID"]:
     if N_PERIODS in d1[d1["ID"] == i]["period"].values:
@@ -32,3 +32,7 @@ df2 = df.copy()
 
 fet = df["Future exit_type"].unique()
 df2.drop(df2[[i not in fet for i in df["exit_type"].values]]["exit_type"].index, inplace=True)
+
+
+
+

@@ -22,6 +22,13 @@ def update_person(x1, x2, x3, exit_prob=None, exit_type_prob=None, dgp=1):
     elif dgp == 2:
         if x1 == "A":
             exit_type_prob = [0.7, 0.2, 0.1]
+    elif dgp == 3:
+        if x1 == "A":
+            exit_type_prob = [0.95, 0.025, 0.025]  # [0.7, 0.2, 0.1]
+        if x1 == "B":
+            exit_type_prob = [0.025, 0.95, 0.025]  # [0.2, 0.7, 0.1]
+        if x1 == "C":
+            exit_type_prob = [0.025, 0.025, 0.95]  # [0.1, 0.2, 0.7]
     else:
         raise NameError('Invalid DGP')
     return x1, x2, x3, exit_prob, exit_type_prob
