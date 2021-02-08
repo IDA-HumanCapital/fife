@@ -10,7 +10,7 @@ from tqdm import tqdm
 from tests_performance.test_on_Monte_Carlo_simulation import run_simulation
 
 
-def plot_differences(dfs, PATH, type):
+def plot_differences(dfs, PATH, type, hue='DGP'):
     """
     This function plots all of the data generating process results for a given simulation run on the same plots.
     :param dfs: A dataframe with markers for the DGP that the data belongs to
@@ -31,28 +31,39 @@ def plot_differences(dfs, PATH, type):
     else:
         NameError('Invalid type!')
 
+    hue_order = sorted(dfs[hue].unique().tolist())
+
     # Build a plot with the average line of whatever statistic we're interested in seeing.
     # remove NaN AUROC to determine if we should make a lineplot of average leads
     dfs = dfs.loc[dfs[col].notnull()]
 
     if dfs['Lead Length'].max() > 2:
         plt.close()
-        sns.lineplot(x='Lead Length', y=col, data=dfs, hue='DGP', legend='auto', palette='deep').set_ylabel("Average {}".format(name))
+        sns.lineplot(x='Lead Length', y=col, data=dfs, hue=hue, legend='auto', palette='deep',
+                     hue_order=hue_order).set_ylabel("Average {}".format(name))
+        if type=='chi_squared':
+            plt.hlines(y =0.05, xmin=1, xmax=dfs['Lead Length'].max(),linestyles='dashed', colors='black')
         plt.tight_layout()
-        plt.savefig(os.path.join(PATH, 'average_runs_{}.png'.format(path_name)))
+        plt.savefig(os.path.join(PATH, 'average_runs_{}_{}.png'.format(path_name, hue)))
 
     # Histograms for lead length == 1
     lead_length_1 = dfs.loc[dfs['Lead Length'] == 1]
     plt.close()
-    sns.histplot(x=col, data=lead_length_1, hue='DGP', element='step', palette='deep').set_xlabel(name)
+    sns.histplot(x=col, data=lead_length_1, hue=hue, element='step', palette='deep',
+                 hue_order=hue_order).set_xlabel(name)
+    if type == 'chi_squared':
+        # these chi squared values are VERY left tailed, so we need to set a x limit.
+        plt.xlim(0, 0.2)
     plt.tight_layout()
-    plt.savefig(os.path.join(PATH, 'lead_1_hist_{}.png'.format(path_name)))
+    plt.savefig(os.path.join(PATH, 'lead_1_hist_{}_{}.png'.format(path_name, hue)))
 
     if type == 'chi_squared':
         plt.close()
-        sns.histplot(x='Chi-square', data=dfs, hue='DGP', palette='deep').set_xlabel('$\chi^{2}$ Statistic')
+        sns.histplot(x='Chi-square', data=dfs, hue=hue, palette='deep', hue_order=hue_order).set_xlabel(
+            '$\chi^{2}$ Statistic')
+        plt.xlim(0, 1500)
         plt.tight_layout()
-        plt.savefig(os.path.join(PATH, 'chi_square_hist.png'))
+        plt.savefig(os.path.join(PATH, 'chi_square_hist_{}.png'.format(hue)))
 
 
 def evaluate_results(df, PATH, type):
@@ -83,6 +94,8 @@ def evaluate_results(df, PATH, type):
         # Look at average at each lead length and graph this.
         plt.close()
         sns.lineplot(x='Lead Length', y=col, data=df).set_ylabel("Average {}".format(name))
+        if type=='chi_squared':
+            plt.hlines(y =0.05, xmin=1, xmax=df['Lead Length'].max(),linestyles='dashed', colors='black')
         plt.tight_layout()
         plt.savefig(os.path.join(PATH, 'average_runs_{}.png'.format(path_name)))
 
@@ -90,6 +103,8 @@ def evaluate_results(df, PATH, type):
         plt.close()
         sns.lineplot(x='Lead Length', y=col, data=df, units='run', estimator=None).set_ylabel(name)
         sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
+        if type=='chi_squared':
+            plt.hlines(y =0.05, xmin=1, xmax=df['Lead Length'].max(),linestyles='dashed', colors='black')
         plt.tight_layout()
         plt.savefig(os.path.join(PATH, 'all_runs_{}.png'.format(path_name)))
 
@@ -142,14 +157,19 @@ def run_evaluations(PATH=None, MODEL='exit'):
         newpath = os.path.join(PATH, '{}_dgp'.format(i + 1))
         evals = pd.read_csv(os.path.join(newpath, 'evaluations_{}.csv'.format(MODEL)))
         chi_square = pd.read_csv(os.path.join(newpath, 'chi_squared_{}.csv'.format(MODEL)))
+
         # Rework chi_squared to get the right format
         chi_square_combined = chi_square.loc[chi_square.Group == 'Combined']
 
         newpath = os.path.join(newpath, 'plots')
         os.makedirs(newpath, exist_ok=True)
 
+        # Get information about each group in Chi Squared
+        chi_squared_all = chi_square.loc[chi_square.Group != 'Combined']
+        plot_differences(chi_squared_all, newpath, 'chi_squared', 'Group')
+
         stats = []
-        # Create AUROC evaluation plots
+        # Create AUROC and Chi Squared evaluation plots
         temp = evaluate_results(evals, newpath, 'auroc')
         stats.append(temp)
         temp = evaluate_results(chi_square_combined, newpath, 'chi_squared')
@@ -169,6 +189,8 @@ def run_evaluations(PATH=None, MODEL='exit'):
     chi_squ_all = pd.concat(chi_squ_all)
     plot_differences(eval_all, PATH, type='auroc')
     plot_differences(chi_squ_all, PATH, type='chi_squared')
+
+    plt.close()
 
 
 if __name__ == '__main__':
