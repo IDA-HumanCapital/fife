@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
+from matplotlib.ticker import MaxNLocator
 
 from tests_performance.test_on_Monte_Carlo_simulation import run_simulation
 
@@ -43,6 +44,12 @@ def plot_differences(dfs, PATH, type, hue='DGP'):
                      hue_order=hue_order).set_ylabel("Average {}".format(name))
         if type=='chi_squared':
             plt.hlines(y =0.05, xmin=1, xmax=dfs['Lead Length'].max(),linestyles='dashed', colors='black')
+            plt.ylim(0, 0.3)
+        else:
+            plt.hlines(y=0.5, xmin=1, xmax=dfs['Lead Length'].max(), linestyles='dashed', colors='black')
+            plt.ylim(0.45, 1)
+        ax = plt.gcf().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.tight_layout()
         plt.savefig(os.path.join(PATH, 'average_runs_{}_{}.png'.format(path_name, hue)))
 
@@ -96,6 +103,12 @@ def evaluate_results(df, PATH, type):
         sns.lineplot(x='Lead Length', y=col, data=df).set_ylabel("Average {}".format(name))
         if type=='chi_squared':
             plt.hlines(y =0.05, xmin=1, xmax=df['Lead Length'].max(),linestyles='dashed', colors='black')
+            plt.ylim(0, 0.3)
+        else:
+            plt.hlines(y=0.5, xmin=1, xmax=df['Lead Length'].max(), linestyles='dashed', colors='black')
+            plt.ylim(0.45, 1.0)
+        ax = plt.gcf().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.tight_layout()
         plt.savefig(os.path.join(PATH, 'average_runs_{}.png'.format(path_name)))
 
@@ -105,13 +118,21 @@ def evaluate_results(df, PATH, type):
         sns.lineplot(x='Lead Length', y=col, data=df, ci=None, color='black')
         if type=='chi_squared':
             plt.hlines(y =0.05, xmin=1, xmax=df['Lead Length'].max(),linestyles='dashed', colors='black')
+            plt.ylim(0, 1)
+        else:
+            plt.hlines(y=0.5, xmin=1, xmax=df['Lead Length'].max(), linestyles='dashed', colors='black')
+            plt.ylim(0, 1)
+        ax = plt.gcf().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.tight_layout()
         plt.savefig(os.path.join(PATH, 'all_runs_{}.png'.format(path_name)))
 
     # Histograms for lead length == 1
     lead_length_1 = df.loc[df['Lead Length'] == 1]
     plt.close()
-    sns.histplot(x=col, data=lead_length_1).set_xlabel(name)
+    sns.histplot(x=col, data=lead_length_1, stat='probability').set_xlabel(name)
+    plt.xlim(0, 1)
+    plt.ylim(0, .4)
     plt.tight_layout()
     plt.savefig(os.path.join(PATH, 'lead_1_hist_{}.png'.format(path_name)))
 
