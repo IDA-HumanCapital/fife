@@ -44,7 +44,7 @@ class IFEModeler(Modeler):
             grouping = self.categorical_features
             if self.objective == "multiclass":
                 if self.weight_col:
-                    grouped_sums = data.groupby(self.categorical_features + ["label"])[
+                    grouped_sums = data.groupby(self.categorical_features + ["_label"])[
                         self.weight_col
                     ].sum()
                     cell_rates[
@@ -57,21 +57,21 @@ class IFEModeler(Modeler):
                         "sum"
                     )
                 else:
-                    grouped_sums = data.groupby(self.categorical_features + ["label"])[
-                        "label"
+                    grouped_sums = data.groupby(self.categorical_features + ["_label"])[
+                        "_label"
                     ].count()
                     cell_rates[time_horizon + 1] = (
                         grouped_sums
-                        / data.groupby(self.categorical_features)["label"].count()
+                        / data.groupby(self.categorical_features)["_label"].count()
                     )
             else:
                 if self.weight_col:
-                    data["label"] = data["label"] * data[self.weight_col]
+                    data["_label"] = data["_label"] * data[self.weight_col]
                     grouped_sums = data.groupby(self.categorical_features)[
-                        "label", self.weight_col
+                        "_label", self.weight_col
                     ].sum()
                     cell_rates[time_horizon + 1] = (
-                        grouped_sums["label"] / grouped_sums[self.weight_col]
+                        grouped_sums["_label"] / grouped_sums[self.weight_col]
                     )
                 else:
                     cell_rates[time_horizon + 1] = data.groupby(

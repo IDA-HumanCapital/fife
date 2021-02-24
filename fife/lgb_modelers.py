@@ -163,8 +163,8 @@ class LGBModeler(Modeler):
                 )
             else:
                 rolling_validation_subset = [False] * data.shape[0]
-            if (data[rolling_validation_subset]["label"].nunique() > 1) and (
-                data[~rolling_validation_subset]["label"].nunique() > 1
+            if (data[rolling_validation_subset]["_label"].nunique() > 1) and (
+                data[~rolling_validation_subset]["_label"].nunique() > 1
             ):
                 validation_subset = rolling_validation_subset
             else:
@@ -173,7 +173,7 @@ class LGBModeler(Modeler):
                 data[~validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~validation_subset]["label"],
+                label=data[~validation_subset]["_label"],
                 weight=data[~validation_subset][self.weight_col]
                 if self.weight_col
                 else None,
@@ -182,7 +182,7 @@ class LGBModeler(Modeler):
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[validation_subset]["label"],
+                label=data[validation_subset]["_label"],
                 weight=data[validation_subset][self.weight_col]
                 if self.weight_col
                 else None,
@@ -282,7 +282,7 @@ class LGBModeler(Modeler):
                 data[~data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~data[self.validation_col]]["label"],
+                label=data[~data[self.validation_col]]["_label"],
                 weight=data[~data[self.validation_col]][self.weight_col]
                 if self.weight_col
                 else None,
@@ -291,7 +291,7 @@ class LGBModeler(Modeler):
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[data[self.validation_col]]["label"],
+                label=data[data[self.validation_col]]["_label"],
                 weight=data[data[self.validation_col]][self.weight_col]
                 if self.weight_col
                 else None,
@@ -308,7 +308,7 @@ class LGBModeler(Modeler):
         else:
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
-                label=data["label"],
+                label=data["_label"],
                 weight=data[self.weight_col] if self.weight_col else None,
             )
             model = lgb.train(
