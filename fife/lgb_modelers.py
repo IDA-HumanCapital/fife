@@ -322,7 +322,7 @@ class LGBModeler(Modeler):
     def predict(
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
     ) -> np.ndarray:
-        """Use trained LightGBM models to predict observation survival rates.
+        """Use trained LightGBM models to predict the outcome for each observation and time horizon.
 
         Args:
             subset: A Boolean Series that is True for observations for which
@@ -333,7 +333,7 @@ class LGBModeler(Modeler):
                 minus the hazard rate).
 
         Returns:
-            A numpy array of survival probabilities by observation and lead
+            A numpy array of predictions by observation and lead
             length.
         """
         subset = default_subset_to_all(subset, self.data)

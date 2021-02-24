@@ -1,14 +1,21 @@
 """FIFE modeler based on Pandas, which tabulates interacted fixed effects."""
 
 from typing import Union
+from warnings import warn
 
-from fife import base_modelers
+from fife.base_modelers import (
+    default_subset_to_all,
+    Modeler,
+    SurvivalModeler,
+    StateModeler,
+    ExitModeler,
+)
 import numpy as np
 import pandas as pd
 
 
-class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
-    """Predict with survival rate of training observations with same values.
+class IFEModeler(Modeler):
+    """Predict with mean of training observations with same values.
 
     Attributes:
         config (dict): User-provided configuration parameters.
@@ -23,7 +30,7 @@ class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
     """
 
     def train(self) -> pd.core.frame.DataFrame:
-        """Compute survival rate for each combination of categorical values."""
+        """Compute the mean of the outcome for each combination of categorical values."""
         cell_rates = pd.DataFrame()
         train_subset = (
             ~self.data[self.validation_col]
@@ -31,55 +38,68 @@ class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
             & ~self.data[self.predict_col]
         )
         for time_horizon in range(self.n_intervals):
-            train_data = self.data[
-                (
-                    self.data[[self.duration_col, self.max_lead_col]].min(axis=1)
-                    + self.data[self.event_col]
-                    > time_horizon
-                )
-                & train_subset
-            ]
-            train_data["survived"] = (
-                train_data[[self.duration_col, self.max_lead_col]].min(axis=1)
-                > time_horizon
-            )
-            if self.weight_col:
-                train_data["survived"] = (
-                    train_data["survived"] * train_data[self.weight_col]
-                )
-                grouped_sums = train_data.groupby(self.categorical_features)[
-                    ["survived", self.weight_col]
-                ].sum()
-                cell_rates[time_horizon + 1] = (
-                    grouped_sums["survived"] / grouped_sums[self.weight_col]
-                )
+            data = self.label_data(time_horizon)
+            data = data[train_subset]
+            data = self.subset_for_training_horizon(data, time_horizon)
+            grouping = self.categorical_features
+            if self.objective == "multiclass":
+                if self.weight_col:
+                    grouped_sums = data.groupby(self.categorical_features + ["label"])[
+                        self.weight_col
+                    ].sum()
+                    cell_rates[
+                        time_horizon + 1
+                    ] = grouped_sums / grouped_sums.reset_index().groupby(
+                        self.categorical_features
+                    )[
+                        self.weight_col
+                    ].transform(
+                        "sum"
+                    )
+                else:
+                    grouped_sums = data.groupby(self.categorical_features + ["label"])[
+                        "label"
+                    ].count()
+                    cell_rates[time_horizon + 1] = (
+                        grouped_sums
+                        / data.groupby(self.categorical_features)["label"].count()
+                    )
             else:
-                cell_rates[time_horizon + 1] = train_data.groupby(
-                    self.categorical_features
-                )["survived"].mean()
+                if self.weight_col:
+                    data["label"] = data["label"] * data[self.weight_col]
+                    grouped_sums = data.groupby(self.categorical_features)[
+                        "label", self.weight_col
+                    ].sum()
+                    cell_rates[time_horizon + 1] = (
+                        grouped_sums["label"] / grouped_sums[self.weight_col]
+                    )
+                else:
+                    cell_rates[time_horizon + 1] = data.groupby(
+                        self.categorical_features
+                    ).mean()
         return cell_rates
 
     def predict(
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
     ) -> np.ndarray:
-        """Map observations to survival rates from their categorical values.
+        """Map observations to outcome means from their categorical values.
 
         Map observations with a combination of categorical values not seen in
-        the training data to the mean survival rate in the training set.
+        the training data to the mean of the outcome in the training set.
 
         Args:
             subset: A Boolean Series that is True for observations for which
                 predictions will be produced. If None, default to all
                 observations.
             cumulative: If True, will produce cumulative survival
-                probabilies. If False, will produce marginal survival
+                probabilities. If False, will produce marginal survival
                 probabilities (i.e., one minus the hazard rate).
 
         Returns:
-            A numpy array of survival probabilities by observation and lead
+            A numpy array of outcome means by observation and lead
             length.
         """
-        subset = base_modelers.default_subset_to_all(subset, self.data)
+        subset = default_subset_to_all(subset, self.data)
         predictions = self.data[subset].merge(
             self.model, how="left", left_on=self.categorical_features, right_index=True
         )
@@ -100,3 +120,31 @@ class InteractedFixedEffectsModeler(base_modelers.SurvivalModeler):
             "Warning: InteractedFixedEffectsModeler does not have hyperparameters to optimize."
         )
         return None
+
+
+class IFESurvivalModeler(IFEModeler, SurvivalModeler):
+    """Predict with survival rate of training observations with same values."""
+
+    pass
+
+
+class InteractedFixedEffectsModeler(IFESurvivalModeler):
+    """Deprecated alias for IFESurvivalModeler"""
+
+    warn(
+        "The name 'InteractedFixedEffectsModeler' is deprecated. "
+        "Please use 'IFESurvivalModeler' instead.",
+        DeprecationWarning,
+    )
+
+
+class IFEStateModeler(IFEModeler, StateModeler):
+    """Forecast the future value of a feature conditional on survival using the mean of observations with the same values."""
+
+    pass
+
+
+class IFEExitModeler(IFEModeler, ExitModeler):
+    """Forecast the circumstance of exit conditional on exit using the mean of observations with the same values."""
+
+    pass
