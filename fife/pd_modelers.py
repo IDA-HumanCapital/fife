@@ -101,13 +101,15 @@ class IFEModeler(Modeler):
         """
         subset = default_subset_to_all(subset, self.data)
         predictions = self.data[subset].merge(
-            self.model, how="left", left_on=self.categorical_features, right_index=True
+            self.model, how="left", on=self.categorical_features
         )
         predictions = predictions[self.model.columns]
         predictions = predictions.fillna(predictions.mean())
         predictions = predictions.to_numpy()
+        if self.objective == "multiclass":
+            predictions = predictions.reshape((self.num_class, subset.sum(), self.n_intervals), order="F")
         if cumulative:
-            predictions = np.cumprod(predictions, axis=1)
+            predictions = np.cumprod(predictions, axis=-1)
         return predictions
 
     def save_model(self, file_name: str = "IFE_Model", path: str = "") -> None:

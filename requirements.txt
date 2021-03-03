@@ -70,7 +70,7 @@ Pillow @ file:///D:/bld/pillow_1614689932919/work
 pluggy==0.13.1
 prettytable==2.1.0
 prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1613068548426/work
-protobuf==3.15.3
+protobuf==3.15.4
 py==1.10.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
