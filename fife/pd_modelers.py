@@ -104,7 +104,6 @@ class IFEModeler(Modeler):
             self.model, how="left", on=self.categorical_features
         )
         predictions = predictions[self.model.columns]
-        predictions = predictions.fillna(predictions.mean())
         predictions = predictions.to_numpy()
         if self.objective == "multiclass":
             predictions = predictions.reshape((self.num_class, subset.sum(), self.n_intervals), order="F")
