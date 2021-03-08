@@ -1,5 +1,5 @@
 absl-py==0.11.0
-alembic==1.5.5
+alembic==1.5.6
 appdirs==1.4.4
 astor==0.8.1
 astunparse==1.6.3
@@ -22,15 +22,15 @@ colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1602866480
 colorlog==4.7.2
 cycler==0.10.0
 cytoolz==0.11.0
-dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1612568682000/work
+dask @ file:///home/conda/feedstock_root/build_artifacts/dask-core_1614995065708/work
 decorator==4.4.2
 fife @ file:///C:/Users/JBishop/Desktop/fife/dist/fife-1.5.0-py3-none-any.whl
 flatbuffers==1.12
 formulaic==0.2.3
 future==0.18.2
 gast==0.3.3
-google-auth==1.27.0
-google-auth-oauthlib==0.4.2
+google-auth==1.27.1
+google-auth-oauthlib==0.4.3
 google-pasta==0.2.0
 grpcio==1.32.0
 h5py==2.10.0
@@ -70,7 +70,7 @@ Pillow @ file:///D:/bld/pillow_1614689932919/work
 pluggy==0.13.1
 prettytable==2.1.0
 prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1613068548426/work
-protobuf==3.15.4
+protobuf==3.15.5
 py==1.10.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
@@ -106,7 +106,7 @@ threadpoolctl @ file:///tmp/tmp79xdzxkt/threadpoolctl-2.1.0-py3-none-any.whl
 toml==0.10.2
 toolz @ file:///home/conda/feedstock_root/build_artifacts/toolz_1600973991856/work
 tornado @ file:///D:/bld/tornado_1610094858390/work
-tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1614279180094/work
+tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1614982742480/work
 traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1602771532708/work
 typed-ast==1.4.2
 typing-extensions==3.7.4.3

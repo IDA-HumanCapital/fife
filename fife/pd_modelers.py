@@ -106,7 +106,9 @@ class IFEModeler(Modeler):
         predictions = predictions[self.model.columns]
         predictions = predictions.to_numpy()
         if self.objective == "multiclass":
-            predictions = predictions.reshape((self.num_class, subset.sum(), self.n_intervals), order="F")
+            predictions = predictions.reshape(
+                (self.num_class, subset.sum(), self.n_intervals), order="F"
+            )
         if cumulative:
             predictions = np.cumprod(predictions, axis=-1)
         return predictions

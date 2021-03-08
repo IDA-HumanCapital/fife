@@ -777,20 +777,18 @@ class StateModeler(Modeler):
         ids = data[
             [
                 self.config["INDIVIDUAL_IDENTIFIER"],
-                self.config["TIME_IDENTIFIER"],
+                self.period_col,
                 self.state_col,
             ]
         ]
-        ids[self.config["TIME_IDENTIFIER"]] = (
-            ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
-        )
+        ids[self.period_col] = ids[self.period_col] - time_horizon - 1
         ids = ids.rename({self.state_col: "_label"}, axis=1)
         if self.objective == "multiclass":
             ids["_label"] = ids["_label"].cat.codes
         data = data.merge(
             ids,
             how="left",
-            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.period_col],
         )
         return data
 
