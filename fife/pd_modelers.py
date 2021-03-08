@@ -76,7 +76,7 @@ class IFEModeler(Modeler):
                 else:
                     cell_rates[time_horizon + 1] = data.groupby(
                         self.categorical_features
-                    ).mean()
+                    )["_label"].mean()
         return cell_rates
 
     def predict(
