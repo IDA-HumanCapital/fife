@@ -1,3 +1,6 @@
+
+###
+# creating a hold out sample
 from fife.processors import PanelDataProcessor
 from fife.lgb_modelers import LGBExitModeler
 from tests_performance.Data_Fabrication import fabricate_data
@@ -36,3 +39,29 @@ df2.drop(df2[[i not in fet for i in df["exit_type"].values]]["exit_type"].index,
 
 
 
+####
+# Chi square power calculation
+from scipy.stats import chi2
+import numpy as np
+import pandas as pd
+
+def chi_square_power(n=100, alpha=0.05, dof = 2, J=40, p0=[.7, .2, .1]):
+    p = [j for j in range(J)]
+    b = [j for j in range(J)]
+    for j in range(J):
+        delta = j * .01
+        d = np.array([-delta, delta/2, delta/2])
+        p0 = np.array(p0)
+        temp = p0 + d
+        if all(temp <= 1) & all(temp >= 0):
+            p1 = temp
+        mu = n * sum( (p0 - p1)**2 / p0 )
+        cv = chi2.ppf(1-alpha, df=dof)
+        power = 1 - chi2.cdf(cv, df=dof, loc=mu)
+        p[j] = power
+        b[j] = delta
+    a = pd.DataFrame({'delta': b, 'power':p})
+    return a
+
+a = chi_square_power(J=20, p0=[.3334, .3333, .3333])
+chi_square_power(J=10, alpha=.1)
