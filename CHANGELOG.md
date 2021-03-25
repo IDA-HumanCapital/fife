@@ -1,3 +1,20 @@
+## 1.5.1 - 2021-03-25
+
+### Added
+
+- Interacted fixed effects state and exit modelers
+- "_label" is now a reserved column name; FIFE may not work if a column in your data has a reserved name
+
+### Fixed
+
+<u>StateModeler and ExitModeler</u>
+
+- Now work as intended with time identifiers that are not a non-negative integer progression
+
+### Changed
+
+- Interacted fixed effects modelers now predict NaN instead of the mean of all predictions
+
 ## 1.5.0 - 2021-01-31
 
 ### Added
