@@ -435,7 +435,7 @@ class SurvivalModeler(Modeler):
             actuals = self.label_data(lead_length - 1)[subset].reset_index()
             actuals = actuals[actuals[self.max_lead_col] >= lead_length]
             weights = actuals[self.weight_col].values if self.weight_col else None
-            actuals = actuals["label"]
+            actuals = actuals["_label"]
             metrics.append(
                 compute_metrics_for_binary_outcome(
                     actuals,
@@ -594,7 +594,7 @@ class SurvivalModeler(Modeler):
             ids[self.config["TIME_IDENTIFIER"]] = (
                 ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
             )
-            ids["label"] = True
+            ids["_label"] = True
             data = data.merge(
                 ids,
                 how="left",
@@ -603,9 +603,9 @@ class SurvivalModeler(Modeler):
                     self.config["TIME_IDENTIFIER"],
                 ],
             )
-            data["label"] = data["label"].fillna(False)
+            data["_label"] = data["_label"].fillna(False)
         else:
-            data["label"] = data[self.duration_col] > time_horizon
+            data["_label"] = data[self.duration_col] > time_horizon
         return data
 
 
@@ -694,7 +694,7 @@ class StateModeler(Modeler):
                 self.label_data(lead_length - 1)[subset].reset_index(), lead_length - 1
             )
             weights = actuals[self.weight_col].values if self.weight_col else None
-            actuals = actuals["label"]
+            actuals = actuals["_label"]
             if self.objective == "multiclass":
                 actuals = pd.DataFrame(
                     {label: actuals == label for label in range(self.num_class)},
@@ -763,7 +763,9 @@ class StateModeler(Modeler):
     ) -> pd.DataFrame:
         """Return only observations where the future state is observed."""
         if self.allow_gaps:
-            return data[data[self.max_lead_col] > time_horizon].dropna(subset=["label"])
+            return data[data[self.max_lead_col] > time_horizon].dropna(
+                subset=["_label"]
+            )
         return data[(data[self.duration_col] > time_horizon)]
 
     def label_data(self, time_horizon: int) -> pd.Series:
@@ -775,20 +777,18 @@ class StateModeler(Modeler):
         ids = data[
             [
                 self.config["INDIVIDUAL_IDENTIFIER"],
-                self.config["TIME_IDENTIFIER"],
+                self.period_col,
                 self.state_col,
             ]
         ]
-        ids[self.config["TIME_IDENTIFIER"]] = (
-            ids[self.config["TIME_IDENTIFIER"]] - time_horizon - 1
-        )
-        ids = ids.rename({self.state_col: "label"}, axis=1)
+        ids[self.period_col] = ids[self.period_col] - time_horizon - 1
+        ids = ids.rename({self.state_col: "_label"}, axis=1)
         if self.objective == "multiclass":
-            ids["label"] = ids["label"].cat.codes
+            ids["_label"] = ids["_label"].cat.codes
         data = data.merge(
             ids,
             how="left",
-            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.config["TIME_IDENTIFIER"]],
+            on=[self.config["INDIVIDUAL_IDENTIFIER"], self.period_col],
         )
         return data
 
@@ -863,7 +863,7 @@ class ExitModeler(StateModeler):
         if self.objective == "multiclass":
             temp_exit_col = data[self.exit_col]
             data[self.exit_col] = data[self.exit_col].cat.codes
-        data["label"] = data.groupby(
+        data["_label"] = data.groupby(
             [self.config["INDIVIDUAL_IDENTIFIER"], self.spell_col]
         )[self.exit_col].transform("last")
         if self.objective == "multiclass":

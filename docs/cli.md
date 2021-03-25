@@ -43,6 +43,7 @@ Input data may not contain any of the following feature names:
 
 -	`_duration`
 -	`_event_observed`
+-	`_label`
 -	`_maximum_lead`
 -	`_period`
 -	`_predict_obs`
