@@ -354,7 +354,7 @@ class LGBModeler(Modeler):
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
-            date_cols = data.select_dtypes("datetime").columns + [
+            date_cols = list(data.select_dtypes("datetime").columns) + [
                 col
                 for col in data.select_dtypes("category")
                 if np.issubdtype(data[col].cat.categories.dtype, np.datetime64)
@@ -366,9 +366,9 @@ class LGBModeler(Modeler):
                     + data[col].dt.day
                 )
         else:
-            data[data.select_dtypes("datetime")] = pd.to_numeric(
-                data[data.select_dtypes("datetime")]
-            )
+            data[data.select_dtypes("datetime").columns] = data[
+                data.select_dtypes("datetime").columns
+            ].apply(pd.to_numeric)
             for col in data.select_dtypes("category"):
                 if np.issubdtype(data[col].cat.categories.dtype, np.datetime64):
                     data[col] = data[col].astype(int)
