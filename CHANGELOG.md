@@ -1,3 +1,9 @@
+## 1.5.2-dev0 - 2021-03-31
+
+### Fixed
+
+- LGBModelers now correctly handle datetime categories
+
 ## 1.5.1 - 2021-03-25
 
 ### Added
