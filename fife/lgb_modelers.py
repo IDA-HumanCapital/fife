@@ -67,7 +67,7 @@ class LGBModeler(Modeler):
             n_trials: The number of hyperparameter sets to evaluate for each
                 time horizon. Return None if non-positive.
             rolling_validation: Whether or not to evaluate performance on the
-                most recent possible period instead of the validation set
+                most recent possible periods instead of the validation set
                 labeled by self.validation_col. Ignored for a given time horizon
                 if there is only one possible period for training and evaluation.
             subset:  A Boolean Series that is True for observations on which
@@ -163,8 +163,8 @@ class LGBModeler(Modeler):
                 )
             else:
                 rolling_validation_subset = [False] * data.shape[0]
-            if (data[rolling_validation_subset]["label"].nunique() > 1) and (
-                data[~rolling_validation_subset]["label"].nunique() > 1
+            if (data[rolling_validation_subset]["_label"].nunique() > 1) and (
+                data[~rolling_validation_subset]["_label"].nunique() > 1
             ):
                 validation_subset = rolling_validation_subset
             else:
@@ -173,7 +173,7 @@ class LGBModeler(Modeler):
                 data[~validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~validation_subset]["label"],
+                label=data[~validation_subset]["_label"],
                 weight=data[~validation_subset][self.weight_col]
                 if self.weight_col
                 else None,
@@ -182,7 +182,7 @@ class LGBModeler(Modeler):
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[validation_subset]["label"],
+                label=data[validation_subset]["_label"],
                 weight=data[validation_subset][self.weight_col]
                 if self.weight_col
                 else None,
@@ -282,7 +282,7 @@ class LGBModeler(Modeler):
                 data[~data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[~data[self.validation_col]]["label"],
+                label=data[~data[self.validation_col]]["_label"],
                 weight=data[~data[self.validation_col]][self.weight_col]
                 if self.weight_col
                 else None,
@@ -291,7 +291,7 @@ class LGBModeler(Modeler):
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
-                label=data[data[self.validation_col]]["label"],
+                label=data[data[self.validation_col]]["_label"],
                 weight=data[data[self.validation_col]][self.weight_col]
                 if self.weight_col
                 else None,
@@ -308,7 +308,7 @@ class LGBModeler(Modeler):
         else:
             data = lgb.Dataset(
                 data[self.categorical_features + self.numeric_features],
-                label=data["label"],
+                label=data["_label"],
                 weight=data[self.weight_col] if self.weight_col else None,
             )
             model = lgb.train(
@@ -322,7 +322,7 @@ class LGBModeler(Modeler):
     def predict(
         self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
     ) -> np.ndarray:
-        """Use trained LightGBM models to predict observation survival rates.
+        """Use trained LightGBM models to predict the outcome for each observation and time horizon.
 
         Args:
             subset: A Boolean Series that is True for observations for which
@@ -333,7 +333,7 @@ class LGBModeler(Modeler):
                 minus the hazard rate).
 
         Returns:
-            A numpy array of survival probabilities by observation and lead
+            A numpy array of predictions by observation and lead
             length.
         """
         subset = default_subset_to_all(subset, self.data)
@@ -354,7 +354,7 @@ class LGBModeler(Modeler):
         """Transform features to suit model training."""
         data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
-            date_cols = data.select_dtypes("datetime").columns + [
+            date_cols = list(data.select_dtypes("datetime").columns) + [
                 col
                 for col in data.select_dtypes("category")
                 if np.issubdtype(data[col].cat.categories.dtype, np.datetime64)
@@ -366,9 +366,9 @@ class LGBModeler(Modeler):
                     + data[col].dt.day
                 )
         else:
-            data[data.select_dtypes("datetime")] = pd.to_numeric(
-                data[data.select_dtypes("datetime")]
-            )
+            data[data.select_dtypes("datetime").columns] = data[
+                data.select_dtypes("datetime").columns
+            ].apply(pd.to_numeric)
             for col in data.select_dtypes("category"):
                 if np.issubdtype(data[col].cat.categories.dtype, np.datetime64):
                     data[col] = data[col].astype(int)

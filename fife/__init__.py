@@ -1,6 +1,6 @@
 """FIFE: Finite-Interval Forecasting Engine.
 
-Copyright (c) 2018 - 2020, Institute for Defense Analyses (IDA)
+Copyright (c) 2018 - 2021, Institute for Defense Analyses (IDA)
 
 Please cite using the suggested citation in the LICENSE file.
 
@@ -14,4 +14,4 @@ PARTICULAR PURPOSE. See the GNU Affero General Public License for more details
 (a copy is included in the LICENSE file).
 """
 
-__version__ = "1.4.2"
+__version__ = "1.5.1"

@@ -1,3 +1,50 @@
+## 1.5.2-dev0 - 2021-03-31
+
+### Fixed
+
+- LGBModelers now correctly handle datetime categories
+
+## 1.5.1 - 2021-03-25
+
+### Added
+
+- Interacted fixed effects state and exit modelers
+- "_label" is now a reserved column name; FIFE may not work if a column in your data has a reserved name
+
+### Fixed
+
+<u>StateModeler and ExitModeler</u>
+
+- Now work as intended with time identifiers that are not a non-negative integer progression
+
+### Changed
+
+- Interacted fixed effects modelers now predict NaN instead of the mean of all predictions
+
+## 1.5.0 - 2021-01-31
+
+### Added
+
+- [Hyperparameter search documentation](https://fife.readthedocs.io/en/latest/hyperparameter_search_link.html)
+
+<u>Command-line Interface</u>
+
+- Can now specify `TIME_ID_AS_FEATURE` as false to exclude the time identifier from the set of features
+
+### Fixed
+
+<u>StateModeler and ExitModeler</u>
+
+- Observations with NaN outcome values now excluded from R-squared calculation
+
+### Changed
+
+- build_packages.bat and requirements.txt updated to Python 3.8
+
+<u>StateModeler and ExitModeler</u>
+
+- Prediction DataFrames for categorical outcomes now include future state in the index
+
 ## 1.4.2 - 2021-01-21
 
 ### Added
