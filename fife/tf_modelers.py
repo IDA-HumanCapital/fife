@@ -587,7 +587,7 @@ class TFModeler(Modeler):
         subset = default_subset_to_all(subset, self.data)
         model_inputs = split_categorical_features(
             self.data[subset], self.categorical_features, self.numeric_features
-        ) + [1.0]
+        )
         predict_with_dropout = K.function(
             # self.model.inputs + [K.learning_phase()], self.model.outputs
             self.model.inputs, self.model.outputs
