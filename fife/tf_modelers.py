@@ -589,7 +589,8 @@ class TFModeler(Modeler):
             self.data[subset], self.categorical_features, self.numeric_features
         ) + [1.0]
         predict_with_dropout = K.function(
-            self.model.inputs + [K.learning_phase()], self.model.outputs
+            # self.model.inputs + [K.learning_phase()], self.model.outputs
+            self.model.inputs, self.model.outputs
         )
         predictions = np.dstack(
             [predict_with_dropout(model_inputs)[0] for i in range(n_iterations)]
