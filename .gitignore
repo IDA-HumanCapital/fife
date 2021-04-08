@@ -3,6 +3,7 @@
 !fife/*.py
 !tests/*.py
 !tests_performance/*.py
+!PIs/*.py
 !docs/*
 !docs/source/*
 docs/_build/
