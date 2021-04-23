@@ -8,15 +8,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type'):
+def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     # Need to be able to incorporate appropriate inputs to the modelers.
     # Maybe use something similar to the relevant function from the testing code.
-    dp = PanelDataProcessor(data=df)
+    if PDPkwargs is None:
+        dp = PanelDataProcessor(data=df)
+    else:
+        if type(PDPkwargs) is not dict:
+            raise TypeError("PDPkwargs must be a dictionary")
+        dp = PanelDataProcessor(data=df, **PDPkwargs)
     dp.build_processed_data()
     if modeler == "LGBSurvivalModeler":
-        m = LGBSurvivalModeler(data=dp.data)
+        if Survivalkwargs is None:
+            m = LGBSurvivalModeler(data=dp.data)
+        else:
+            if type(Survivalkwargs) is not dict:
+                raise TypeError("Survivalkwargs must be a dictionary")
+            m = LGBSurvivalModeler(data=dp.data, **Survivalkwargs)
     elif modeler == "LGBExitModeler":
-        m = LGBExitModeler(data=dp.data, exit_col=exit_col)
+        if Exitkwargs is None:
+            m = LGBExitModeler(data=dp.data, exit_col=exit_col)
+        else:
+            if type(Exitkwargs) is not dict:
+                raise TypeError("Exitkwargs must be a dictionary")
+            if "exit_col" in Exitkwargs.keys():
+                exit_col = Exitkwargs["exit_col"]
+                Exitkwargs.pop("exit_col")
+            m = LGBExitModeler(data=dp.data, exit_col=exit_col, **Exitkwargs)
     else:
         raise NameError('Invalid modeler')
     m.build_model(parallelize=False)
@@ -25,10 +43,10 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type'):
     return f
 
 
-def get_forecasts(df, exit_col='exit_type'):
-    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col)
-    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col)
-    f = f0.merge(f1, how="outer", on="ID")
+def get_forecasts(df, ID="ID", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
+    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
+    f = f0.merge(f1, how="outer", on=ID) #change to get ID automatically
     return f
 
 
@@ -64,12 +82,12 @@ def calc_CIF(f):
     return f
 
 
-def get_features_and_collapse(d0, f, grouping_vars=None):
+def get_features_and_collapse(d0, f, grouping_vars=None, ID="ID"):
     if grouping_vars is None:
         grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
     # now merge in with the original data to get features
-    temp = d0.groupby("ID").tail(1)  # may need to sort by period first to get the last row
-    out = f.merge(temp, how="left", on="ID")
+    temp = d0.groupby(ID).tail(1)  # may need to sort by period first to get the last row
+    out = f.merge(temp, how="left", on=ID)
     df = out.groupby(grouping_vars).mean()
     df = df.reset_index()
     return df
@@ -86,12 +104,18 @@ def wide_to_long(df, grouping_vars=None):
     return df2
 
 
-def CIF(d0, grouping_vars=None, exit_col='exit_type'):
+def CIF(d0, ID="ID", grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     if grouping_vars is None:
-        grouping_vars = ["X1", "Future " + exit_col]  # need to specify this for other data sets
-    f = get_forecasts(d0, exit_col=exit_col)
+        # raise NameError("You must specify the CIF grouping by passing a list of variable names to grouping_vars=")
+        grouping_vars = []
+    else:
+        if type(grouping_vars) is not list:
+            raise TypeError("grouping_vars must be a list")
+    if "Future " + exit_col not in grouping_vars:
+        grouping_vars = grouping_vars + ["Future " + exit_col]
+    f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
     f = calc_CIF(f)
-    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars)
+    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, ID=ID)
     df2 = wide_to_long(df, grouping_vars=grouping_vars)
     return df2
 
@@ -124,6 +148,7 @@ def plot_CIF(df2, linestyles=None):
 if __name__ == "__main__":
     df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.3)  # example data
     cif = CIF(df)
+    cif = CIF(df, grouping_vars=["X1"])
     plot_CIF(cif)
 
 
