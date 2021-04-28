@@ -46,7 +46,7 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', PDPkwar
 def get_forecasts(df, ID="ID", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
     f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
-    f = f0.merge(f1, how="outer", on=ID) #change to get ID automatically
+    f = f0.merge(f1, how="outer", on=ID) # maybe change to get ID automatically by having get_forecast return the id from the data processor
     return f
 
 
@@ -82,9 +82,10 @@ def calc_CIF(f):
     return f
 
 
-def get_features_and_collapse(d0, f, grouping_vars=None, ID="ID"):
-    if grouping_vars is None:
-        grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
+def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID="ID"):
+    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
+    # if grouping_vars is None:
+    #     grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
     # now merge in with the original data to get features
     temp = d0.groupby(ID).tail(1)  # may need to sort by period first to get the last row
     out = f.merge(temp, how="left", on=ID)
@@ -93,9 +94,10 @@ def get_features_and_collapse(d0, f, grouping_vars=None, ID="ID"):
     return df
 
 
-def wide_to_long(df, grouping_vars=None):
-    if grouping_vars is None:
-        grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
+def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
+    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
+    # if grouping_vars is None:
+    #     grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
     temp = [i for i in df.columns if "-CIF" in i]
     num = sorted([int(x.split('-')[0]) for x in temp])
     df2 = df.melt(id_vars=grouping_vars, value_vars=[str(n) + '-CIF' for n in num], value_name="CIF",
@@ -105,29 +107,30 @@ def wide_to_long(df, grouping_vars=None):
 
 
 def CIF(d0, ID="ID", grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
+    f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
+    f = calc_CIF(f)
+    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID)
+    df2 = wide_to_long(df, grouping_vars=grouping_vars, exit_col=exit_col)
+    return df2
+
+
+def grouping_vars_subfcn(grouping_vars=None, exit_col="exit_type", include_forecast=True):
     if grouping_vars is None:
-        # raise NameError("You must specify the CIF grouping by passing a list of variable names to grouping_vars=")
         grouping_vars = []
     else:
         if type(grouping_vars) is not list:
             raise TypeError("grouping_vars must be a list")
-    if "Future " + exit_col not in grouping_vars:
-        grouping_vars = grouping_vars + ["Future " + exit_col]
-    f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
-    f = calc_CIF(f)
-    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, ID=ID)
-    df2 = wide_to_long(df, grouping_vars=grouping_vars)
-    return df2
+    if include_forecast:
+        if "Future " + exit_col not in grouping_vars:
+            grouping_vars = grouping_vars + ["Future " + exit_col]
+    return grouping_vars
 
 
 def plot_CIF(df2, linestyles=None, grouping_vars=None):
     # Note that this plotting function is for the specific case generated from our simulations only.
     # Different data will necessitate a modified plotting function.
-    if grouping_vars is None:
-        grouping_vars = []
-    else:
-        if type(grouping_vars) is not list:
-            raise TypeError("grouping_vars must be a list")
+    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, include_forecast=False)
     if linestyles is None:
         linestyles = {'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'}
     xlims = [(min(df2["Period"])-1), (max(df2["Period"])+1)]
@@ -140,6 +143,7 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None):
             axes.set_title("$CIF$ by exit type")
             axes.set_xlim(xlims)
             axes.set_xticks(xticks)
+        axes.set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
     elif len(grouping_vars) > 0:
         grouped = df2.groupby(grouping_vars)
         key_label = " ".join(k for k in grouping_vars)
@@ -152,7 +156,7 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None):
                 ax.set_title("$CIF$, " + key_label + "=" + str(key) + ", by exit type")
                 ax.set_xlim(xlims)
                 ax.set_xticks(xticks)
-    axes[0].set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
+        axes[0].set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
     plt.tight_layout()
     plt.show()
 
@@ -161,7 +165,7 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None):
 
 
 if __name__ == "__main__":
-    df = fabricate_data(N_PERSONS=3000, N_PERIODS=20, SEED=1234, exit_prob=.4)  # example data
+    df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.4)  # example data
     cif = CIF(df)
     plot_CIF(cif)
     cif = CIF(df, grouping_vars=["X1"])
