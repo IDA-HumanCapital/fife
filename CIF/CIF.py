@@ -120,35 +120,51 @@ def CIF(d0, ID="ID", grouping_vars=None, exit_col="exit_type", PDPkwargs=None, S
     return df2
 
 
-def plot_CIF(df2, linestyles=None):
+def plot_CIF(df2, linestyles=None, grouping_vars=None):
     # Note that this plotting function is for the specific case generated from our simulations only.
     # Different data will necessitate a modified plotting function.
+    if grouping_vars is None:
+        grouping_vars = []
+    else:
+        if type(grouping_vars) is not list:
+            raise TypeError("grouping_vars must be a list")
     if linestyles is None:
         linestyles = {'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'}
     xlims = [(min(df2["Period"])-1), (max(df2["Period"])+1)]
     xticks = np.sort(df2["Period"].unique())
-    grouped = df2.groupby(["X1"])
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 3), sharey=True)
-    for (key, ax) in zip(grouped.groups.keys(), axes.flatten()):
-        print(key)
-        print(grouped.get_group(key))
-        print(grouped.get_group(key).groupby("Future exit_type"))
-        for label, a in grouped.get_group(key).groupby("Future exit_type"):
+    if len(grouping_vars) == 0:
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4, 3), sharey=True)
+        for label, a in df2.groupby("Future exit_type"):
             linestyle = linestyles[label]
-            a.plot(x='Period', y='CIF', ax=ax, label=label, linestyle=linestyle)
-            ax.set_title("$CIF$, $X_{1}=" + key + "$, by exit type")
-            ax.set_xlim(xlims)
-            ax.set_xticks(xticks)
-    axes[0].set_ylabel(r'$P(1 \leq T_{i} \leq h, D=d|...)$')
-    # plt.ylabel(r'$P(0 \le T_{i} \le h, D=d)$')
+            a.plot(x='Period', y='CIF', ax=axes, label=label, linestyle=linestyle)
+            axes.set_title("$CIF$ by exit type")
+            axes.set_xlim(xlims)
+            axes.set_xticks(xticks)
+    elif len(grouping_vars) > 0:
+        grouped = df2.groupby(grouping_vars)
+        key_label = " ".join(k for k in grouping_vars)
+        ncols = len(grouped.groups.keys())
+        fig, axes = plt.subplots(nrows=1, ncols=ncols, figsize=(4*ncols, 3), sharey=True)
+        for (key, ax) in zip(grouped.groups.keys(), axes.flatten()):
+            for label, a in grouped.get_group(key).groupby("Future exit_type"):
+                linestyle = linestyles[label]
+                a.plot(x='Period', y='CIF', ax=ax, label=label, linestyle=linestyle)
+                ax.set_title("$CIF$, " + key_label + "=" + str(key) + ", by exit type")
+                ax.set_xlim(xlims)
+                ax.set_xticks(xticks)
+    axes[0].set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
     plt.tight_layout()
     plt.show()
 
 
+
+
+
 if __name__ == "__main__":
-    df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.3)  # example data
+    df = fabricate_data(N_PERSONS=3000, N_PERIODS=20, SEED=1234, exit_prob=.4)  # example data
     cif = CIF(df)
-    cif = CIF(df, grouping_vars=["X1"])
     plot_CIF(cif)
+    cif = CIF(df, grouping_vars=["X1"])
+    plot_CIF(cif, grouping_vars=["X1"])
 
 
