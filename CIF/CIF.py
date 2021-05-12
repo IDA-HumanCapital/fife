@@ -64,6 +64,11 @@ def rename_cols(f):
 
 def calc_CIF(f):
     temp = [i for i in f.columns if "-period Surv" in i]
+    temp2 = [i for i in f.columns if "-period Stat" in i]
+    if (len(temp) == 0):
+        raise ValueError("Survival Probability Forecasts are missing.")
+    if (len(temp2) == 0):
+        raise ValueError("State Probability Forecasts are missing.")
     num = sorted([int(x.split('-')[0]) for x in temp])
     for i in num:
         a = f[''.join(str(i) + '-period State Probabilities')]
@@ -107,11 +112,18 @@ def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
 
 
 def CIF(d0, f0=None, f1=None, ID="ID", grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
-    if (f0 is not None) | (f1 is not None):
-        if (f0 is not None) & (f1 is not None):
+    if (f0 is None) | (f1 is None):
+        if (f0 is None) & (f1 is None):
             f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
         else:
-            raise ValueError("It appears you only passed one forecast.  You must pass both survival probability and exit type probability forecasts using the arguments f0= and f1=")
+            if f0 is not None:
+                f = f0
+            else:
+                f = f1
+            temp = [i for i in f.columns if "-period Surv" in i]
+            temp2 = [i for i in f.columns if "-period Stat" in i]
+            if (len(temp) == 0) | (len(temp2) == 0):
+                raise ValueError("It appears you only passed one forecast.  You must pass both survival probability and exit type probability forecasts using the arguments f0= and f1=")
     else:
         f = f0.merge(f1, how="outer", on=ID)
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
