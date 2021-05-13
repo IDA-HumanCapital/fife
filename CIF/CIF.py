@@ -178,7 +178,7 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col=None):
         raise TypeError("You must specify exit_col")
     # Note that this plotting function is for the specific case generated from our simulations only.
     # Different data will necessitate a modified plotting function.
-    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, include_forecast=False)
+    grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, include_forecast=False, exit_col=exit_col)
     if linestyles is None:
         linestyles = {temp[0]: "solid" for temp in df2.groupby("Future " + exit_col)}
     xlims = [(min(df2["Period"])-1), (max(df2["Period"])+1)]
@@ -232,10 +232,11 @@ if __name__ == "__main__":
     df["exit_type2"] = "No_exit"
     for i in df["ID"].unique():
         if "No_exit" not in df[df["ID"] == i]["exit_type"]:
-            temp = np.random.choice(["I", "V"])
+            temp = np.random.choice(["I", "V"], p=[.3, .7])
             df.loc[df["ID"] == i, "exit_type2"] = temp
 
     # now the procedure - computationally efficient method
+    grouping_vars = None
     dfp, ID = process_data(df)
     dfps = dfp.drop(columns=["exit_type", "exit_type2"])
     dfp1 = dfp.drop(columns="exit_type2")
@@ -245,17 +246,19 @@ if __name__ == "__main__":
     fe1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False)
     fe2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False)
     # now create the CIF; notice that we pass in the original dataframe df here because we have already produced the forecasts.  Passing in the processed data will work too, but will produce additional rows with NaN which must be removed.
-    dfcif1A = CIF(df, f0=fs, f1=fe1, ID=ID, exit_col="exit_type", grouping_vars=None)
-    dfcif2A = CIF(df, f0=fs, f1=fe2, ID=ID, exit_col="exit_type2", grouping_vars=None)
+    dfcif1A = CIF(df, f0=fs, f1=fe1, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
+    dfcif2A = CIF(df, f0=fs, f1=fe2, ID=ID, exit_col="exit_type2", grouping_vars=grouping_vars)
 
     # now the procedure - computationally inefficient method but a lot easier
     df1 = df.drop(columns="exit_type2")
     df2 = df.drop(columns="exit_type")
     # Observe that here we must pass in the relevant data frames, df1 and df2, in order to correctly produce forecasts.
-    dfcif1B = CIF(df1, grouping_vars=None, exit_col="exit_type")
-    dfcif2B = CIF(df2, grouping_vars=None, exit_col="exit_type2")
-    plot_CIF(dfcif1B, grouping_vars=None, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
-    plot_CIF(dfcif2B, grouping_vars=None, exit_col="exit_type2", linestyles={'I': 'solid', 'V': 'dashed'})
+    dfcif1B = CIF(df1, grouping_vars=grouping_vars, exit_col="exit_type")
+    dfcif2B = CIF(df2, grouping_vars=grouping_vars, exit_col="exit_type2")
+
+    # plot them
+    plot_CIF(dfcif1B, grouping_vars=grouping_vars, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
+    plot_CIF(dfcif2B, grouping_vars=grouping_vars, exit_col="exit_type2", linestyles={'I': 'solid', 'V': 'dashed'})
 
     #TODO: figure out why these differ:
     dfcif1A["CIF"] - dfcif1B["CIF"]
