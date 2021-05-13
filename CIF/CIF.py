@@ -19,6 +19,9 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', PDPkwar
         dp = PanelDataProcessor(data=df, **PDPkwargs)
     dp.build_processed_data()
     if modeler == "LGBSurvivalModeler":
+        if exit_col is not None:
+            if exit_col in dp.data.columns:
+                dp.data = dp.data.drop(columns=exit_col)
         if Survivalkwargs is None:
             m = LGBSurvivalModeler(data=dp.data)
         else:
