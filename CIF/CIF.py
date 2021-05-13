@@ -16,12 +16,13 @@ def process_data(df, PDPkwargs=None):
             raise TypeError("PDPkwargs must be a dictionary")
         dp = PanelDataProcessor(data=df, **PDPkwargs)
     dp.build_processed_data()
-    return dp.data
+    ID = dp.config["INDIVIDUAL_IDENTIFIER"]
+    return dp.data, ID
 
 
 def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     if process_data_first:
-        df = process_data(df, PDPkwargs=PDPkwargs)
+        df, ID = process_data(df, PDPkwargs=PDPkwargs)
     if modeler == "LGBSurvivalModeler":
         if exit_col is not None:
             if exit_col in df.columns:
@@ -50,12 +51,20 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process
     return f
 
 
-def get_forecasts(df, ID="ID", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
-    df = process_data(df, PDPkwargs=None)
+def get_forecasts(df, ID=None, exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+    df, PDPID = process_data(df, PDPkwargs=None)
+    returnID = False
+    if ID is None:
+        ID = PDPID
+        returnID = True
     f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
     f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
-    f = f0.merge(f1, how="outer", on=ID) # maybe change to get ID automatically by having get_forecast return the id from the data processor
-    return f
+    f = f0.merge(f1, how="outer", on=ID)
+    if returnID:
+        out = (f, ID)
+    else:
+        out = f
+    return out
 
 
 def rename_cols(f):
@@ -95,11 +104,10 @@ def calc_CIF(f):
     return f
 
 
-def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID="ID"):
+def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID=None):
+    if ID is None:
+        raise TypeError("ID was not specified, so the merge cannot be completed.")
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
-    # if grouping_vars is None:
-    #     grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
-    # now merge in with the original data to get features
     temp = d0.groupby(ID).tail(1)  # may need to sort by period first to get the last row
     out = f.merge(temp, how="left", on=ID)
     df = out.groupby(grouping_vars).mean()
@@ -109,20 +117,20 @@ def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", I
 
 def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
-    # if grouping_vars is None:
-    #     grouping_vars = ["X1", "Future exit_type"]  # need to specify this for other data sets
     temp = [i for i in df.columns if "-CIF" in i]
     num = sorted([int(x.split('-')[0]) for x in temp])
-    df2 = df.melt(id_vars=grouping_vars, value_vars=[str(n) + '-CIF' for n in num], value_name="CIF",
-                  var_name="Period")
+    df2 = df.melt(id_vars=grouping_vars, value_vars=[str(n) + '-CIF' for n in num], value_name="CIF", var_name="Period")
     df2["Period"] = df2["Period"].apply(lambda x: int(x.split('-')[0]))
     return df2
 
 
-def CIF(d0, f0=None, f1=None, ID="ID", grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     if (f0 is None) | (f1 is None):
         if (f0 is None) & (f1 is None):
             f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
+            if ID is None:
+                f = f[0]
+                ID = f[1]
         else:
             if f0 is not None:
                 f = f0
@@ -191,10 +199,18 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None):
 
 
 if __name__ == "__main__":
-    df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.4)  # example data
-    cif = CIF(df)
-    plot_CIF(cif)
-    cif = CIF(df, grouping_vars=["X1"])
-    plot_CIF(cif, grouping_vars=["X1"])
+    # make some data
+    df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.4)
+
+    # example 1
+    dfcif = CIF(df)
+    plot_CIF(dfcif)
+
+    # example 2
+    dfcif = CIF(df, grouping_vars=["X1"])
+    plot_CIF(dfcif, grouping_vars=["X1"])
+
+    # example 3
+
 
 
