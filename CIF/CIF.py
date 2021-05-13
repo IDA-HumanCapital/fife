@@ -53,10 +53,10 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_f
     f = m.forecast()
     f = f.reset_index()
     # TODO: return the model if desired so that performance can be evaluated, etc.
-    # if return_model:
-    #     out = (f, m)
-    # else:
-    out = f
+    if return_model:
+        out = (f, m)
+    else:
+        out = f
     return out
 
 
