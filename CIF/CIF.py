@@ -8,9 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
-    # Need to be able to incorporate appropriate inputs to the modelers.
-    # Maybe use something similar to the relevant function from the testing code.
+def process_data(df, PDPkwargs=None):
     if PDPkwargs is None:
         dp = PanelDataProcessor(data=df)
     else:
@@ -18,26 +16,32 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', PDPkwar
             raise TypeError("PDPkwargs must be a dictionary")
         dp = PanelDataProcessor(data=df, **PDPkwargs)
     dp.build_processed_data()
+    return dp.data
+
+
+def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+    if process_data_first:
+        df = process_data(df, PDPkwargs=PDPkwargs)
     if modeler == "LGBSurvivalModeler":
         if exit_col is not None:
-            if exit_col in dp.data.columns:
-                dp.data = dp.data.drop(columns=exit_col)
+            if exit_col in df.columns:
+                df = df.drop(columns=exit_col)
         if Survivalkwargs is None:
-            m = LGBSurvivalModeler(data=dp.data)
+            m = LGBSurvivalModeler(data=df)
         else:
             if type(Survivalkwargs) is not dict:
                 raise TypeError("Survivalkwargs must be a dictionary")
-            m = LGBSurvivalModeler(data=dp.data, **Survivalkwargs)
+            m = LGBSurvivalModeler(data=df, **Survivalkwargs)
     elif modeler == "LGBExitModeler":
         if Exitkwargs is None:
-            m = LGBExitModeler(data=dp.data, exit_col=exit_col)
+            m = LGBExitModeler(data=df, exit_col=exit_col)
         else:
             if type(Exitkwargs) is not dict:
                 raise TypeError("Exitkwargs must be a dictionary")
             if "exit_col" in Exitkwargs.keys():
                 exit_col = Exitkwargs["exit_col"]
                 Exitkwargs.pop("exit_col")
-            m = LGBExitModeler(data=dp.data, exit_col=exit_col, **Exitkwargs)
+            m = LGBExitModeler(data=df, exit_col=exit_col, **Exitkwargs)
     else:
         raise NameError('Invalid modeler')
     m.build_model(parallelize=False)
