@@ -51,8 +51,9 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process
 
 
 def get_forecasts(df, ID="ID", exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
-    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
-    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
+    df = process_data(df, PDPkwargs=None)
+    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
+    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
     f = f0.merge(f1, how="outer", on=ID) # maybe change to get ID automatically by having get_forecast return the id from the data processor
     return f
 
