@@ -52,7 +52,6 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_f
     m.build_model(parallelize=False)
     f = m.forecast()
     f = f.reset_index()
-    # TODO: return the model if desired so that performance can be evaluated, etc.
     if return_model:
         out = (f, m)
     else:
@@ -160,7 +159,9 @@ def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwa
     return df2
 
 
-def grouping_vars_subfcn(grouping_vars=None, exit_col="exit_type", include_forecast=True):
+def grouping_vars_subfcn(grouping_vars=None, exit_col=None, include_forecast=True):
+    if exit_col is None:
+        raise TypeError("You must specify exit_col")
     if grouping_vars is None:
         grouping_vars = []
     else:
@@ -172,13 +173,14 @@ def grouping_vars_subfcn(grouping_vars=None, exit_col="exit_type", include_forec
     return grouping_vars
 
 
-def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col="exit_type"):
+def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col=None):
+    if exit_col is None:
+        raise TypeError("You must specify exit_col")
     # Note that this plotting function is for the specific case generated from our simulations only.
     # Different data will necessitate a modified plotting function.
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, include_forecast=False)
     if linestyles is None:
-        linestyles = {'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'}
-        # TODO: make this for arbitrary exit categories
+        linestyles = {temp[0]: "solid" for temp in df2.groupby("Future " + exit_col)}
     xlims = [(min(df2["Period"])-1), (max(df2["Period"])+1)]
     xticks = np.sort(df2["Period"].unique())
     if len(grouping_vars) == 0:
@@ -217,12 +219,12 @@ if __name__ == "__main__":
     #####
     # example 1 - aggregate CIF
     dfcif = CIF(df, exit_col="exit_type")
-    plot_CIF(dfcif)
+    plot_CIF(dfcif, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
 
     #####
     # example 2 - examine CIF aggregated by groups
     dfcif = CIF(df, grouping_vars=["X1"], exit_col="exit_type")
-    plot_CIF(dfcif, grouping_vars=["X1"])
+    plot_CIF(dfcif, grouping_vars=["X1"], exit_col="exit_type")
 
     #####
     # example 3 - more than one exit column
