@@ -250,15 +250,7 @@ if __name__ == "__main__":
     dfp1 = dfp.drop(columns="exit_type2")
     dfp2 = dfp.drop(columns="exit_type")
 
-    # make_results_reproducible(seed)
-    # dfp1B, ID = process_data(df1)
-    # make_results_reproducible(seed)
-    # dfp2B, ID = process_data(df2)
-    #
-    #
     fs = get_forecast(dfps, modeler="LGBSurvivalModeler", process_data_first=False)
-    # fs1 = get_forecast(dfp1, modeler="LGBSurvivalModeler", exit_col='exit_type', process_data_first=False)
-    # fs2 = get_forecast(dfp2, modeler="LGBSurvivalModeler", exit_col='exit_type2', process_data_first=False)
     fe1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False)
     fe2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False)
     # now create the CIF; notice that we pass in the original dataframe df here because we have already produced the forecasts.  Passing in the processed data will work too, but will produce additional rows with NaN which must be removed.
@@ -281,5 +273,29 @@ if __name__ == "__main__":
     # plot them
     plot_CIF(dfcif1B, grouping_vars=grouping_vars, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
     plot_CIF(dfcif2B, grouping_vars=grouping_vars, exit_col="exit_type2", linestyles={'I': 'solid', 'V': 'dashed'})
+
+    #####
+    # example 4 - model diagnostics:
+    # In addition to examining the CIF, you may wish to examine model diagnostics on the estimated survival and exit models.  You can retrieve the models by passing the argument return_model=True to get_forecast():
+    seed = 1234
+    grouping_vars = ["X1"]
+    make_results_reproducible(seed)
+    dfp, ID = process_data(df)
+    dfps = dfp.drop(columns=["exit_type", "exit_type2"])
+    dfp1 = dfp.drop(columns="exit_type2")
+    dfp2 = dfp.drop(columns="exit_type")
+
+    fs, ms = get_forecast(dfps, modeler="LGBSurvivalModeler", process_data_first=False, return_model=True)
+    fe1, me1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False, return_model=True)
+    fe2, me2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False, return_model=True)
+
+    # You may now perform model diagnostics using the modeler objects ms, me1, and me2.
+
+    #####
+    # example 5 - passing additional instructions to  PanelDataProcessor, LGBSurvivalModeler, and LGBExitModeler:
+    # Do do this, simply put the instructions in a dictionary of the form {<arg1>: <value1>, <arg2>: <value2>, <kwarg1>: <kwvalue1>, ...} and pass this dictionary to CIF(), get_forecasts(), get_forecast(), or process_data() as appropriate, using the arguments PDPkwargs=..., Survivalkwargs=..., Exitkwargs=....
+    # This allows any and all possible allowable options to be passed directly to the processor and modelers.
+
+
 
 
