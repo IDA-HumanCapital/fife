@@ -2,14 +2,15 @@
 
 from fife.processors import PanelDataProcessor
 from fife.lgb_modelers import LGBExitModeler, LGBSurvivalModeler, LGBStateModeler
-from tests_performance.Data_Fabrication import fabricate_data
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from fife.utils import make_results_reproducible
 
 
-def process_data(df, PDPkwargs=None):
+def process_data(df, PDPkwargs=None, seed=None):
+    if seed is not None:
+        make_results_reproducible(seed)
     if PDPkwargs is None:
         dp = PanelDataProcessor(data=df)
     else:
@@ -21,7 +22,7 @@ def process_data(df, PDPkwargs=None):
     return dp.data, ID
 
 
-def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, return_model=False, seed=None):
+def get_model(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None):
     if seed is not None:
         make_results_reproducible(seed)
     if process_data_first:
@@ -53,6 +54,14 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_f
     else:
         raise NameError('Invalid modeler')
     m.build_model(parallelize=False)
+    return m
+
+
+def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, build_model=True, seed=None, return_model=False):
+    if build_model:
+        m = get_model(df, modeler=modeler, exit_col=exit_col, process_data_first=process_data_first, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs, seed=seed)
+    else:
+        m = df
     f = m.forecast()
     f = f.reset_index()
     if return_model:
@@ -63,15 +72,13 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_f
 
 
 def get_forecasts(df, ID=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None):
-    if seed is not None:
-        make_results_reproducible(seed)
-    df, PDPID = process_data(df, PDPkwargs=PDPkwargs)
+    df, PDPID = process_data(df, PDPkwargs=PDPkwargs, seed=seed)
     returnID = False
     if ID is None:
         ID = PDPID
         returnID = True
-    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs)
-    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, process_data_first=False, PDPkwargs=PDPkwargs, Exitkwargs=Exitkwargs)
+    f0 = get_forecast(df, modeler="LGBSurvivalModeler", exit_col=exit_col, process_data_first=False, Survivalkwargs=Survivalkwargs)
+    f1 = get_forecast(df, modeler="LGBExitModeler", exit_col=exit_col, process_data_first=False, Exitkwargs=Exitkwargs)
     f = f0.merge(f1, how="outer", on=ID)
     if returnID:
         out = (f, ID)
@@ -117,11 +124,15 @@ def calc_CIF(f):
     return f
 
 
-def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID=None):
+def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID=None, subset=None):
     if ID is None:
         raise TypeError("ID was not specified, so the merge cannot be completed.")
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
-    temp = d0.groupby(ID).tail(1)  # may need to sort by period first to get the last row
+    # need to merge with data frame d0[d0p[m.predict_col] == True], so pass the predict_obs column as an input to here
+    if subset is None:
+        temp = d0.groupby(ID).tail(1)  # may need to sort by period first to get the last row
+    else:
+        temp = d0[subset]
     out = f.merge(temp, how="left", on=ID)
     df = out.groupby(grouping_vars).mean()
     df = df.reset_index()
@@ -137,7 +148,7 @@ def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
     return df2
 
 
-def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None):
+def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None, subset=None):
     if (f0 is None) | (f1 is None):
         if (f0 is None) & (f1 is None):
             f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs, seed=seed)
@@ -159,7 +170,7 @@ def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwa
         f = f0.merge(f1, how="outer", on=ID)
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
     f = calc_CIF(f)
-    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID)
+    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID, subset=subset)
     df2 = wide_to_long(df, grouping_vars=grouping_vars, exit_col=exit_col)
     return df2
 
@@ -213,88 +224,6 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col=None):
     plt.tight_layout()
     plt.show()
 
-
-
-
-
-if __name__ == "__main__":
-    # make some data
-    df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.4)
-
-    #####
-    # example 1 - aggregate CIF
-    dfcif = CIF(df, exit_col="exit_type")
-    plot_CIF(dfcif, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
-
-    #####
-    # example 2 - examine CIF aggregated by groups
-    dfcif = CIF(df, grouping_vars=["X1"], exit_col="exit_type")
-    plot_CIF(dfcif, grouping_vars=["X1"], exit_col="exit_type")
-
-    #####
-    # example 3 - more than one exit column
-    # first add a 2nd exit column for demonstration
-    df["exit_type2"] = "No_exit"
-    for i in df["ID"].unique():
-        if "No_exit" not in df[df["ID"] == i]["exit_type"]:
-            temp = np.random.choice(["I", "V"], p=[.3, .7])
-            df.loc[df["ID"] == i, "exit_type2"] = temp
-
-    seed = 1234  # Only used in this example to show that the computationally efficient method and the easy method produce the same results.  Without setting the seed, the training and validation set will differ, resulting in slightly different results.
-
-    # now the procedure - computationally efficient method
-    grouping_vars = ["X1"]
-    make_results_reproducible(seed)
-    dfp, ID = process_data(df)
-    dfps = dfp.drop(columns=["exit_type", "exit_type2"])
-    dfp1 = dfp.drop(columns="exit_type2")
-    dfp2 = dfp.drop(columns="exit_type")
-
-    fs = get_forecast(dfps, modeler="LGBSurvivalModeler", process_data_first=False)
-    fe1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False)
-    fe2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False)
-    # now create the CIF; notice that we pass in the original dataframe df here because we have already produced the forecasts.  Passing in the processed data will work too, but will produce additional rows with NaN which must be removed.
-    dfcif1A = CIF(df, f0=fs, f1=fe1, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
-    dfcif2A = CIF(df, f0=fs, f1=fe2, ID=ID, exit_col="exit_type2", grouping_vars=grouping_vars)
-
-    # now the procedure - computationally inefficient method but a lot easier
-    df1 = df.drop(columns="exit_type2")
-    df2 = df.drop(columns="exit_type")
-    # Observe that here we must pass in the relevant data frames, df1 and df2, in order to correctly produce forecasts.
-    dfcif1B = CIF(df1, grouping_vars=grouping_vars, exit_col="exit_type", seed=seed)
-    dfcif2B = CIF(df2, grouping_vars=grouping_vars, exit_col="exit_type2", seed=seed)
-
-    # verify that the methods agree
-    max(abs(dfcif1A["CIF"] - dfcif1B["CIF"]))
-    max(abs(dfcif2A["CIF"] - dfcif2B["CIF"]))
-    dfcif1A.ne(dfcif1B).sum()
-    dfcif2A.ne(dfcif2B).sum()
-
-    # plot them
-    plot_CIF(dfcif1B, grouping_vars=grouping_vars, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
-    plot_CIF(dfcif2B, grouping_vars=grouping_vars, exit_col="exit_type2", linestyles={'I': 'solid', 'V': 'dashed'})
-
-    #####
-    # example 4 - model diagnostics:
-    # In addition to examining the CIF, you may wish to examine model diagnostics on the estimated survival and exit models.  You can retrieve the models by passing the argument return_model=True to get_forecast():
-    seed = 1234
-    grouping_vars = ["X1"]
-    make_results_reproducible(seed)
-    dfp, ID = process_data(df)
-    dfps = dfp.drop(columns=["exit_type", "exit_type2"])
-    dfp1 = dfp.drop(columns="exit_type2")
-    dfp2 = dfp.drop(columns="exit_type")
-
-    fs, ms = get_forecast(dfps, modeler="LGBSurvivalModeler", process_data_first=False, return_model=True)
-    fe1, me1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False, return_model=True)
-    fe2, me2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False, return_model=True)
-
-    # You may now perform model diagnostics using the modeler objects ms, me1, and me2.
-
-    #####
-    # example 5 - passing additional instructions to  PanelDataProcessor, LGBSurvivalModeler, and LGBExitModeler:
-    # Do do this, simply put the instructions in a dictionary of the form {<arg1>: <value1>, <arg2>: <value2>, <kwarg1>: <kwvalue1>, ...} and pass this dictionary to CIF(), get_forecasts(), get_forecast(), or process_data() as appropriate, using the arguments PDPkwargs=..., Survivalkwargs=..., Exitkwargs=....
-    # This allows any and all possible allowable options to be passed directly to the processor and modelers.
 
 
 
