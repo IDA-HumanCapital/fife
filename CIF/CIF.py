@@ -20,7 +20,7 @@ def process_data(df, PDPkwargs=None):
     return dp.data, ID
 
 
-def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+def get_forecast(df, modeler="LGBSurvivalModeler", exit_col=None, process_data_first=True, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, return_model=False):
     if process_data_first:
         df, ID = process_data(df, PDPkwargs=PDPkwargs)
     if modeler == "LGBSurvivalModeler":
@@ -35,6 +35,8 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process
             m = LGBSurvivalModeler(data=df, **Survivalkwargs)
     elif modeler == "LGBExitModeler":
         if Exitkwargs is None:
+            if exit_col is None:
+                raise TypeError("exit_col must be specified")
             m = LGBExitModeler(data=df, exit_col=exit_col)
         else:
             if type(Exitkwargs) is not dict:
@@ -42,16 +44,23 @@ def get_forecast(df, modeler="LGBSurvivalModeler", exit_col='exit_type', process
             if "exit_col" in Exitkwargs.keys():
                 exit_col = Exitkwargs["exit_col"]
                 Exitkwargs.pop("exit_col")
+            if exit_col is None:
+                raise TypeError("exit_col must be specified")
             m = LGBExitModeler(data=df, exit_col=exit_col, **Exitkwargs)
     else:
         raise NameError('Invalid modeler')
     m.build_model(parallelize=False)
     f = m.forecast()
     f = f.reset_index()
-    return f
+    # TODO: return the model if desired so that performance can be evaluated, etc.
+    # if return_model:
+    #     out = (f, m)
+    # else:
+    out = f
+    return out
 
 
-def get_forecasts(df, ID=None, exit_col='exit_type', PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+def get_forecasts(df, ID=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     df, PDPID = process_data(df, PDPkwargs=None)
     returnID = False
     if ID is None:
@@ -124,13 +133,13 @@ def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
     return df2
 
 
-def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col="exit_type", PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
+def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None):
     if (f0 is None) | (f1 is None):
         if (f0 is None) & (f1 is None):
             f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs)
             if ID is None:
-                f = f[0]
                 ID = f[1]
+                f = f[0]
         else:
             if f0 is not None:
                 f = f0
@@ -141,6 +150,8 @@ def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col="exit_type",
             if (len(temp) == 0) | (len(temp2) == 0):
                 raise ValueError("It appears you only passed one forecast.  You must pass both survival probability and exit type probability forecasts using the arguments f0= and f1=")
     else:
+        if ID is None:
+            raise TypeError("You specified both forecasts, but did not specify the ID for merging them.  Use the arg ID= to specify the ID.")
         f = f0.merge(f1, how="outer", on=ID)
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
     f = calc_CIF(f)
@@ -161,17 +172,18 @@ def grouping_vars_subfcn(grouping_vars=None, exit_col="exit_type", include_forec
     return grouping_vars
 
 
-def plot_CIF(df2, linestyles=None, grouping_vars=None):
+def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col="exit_type"):
     # Note that this plotting function is for the specific case generated from our simulations only.
     # Different data will necessitate a modified plotting function.
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, include_forecast=False)
     if linestyles is None:
         linestyles = {'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'}
+        # TODO: make this for arbitrary exit categories
     xlims = [(min(df2["Period"])-1), (max(df2["Period"])+1)]
     xticks = np.sort(df2["Period"].unique())
     if len(grouping_vars) == 0:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4, 3), sharey=True)
-        for label, a in df2.groupby("Future exit_type"):
+        for label, a in df2.groupby("Future " + exit_col):
             linestyle = linestyles[label]
             a.plot(x='Period', y='CIF', ax=axes, label=label, linestyle=linestyle)
             axes.set_title("$CIF$ by exit type")
@@ -184,7 +196,7 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None):
         ncols = len(grouped.groups.keys())
         fig, axes = plt.subplots(nrows=1, ncols=ncols, figsize=(4*ncols, 3), sharey=True)
         for (key, ax) in zip(grouped.groups.keys(), axes.flatten()):
-            for label, a in grouped.get_group(key).groupby("Future exit_type"):
+            for label, a in grouped.get_group(key).groupby("Future " + exit_col):
                 linestyle = linestyles[label]
                 a.plot(x='Period', y='CIF', ax=ax, label=label, linestyle=linestyle)
                 ax.set_title("$CIF$, " + key_label + "=" + str(key) + ", by exit type")
@@ -202,15 +214,47 @@ if __name__ == "__main__":
     # make some data
     df = fabricate_data(N_PERSONS=1000, N_PERIODS=20, SEED=1234, exit_prob=.4)
 
-    # example 1
-    dfcif = CIF(df)
+    #####
+    # example 1 - aggregate CIF
+    dfcif = CIF(df, exit_col="exit_type")
     plot_CIF(dfcif)
 
-    # example 2
-    dfcif = CIF(df, grouping_vars=["X1"])
+    #####
+    # example 2 - examine CIF aggregated by groups
+    dfcif = CIF(df, grouping_vars=["X1"], exit_col="exit_type")
     plot_CIF(dfcif, grouping_vars=["X1"])
 
-    # example 3
+    #####
+    # example 3 - more than one exit column
+    # first add a 2nd exit column for demonstration
+    df["exit_type2"] = "No_exit"
+    for i in df["ID"].unique():
+        if "No_exit" not in df[df["ID"] == i]["exit_type"]:
+            temp = np.random.choice(["I", "V"])
+            df.loc[df["ID"] == i, "exit_type2"] = temp
 
+    # now the procedure - computationally efficient method
+    dfp, ID = process_data(df)
+    dfps = dfp.drop(columns=["exit_type", "exit_type2"])
+    dfp1 = dfp.drop(columns="exit_type2")
+    dfp2 = dfp.drop(columns="exit_type")
+    #
+    fs = get_forecast(dfps, modeler="LGBSurvivalModeler", process_data_first=False)
+    fe1 = get_forecast(dfp1, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False)
+    fe2 = get_forecast(dfp2, modeler="LGBExitModeler", exit_col='exit_type2', process_data_first=False)
+    # now create the CIF; notice that we pass in the original dataframe df here because we have already produced the forecasts.  Passing in the processed data will work too, but will produce additional rows with NaN which must be removed.
+    dfcif1A = CIF(df, f0=fs, f1=fe1, ID=ID, exit_col="exit_type", grouping_vars=None)
+    dfcif2A = CIF(df, f0=fs, f1=fe2, ID=ID, exit_col="exit_type2", grouping_vars=None)
 
+    # now the procedure - computationally inefficient method but a lot easier
+    df1 = df.drop(columns="exit_type2")
+    df2 = df.drop(columns="exit_type")
+    # Observe that here we must pass in the relevant data frames, df1 and df2, in order to correctly produce forecasts.
+    dfcif1B = CIF(df1, grouping_vars=None, exit_col="exit_type")
+    dfcif2B = CIF(df2, grouping_vars=None, exit_col="exit_type2")
+    plot_CIF(dfcif1B, grouping_vars=None, exit_col="exit_type", linestyles={'X': 'solid', 'Y': 'dashed', 'Z': 'dotted'})
+    plot_CIF(dfcif2B, grouping_vars=None, exit_col="exit_type2", linestyles={'I': 'solid', 'V': 'dashed'})
 
+    #TODO: figure out why these differ:
+    dfcif1A["CIF"] - dfcif1B["CIF"]
+    dfcif2A["CIF"] - dfcif2B["CIF"]
