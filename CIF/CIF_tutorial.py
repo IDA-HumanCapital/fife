@@ -88,7 +88,9 @@ dfp1, ID = cif.process_data(df, PDPkwargs={"config": {"TEST_INTERVALS": 4}}, see
 dfcif = cif.CIF(df, grouping_vars=grouping_vars, exit_col="exit_type", seed=seed, PDPkwargs={"config": {"TEST_INTERVALS": 4}})
 # etc.
 
-# These will still only produce forecasts for the censored observations at the last period in the data set.  What if we want to produce forecasts for the test set to illustrate the forecasted CIF against an empirical CIF calculated on the test set?
+# These will still only produce forecasts for the censored observations at the last period in the data set.
+# You might want to calculate the CIF for individuals in the test set to illustrate the forecasted vs the empirical exit probabilities as an additional illustration of model performance.
+# The following illustrates this.
 df = df0.copy()
 seed = 1234
 grouping_vars = ["X1"]
@@ -178,9 +180,14 @@ fe_test = cif.get_forecast(me, build_model=False)
 
 # Now we will use CIF() to merge the relevant forecasts and return some different CIFs
 
+# CIFs for censored individuals
 dfcif_indiv = cif.CIF(df, f0=fs, f1=fe, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, individual_level=True)
+
+# CIFs for censored individuals, grouped by grouping_vars
 dfcif_grouped = cif.CIF(df, f0=fs, f1=fe, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
 
-dfcif_test_indiv = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, individual_level=True)
-dfcif_test_grouped = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
+# CIFs for individuals in the test set.  Notice that we also use the subset= argument to ensure that we are recording the covariate information from the relevant time periods in the output.
+# You might want to calculate the CIF for individuals in the test set to illustrate the forecasted vs the empirical exit probabilities as an additional illustration of model performance.
+dfcif_test_indiv = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, individual_level=True, subset=test_set_predict_obs)
+dfcif_test_grouped = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, subset=test_set_predict_obs)
 
