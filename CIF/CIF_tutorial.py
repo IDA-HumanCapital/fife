@@ -66,6 +66,7 @@ dfp, ID = cif.process_data(df, seed=seed)
 dfps = dfp.drop(columns=["exit_type", "exit_type2"])
 ms = cif.get_model(dfps, modeler="LGBSurvivalModeler", process_data_first=False)
 # You may now perform model diagnostics using the modeler objects ms, me1, and me2.
+ms.evaluate()
 # Once you already have the models, you don't need to build them again.  You can just pass the modeler to get_forecast in place of the data frame along with the argument build_model=False:
 fs = cif.get_forecast(ms, build_model=False)
 
@@ -76,14 +77,14 @@ fs = cif.get_forecast(ms, build_model=False)
 seed = 1234
 grouping_vars = None
 dfp0, ID = cif.process_data(df1, seed=seed)
-dfp1, ID = cif.process_data(df1, PDPkwargs={"config": {"TEST_INTERVALS": 5}}, seed=seed)
-dfcif = cif.CIF(df1, grouping_vars=grouping_vars, exit_col="exit_type", seed=seed, PDPkwargs={"config": {"TEST_INTERVALS": 5}})
+dfp1, ID = cif.process_data(df1, PDPkwargs={"config": {"TEST_INTERVALS": 4}}, seed=seed)
+dfcif = cif.CIF(df1, grouping_vars=grouping_vars, exit_col="exit_type", seed=seed, PDPkwargs={"config": {"TEST_INTERVALS": 4}})
 # etc.
 
 # These will still only produce forecasts for the censored observations at the last period in the data set.  What if we want to produce forecasts for the test set to illustrate the forecasted CIF against an empirical CIF calculated on the test set?
 seed = 1234
 grouping_vars = ["X1"]
-dfp1, ID = cif.process_data(df1, PDPkwargs={"config": {"TEST_INTERVALS": 5}}, seed=seed)
+dfp1, ID = cif.process_data(df1, PDPkwargs={"config": {"TEST_INTERVALS": 4}}, seed=seed)
 # First, find the test set flagged by the data processor:
 test_period_start = min(dfp1[dfp1["_test"] == True]["period"])
 test_set_predict_obs = (dfp1["_test"] == True) & (dfp1["period"] == test_period_start)
