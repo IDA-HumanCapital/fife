@@ -124,7 +124,7 @@ def calc_CIF(f):
     return f
 
 
-def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID=None, subset=None):
+def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", ID=None, subset=None, individual_level=False):
     if ID is None:
         raise TypeError("ID was not specified, so the merge cannot be completed.")
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
@@ -134,21 +134,30 @@ def get_features_and_collapse(d0, f, grouping_vars=None, exit_col="exit_type", I
     else:
         temp = d0[subset]
     out = f.merge(temp, how="left", on=ID)
-    df = out.groupby(grouping_vars).mean()
-    df = df.reset_index()
+    if individual_level:
+        df = out
+    else:
+        df = out.groupby(grouping_vars).mean()
+        df = df.reset_index()
     return df
 
 
-def wide_to_long(df, grouping_vars=None, exit_col="exit_type"):
+def wide_to_long(df, grouping_vars=None, exit_col="exit_type", ID=None, individual_level=False):
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
     temp = [i for i in df.columns if "-CIF" in i]
     num = sorted([int(x.split('-')[0]) for x in temp])
+    if individual_level:
+        if ID is None:
+            raise ValueError("You must specify the ID column with ID=")
+        else:
+            if ID not in grouping_vars:
+                grouping_vars = [ID] + grouping_vars
     df2 = df.melt(id_vars=grouping_vars, value_vars=[str(n) + '-CIF' for n in num], value_name="CIF", var_name="Period")
     df2["Period"] = df2["Period"].apply(lambda x: int(x.split('-')[0]))
     return df2
 
 
-def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None, subset=None):
+def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwargs=None, Survivalkwargs=None, Exitkwargs=None, seed=None, subset=None,individual_level=False):
     if (f0 is None) | (f1 is None):
         if (f0 is None) & (f1 is None):
             f = get_forecasts(d0, ID=ID, exit_col=exit_col, PDPkwargs=PDPkwargs, Survivalkwargs=Survivalkwargs, Exitkwargs=Exitkwargs, seed=seed)
@@ -170,8 +179,8 @@ def CIF(d0, f0=None, f1=None, ID=None, grouping_vars=None, exit_col=None, PDPkwa
         f = f0.merge(f1, how="outer", on=ID)
     grouping_vars = grouping_vars_subfcn(grouping_vars=grouping_vars, exit_col=exit_col)
     f = calc_CIF(f)
-    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID, subset=subset)
-    df2 = wide_to_long(df, grouping_vars=grouping_vars, exit_col=exit_col)
+    df = get_features_and_collapse(d0, f, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID, subset=subset, individual_level=individual_level)
+    df2 = wide_to_long(df, grouping_vars=grouping_vars, exit_col=exit_col, ID=ID, individual_level=individual_level)
     return df2
 
 
