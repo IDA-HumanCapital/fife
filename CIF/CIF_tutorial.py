@@ -133,3 +133,54 @@ fe = cif.get_forecast(me, build_model=False)
 dfcif = cif.CIF(df, f0=fs, f1=fe, ID=ID, grouping_vars=grouping_vars, exit_col="exit_type", individual_level=True)
 
 dfcif[dfcif["ID"] == dfcif["ID"][0]]
+
+
+
+
+#####
+# example 7 - A complete example
+seed = 1234
+grouping_vars = ["X1"]
+df = df0.copy()
+
+# Pass the relevant arguments to the PDP.  Note that these arguments do not need to be passed to the modeler.  If they are passed to the modeler, they should be identical to those passed to the PDP.
+# It is not clear to me if the modelers will overwrite what is specified by the PDP, so I would advise NOT passing these arguments to the modelers.
+# Note that setting n_intervals is NOT required, and I recommend not using it.  That is, do not use it at all; do not pass it to the PDP or the Modelers.
+dfp, ID = cif.process_data(df, PDPkwargs={"config": {"TEST_INTERVALS": 2}}, seed=seed)
+# Find the rows corresponding to the start of the test set and make a new column that flags those rows
+test_period_start = min(dfp[dfp["_test"] == True]["period"])
+test_set_predict_obs = (dfp["_test"] == True) & (dfp["period"] == test_period_start)
+dfp["_predict_obs_test_set"] = test_set_predict_obs
+
+# remove the exit type column(s) for the survival modeler
+dfps = dfp.drop(columns=["exit_type"])
+# similarly, if there are multiple exit_cols, make a df for each by removing the unused columns from dfp
+
+# Build the models on the relevant dfs
+ms = cif.get_model(dfps, modeler="LGBSurvivalModeler", exit_col='exit_type', process_data_first=False)
+me = cif.get_model(dfp, modeler="LGBExitModeler", exit_col='exit_type', process_data_first=False)
+
+# First, let's get the evaluation information:
+eval_s = ms.evaluate()
+eval_e = me.evaluate()
+
+# Next, let's get the forecasts for the censored individuals
+fs = cif.get_forecast(ms, build_model=False)
+fe = cif.get_forecast(me, build_model=False)
+
+# Next, let's get the forecasts for the test set
+# To do this, we need to change the modelers' predict_col attribute to the column we created earlier
+ms.predict_col = "_predict_obs_test_set"
+me.predict_col = "_predict_obs_test_set"
+# Now get the forecasts
+fs_test = cif.get_forecast(ms, build_model=False)
+fe_test = cif.get_forecast(me, build_model=False)
+
+# Now we will use CIF() to merge the relevant forecasts and return some different CIFs
+
+dfcif_indiv = cif.CIF(df, f0=fs, f1=fe, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, individual_level=True)
+dfcif_grouped = cif.CIF(df, f0=fs, f1=fe, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
+
+dfcif_test_indiv = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars, individual_level=True)
+dfcif_test_grouped = cif.CIF(df, f0=fs_test, f1=fe_test, ID=ID, exit_col="exit_type", grouping_vars=grouping_vars)
+
