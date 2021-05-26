@@ -216,7 +216,8 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col=None):
             axes.set_title("$CIF$ by exit type")
             axes.set_xlim(xlims)
             axes.set_xticks(xticks)
-        axes.set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
+        # axes.set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
+        axes.set_ylabel('Probability')
     elif len(grouping_vars) > 0:
         grouped = df2.groupby(grouping_vars)
         key_label = " ".join(k for k in grouping_vars)
@@ -229,7 +230,8 @@ def plot_CIF(df2, linestyles=None, grouping_vars=None, exit_col=None):
                 ax.set_title("$CIF$, " + key_label + "=" + str(key) + ", by exit type")
                 ax.set_xlim(xlims)
                 ax.set_xticks(xticks)
-        axes[0].set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
+        # axes[0].set_ylabel(r'$P(0 < T_{i} \leq h, D=d|...)$')
+        axes[0].set_ylabel('Probability')
     plt.tight_layout()
     plt.show()
 
