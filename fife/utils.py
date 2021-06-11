@@ -73,7 +73,7 @@ def import_data_file(file_path: str = "Input_Data") -> pd.core.frame.DataFrame:
 def compute_aggregation_uncertainty(
     individual_probabilities: pd.core.frame.DataFrame, percent_confidence: float = 0.95
 ) -> pd.core.frame.DataFrame:
-    """Statistically bound number of events given each of their probabilities.
+    """Statistically bound number of events given each of their probabilities, using Chernoff bounds.
 
     Args:
         individual_probabilities: A DataFrame of probabilities where each row

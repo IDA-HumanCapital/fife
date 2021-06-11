@@ -30,7 +30,7 @@ from tensorflow.keras.regularizers import l2
 
 
 def binary_encode_feature(col: pd.core.series.Series) -> pd.core.frame.DataFrame:
-    """Map whole numbers to bits.  
+    """Map whole numbers to bits.
 
     Args:
         col: a pandas Series of whole numbers.
