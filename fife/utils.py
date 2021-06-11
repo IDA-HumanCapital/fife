@@ -12,6 +12,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize_scalar
 import seaborn as sns
 import shap
 
@@ -73,7 +74,7 @@ def import_data_file(file_path: str = "Input_Data") -> pd.core.frame.DataFrame:
 def compute_aggregation_uncertainty(
     individual_probabilities: pd.core.frame.DataFrame, percent_confidence: float = 0.95
 ) -> pd.core.frame.DataFrame:
-    """Statistically bound number of events given each of their probabilities, using Chernoff bounds.
+    """Statistically bound number of predicted events given each of their probabilities, using Chernoff bounds.
 
     Args:
         individual_probabilities: A DataFrame of probabilities where each row
@@ -92,12 +93,60 @@ def compute_aggregation_uncertainty(
     if (percent_confidence <= 0) | (percent_confidence >= 1):
         raise ValueError("Percent confidence outside (0, 1)")
     means = individual_probabilities.transpose().to_numpy().sum(axis=1)
-    cutoff = np.log((1 - percent_confidence) / 2) / means
-    upper_bounds = (
-        1 + ((-cutoff) + np.sqrt(np.square(cutoff) - (8 * cutoff))) / 2
-    ) * means
+    alpha = (1 - percent_confidence) / 2
+
+
+    def chernoff_upper_bounds (means: np.ndarray, alpha: float) -> np.ndarray:
+        """Use optimizer to find the Chernoff upper bounds for given significance level"""
+
+        def minimize_delta_function_upper_bound(delta: float, mu: float, alpha: float):
+            quantity = (((np.exp(delta)) / ((1 + delta) ** (1 + delta))) ** mu - alpha) ** 2
+
+
+            if (delta <= 0):
+                quantity = (quantity * 1e4) ** 2
+
+            return quantity
+
+        deltas_solved = np.array([])
+
+        for mu in means:
+            one_delta = minimize_scalar(minimize_delta_function_upper_bound, args=(mu, alpha),
+                 method="Bounded", bounds=(0, 3)).x
+            deltas_solved = np.append(deltas_solved, one_delta)
+
+        upper_bounds = (1 + deltas_solved) * means
+
+        return upper_bounds
+
+
+    def chernoff_lower_bounds (means: np.ndarray, alpha: float) -> np.ndarray:
+        """Use optimizer to find the Chernoff lower bounds for given significance level"""
+
+        def minimize_delta_function_lower_bound(delta: float, mu: float, alpha: float):
+            quantity = ((1 / (np.exp(delta) * ((1 - delta) ** (1 - delta)))) ** mu - alpha) ** 2
+            if (delta <= 0):
+                quantity = (quantity * 1e4) ** 2
+
+            return quantity
+
+        deltas_solved = np.array([])
+
+        for mu in means:
+            one_delta = minimize_scalar(minimize_delta_function_lower_bound, args=(mu, alpha),
+                 method="Bounded", bounds=(0, 1)).x
+            deltas_solved = np.append(deltas_solved, one_delta)
+
+        lower_bounds = (1 - deltas_solved) * means
+
+        return lower_bounds
+
+
+
+    upper_bounds = chernoff_upper_bounds(means, alpha)
+    lower_bounds = chernoff_lower_bounds(means, alpha)
+
     upper_bounds = np.minimum(upper_bounds, individual_probabilities.shape[0])
-    lower_bounds = np.maximum((1 - np.sqrt(-2 * cutoff)) * means, 0)
     lower_bounds = np.maximum(lower_bounds, 0)
     conf = str(int(percent_confidence * 100))
     times = list(individual_probabilities)
