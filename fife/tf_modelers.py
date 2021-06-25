@@ -9,7 +9,9 @@ from fife.nnet_survival import make_surv_array, surv_likelihood, PropHazards
 import numpy as np
 import optuna
 import pandas as pd
+from matplotlib import pyplot as plt
 import shap
+from random import randrange
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.backend as K
@@ -567,9 +569,15 @@ class TFModeler(Modeler):
         return shap_values
 
     def compute_model_uncertainty(
-        self, subset: Union[None, pd.core.series.Series] = None, n_iterations: int = 200
-    ) -> np.ndarray:
-        """Predict with dropout as proposed by Gal and Ghahramani (2015).
+            self,
+            subset: Union[None, pd.core.series.Series] = None,
+            n_iterations: int = 50,
+            params: dict = None,
+            dropout_rate: float = None,
+            percent_confidence: float = 0.95
+    ) -> pd.DataFrame:
+        """Predict with MC Dropout as proposed by Gal and Ghahramani (2015). Produces prediction intervals for future observations.
+        This procedure must be used with a NN model that uses dropout.
 
         See https://arxiv.org/abs/1506.02142.
 
@@ -577,24 +585,264 @@ class TFModeler(Modeler):
             subset: A Boolean Series that is True for observations for which
                 predictions will be produced. If None, default to all
                 observations.
-            n_iterations: Number of random dropout specifications to obtain
+            n_iterations: Number of random dropout iterations to obtain
                 predictions from.
+            params: A dictionary containing custom model parameters.
+            dropout_rate: A dropout rate to be used, if different than default or in params.
+            percent_confidence: The percent confidence of the two-sided intervals
+                defined by the computed prediction intervals.
 
         Returns:
-            A numpy array of predictions by observation, lead length, and
-            iteration.
+            A pandas DataFrame of prediction intervals for each observation, for each future time point.
         """
+
         subset = default_subset_to_all(subset, self.data)
-        model_inputs = split_categorical_features(
-            self.data[subset], self.categorical_features, self.numeric_features
-        ) + [1.0]
-        predict_with_dropout = K.function(
-            self.model.inputs + [K.learning_phase()], self.model.outputs
-        )
-        predictions = np.dstack(
-            [predict_with_dropout(model_inputs)[0] for i in range(n_iterations)]
-        )
-        return predictions
+
+        alpha = (1 - percent_confidence) / 2
+
+        conf = str(int(percent_confidence * 100))
+
+        def one_dropout_prediction(self, params, DROPOUT_SHARE, subset) -> pd.core.frame.DataFrame:
+            """Compute forecasts for one MC Dropout iteration."""
+
+            dropout_model = TFSurvivalModeler(data=self.data)
+            dropout_model.n_intervals = self.n_intervals
+
+            dropout_model.config["SEED"] = randrange(1, 9999, 1)
+
+            if params is None:
+                params = dropout_model.config
+
+            if DROPOUT_SHARE is not None:
+                params["DROPOUT_SHARE"] = DROPOUT_SHARE
+
+            if "DROPOUT_SHARE" not in params.keys():
+                warn("Model must have a dropout rate specified. Specify one using dropout_rate argument",
+                     UserWarning)
+                return None
+
+            dropout_model.build_model(params=params)
+
+            forecasts = dropout_model.forecast()
+
+            forecasts.columns = list(map(str, np.arange(1, len(forecasts.columns) + 1, 1)))
+
+            ids_in_subset = dropout_model.data[subset]["ID"].unique()
+
+            keep_rows = np.repeat(True, len(forecasts))
+
+            for rw in range(len(forecasts)):
+                if forecasts.index[rw] not in ids_in_subset:
+                    keep_rows[rw] = False
+
+            forecasts = forecasts[keep_rows]
+
+            return (forecasts)
+
+        dropout_forecasts = list()
+
+        # do MC dropout for n_iterations
+
+        for i in range(n_iterations):
+            one_forecast = one_dropout_prediction(self, params=params,
+                                                  DROPOUT_SHARE=dropout_rate,
+                                                  subset = subset)
+            dropout_forecasts.append(one_forecast)
+
+        ### get mean forecasts
+
+        sum_forecasts = dropout_forecasts[0]
+
+        for i in range(1, len(dropout_forecasts)):
+            sum_forecasts = sum_forecasts + dropout_forecasts[i]
+
+        mean_forecasts = sum_forecasts / len(dropout_forecasts)
+
+        def get_forecast_variance() -> pd.DataFrame:
+            """ Get variance across forecasts"""
+
+            def get_forecast_variance_for_time(time=0):
+
+                def get_variance_for_index_time(index, time=0):
+                    diff_from_mean_df = dropout_forecasts[index].iloc[:, [time]] - mean_forecasts.iloc[:, [time]]
+                    squared_error_df = diff_from_mean_df ** 2
+                    return squared_error_df
+
+                squared_error_sum_df = get_variance_for_index_time(0, time=time)
+
+                for i in range(1, len(dropout_forecasts)):
+                    squared_error_sum_df = squared_error_sum_df + get_variance_for_index_time(i, time=time)
+
+                variance_df = squared_error_sum_df / len(dropout_forecasts)
+
+                return variance_df
+
+            variance_all_times_df = get_forecast_variance_for_time(time=0)
+
+            for t in range(1, len(mean_forecasts.columns)):
+                variance_all_times_df = pd.concat([variance_all_times_df, get_forecast_variance_for_time(time=t)],
+                                                  axis=1)
+
+            return variance_all_times_df
+
+        def aggregate_observation_dropout_forecasts(dropout_forecasts, rw=0) -> pd.DataFrame:
+            """Get collection of forecasts from MC Dropout for one observation"""
+
+            survival_probability = pd.Series(dtype="float32")
+            period = np.empty(shape=0, dtype="int")
+            iteration = np.empty(shape=0, dtype="int")
+
+            # iter = 0
+            for iter in range(len(dropout_forecasts)):
+                observation_forecasts = dropout_forecasts[iter].iloc[rw]
+                id = dropout_forecasts[iter].index[rw]
+                survival_probability = survival_probability.append(observation_forecasts)
+
+                keys = observation_forecasts.keys()
+                period = np.append(period, observation_forecasts.keys().to_numpy(dtype="int"))
+                iteration = np.append(iteration, np.repeat(iter, len(keys)))
+
+            id = np.repeat(dropout_forecasts[0].index[rw], len(iteration))
+            forecast_df = pd.DataFrame({"ID": id, "iter": iteration, "period": period,
+                                        "survival_prob": survival_probability})
+
+            return forecast_df
+
+        def get_forecast_prediction_intervals(alpha=0.025) -> pd.DataFrame:
+            """Get prediction intervals for all observations for all time points"""
+
+            prediction_intervals_df = pd.DataFrame({
+                "ID": np.empty(shape=0, dtype=type(dropout_forecasts[0].index[0])),
+                "Period": np.empty(shape=0, dtype="str"),
+                "Lower" + conf + "PercentBound": np.empty(shape=0, dtype="float"),
+                "Median": np.empty(shape=0, dtype="float"),
+                "Mean": np.empty(shape=0, dtype="float"),
+                "Upper" + conf + "PercentBound": np.empty(shape=0, dtype="float")
+            })
+
+            # p = 1
+            for rw in range(len(mean_forecasts.index)):
+
+                forecast_df = aggregate_observation_dropout_forecasts(dropout_forecasts, rw)
+
+                for p in range(len(forecast_df['period'].unique())):
+                    period = p + 1
+                    # mean_forecasts.iloc[rw, forecast_df['period'].unique() == p
+                    mean_forecast = mean_forecasts.iloc[rw, p]
+                    period_forecasts = forecast_df[forecast_df['period'] == period]['survival_prob']
+                    forecast_quantiles = period_forecasts.quantile([alpha, 0.5, 1 - alpha])
+                    df = pd.DataFrame(
+                        {"ID": forecast_df["ID"][0],
+                         "Period": [period],
+                         # "Period": [forecast_df['period'].unique()[p]],
+                         "Lower" + conf + "PercentBound": forecast_quantiles.iloc[0],
+                         "Median": forecast_quantiles.iloc[1],
+                         "Mean": mean_forecast,
+                         "Upper" + conf + "PercentBound": forecast_quantiles.iloc[2]
+                         }
+                    )
+                    prediction_intervals_df = prediction_intervals_df.append(df)
+
+            return prediction_intervals_df
+
+        prediction_intervals_df = get_forecast_prediction_intervals(alpha)
+
+
+        def get_aggregation_prediction_intervals() -> pd.DataFrame:
+            """Get prediction intervals for the expected counts for each time period."""
+
+            aggregation_pi_df = pd.DataFrame({
+                "ID": np.empty(shape=0, dtype=type(dropout_forecasts[0].index[0])),
+                "Period": np.empty(shape=0, dtype="str"),
+                "Lower" + conf + "PercentBound": np.empty(shape=0, dtype="float"),
+                "Median": np.empty(shape=0, dtype="float"),
+                "Mean": np.empty(shape=0, dtype="float"),
+                "Upper" + conf + "PercentBound": np.empty(shape=0, dtype="float")
+            })
+
+            p = 0
+            for p in range(len(dropout_forecasts[0].columns.unique())):
+                period = p + 1
+                dropout_expected_counts = []
+
+                for d in dropout_forecasts:
+                    dropout_expected_counts.append(d[d.columns[p]].sum())
+
+                forecast_sum_series = pd.Series(dropout_expected_counts)
+
+                forecast_sum_quantiles = forecast_sum_series.quantile([alpha, 0.5, 1 - alpha])
+
+                df = pd.DataFrame(
+                    {"ID": "Sum",
+                     "Period": [period],
+                     "Lower" + conf + "PercentBound": forecast_sum_quantiles.iloc[0],
+                     "Median": forecast_sum_quantiles.iloc[1],
+                     "Mean": forecast_sum_series.mean(),
+                     "Upper" + conf + "PercentBound": forecast_sum_quantiles.iloc[2]
+                     }
+                )
+
+                aggregation_pi_df = aggregation_pi_df.append(df)
+
+            return aggregation_pi_df
+
+        aggregation_prediction_intervals_df = get_aggregation_prediction_intervals()
+
+
+
+        prediction_intervals_df = aggregation_prediction_intervals_df.append(prediction_intervals_df)
+
+        prediction_intervals_df.index = np.arange(0, len(prediction_intervals_df.index))
+
+        return prediction_intervals_df
+
+
+
+    def plot_forecast_prediction_intervals(self, pi_df: pd.DataFrame, id: str = "Sum") -> None:
+        """Plot forecasts for future time periods with prediction intervals calculated by MC Dropout using compute_model_uncertainty()
+
+        Args:
+            pi_df: A DataFrame of prediction intervals for forecasts, generated by compute_model_uncertainty()
+            id: The ID of the observation for which to have forecasts plotted, or "Sum" for aggregated counts.
+        """
+
+        ID = str(id)
+        forecast_df = pi_df[pi_df['ID'] == ID]
+
+
+        if len(forecast_df) == 0:
+            try:
+                ID = int(ID)
+                forecast_df = pi_df[pi_df['ID'] == int(ID)]
+            except ValueError:
+                ID = ID
+                warn("Invalid ID.", UserWarning)
+                return None
+
+        forecast_df = forecast_df.assign(Period=forecast_df['Period'].tolist())
+
+        forecast_df = forecast_df.rename({forecast_df.columns[2]: "Lower", forecast_df.columns[5]: "Upper"}, axis = "columns")
+
+        plt.clf()
+
+        plt.scatter('Period', 'Mean', data=forecast_df, color="black")
+
+        plt.fill_between(x='Period', y1='Lower', y2='Upper',
+                         data=forecast_df, color='gray', alpha=0.3,
+                         linewidth=0)
+
+        plt.xlabel("Period")
+
+        if ID == "Sum":
+            plt.ylabel("Expected counts")
+        else:
+            plt.ylabel("Survival probability")
+
+        plt.title("Forecasts with Prediction Intervals")
+
+        plt.show()
+
+        return None
 
 
 class TFSurvivalModeler(TFModeler, SurvivalModeler):
