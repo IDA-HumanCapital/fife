@@ -625,6 +625,11 @@ class TFModeler(Modeler):
         subset = default_subset_to_all(subset, self.data)
         alpha = (1 - percent_confidence) / 2
         conf = str(int(percent_confidence * 100))
+
+        individual_identifier = self.config["INDIVIDUAL_IDENTIFIER"]
+        ids_in_subset = self.data[subset][individual_identifier].unique()
+
+
         if params is None:
             params = self.config
         if dropout_rate is not None:
@@ -643,7 +648,6 @@ class TFModeler(Modeler):
             dropout_model.build_model(params=params)
             forecasts = dropout_model.forecast()
             forecasts.columns = list(map(str, np.arange(1, len(forecasts.columns) + 1, 1)))
-            ids_in_subset = dropout_model.data[subset]["ID"].unique()
             keep_rows = np.repeat(True, len(forecasts))
             for rw in range(len(forecasts)):
                 if forecasts.index[rw] not in ids_in_subset:
@@ -660,6 +664,8 @@ class TFModeler(Modeler):
                                                   params=params,
                                                   subset = subset)
             dropout_forecasts.append(one_forecast)
+
+        print("Calculating forecast uncertainty")
 
         ### get mean forecasts
         sum_forecasts = dropout_forecasts[0]
