@@ -542,7 +542,13 @@ class LGBModeler(Modeler):
         if params is None:
             params = self.config
 
-        self.langevin_noise = langevin_variance
+        self.langevin_noise = 0
+
+        self.build_model(params = params, parallelize=False, n_intervals = self.n_intervals)
+        original_forecasts = self.forecast()
+
+
+
 
         individual_identifier = self.config["INDIVIDUAL_IDENTIFIER"]
 
@@ -573,6 +579,16 @@ class LGBModeler(Modeler):
 
         self.config["fobj"] = bce_loss
 
+        self.build_model(params = params, parallelize=False, n_intervals = self.n_intervals)
+        forecasts_using_custom_loss = self.forecast()
+
+        forecast_difference = original_forecasts - forecasts_using_custom_loss
+
+
+
+        self.langevin_noise = langevin_variance
+
+
         # testing
 
         def one_sglb_prediction(self, params, subset) -> pd.core.frame.DataFrame:
@@ -585,9 +601,8 @@ class LGBModeler(Modeler):
 
             self.build_model(params=params, parallelize=False, n_intervals = self.n_intervals)
             forecasts = self.forecast()
-            forecasts.columns = list(map(str, np.arange(1, len(forecasts.columns) + 1, 1)))
 
-            # ids_in_subset = self.data[subset]["ID"].unique()
+            forecasts.columns = list(map(str, np.arange(1, len(forecasts.columns) + 1, 1)))
 
             keep_rows = np.repeat(True, len(forecasts))
             for rw in range(len(forecasts)):
@@ -611,6 +626,34 @@ class LGBModeler(Modeler):
             sum_forecasts = sum_forecasts + ensemble_forecasts[i]
 
         mean_forecasts = sum_forecasts / len(ensemble_forecasts)
+
+        original_forecasts.columns = mean_forecasts.columns
+
+
+        def adjust_forecasts(ensemble_forecasts):
+            '''Adjusts the forecasts based on difference between predictions using default loss function and custom loss function'''
+
+            forecast_difference = original_forecasts - mean_forecasts
+
+            for j in range(n_iterations):
+                forecasts = ensemble_forecasts[j]
+                forecasts_set_to_zero = forecasts <= 0
+                forecasts_set_to_one = forecasts >= 1
+
+                for i in range(len(forecasts.columns)):
+                    adjust = (1 - forecasts_set_to_zero.iloc[:,i].astype("int")) * (1 - forecasts_set_to_one.iloc[:,i].astype("int"))
+                    forecasts.iloc[:,i] = forecasts.iloc[:,i] + forecast_difference.iloc[:,i] * adjust
+                    forecasts.iloc[:,i][forecasts.iloc[:,i] > 1] = 1
+                    forecasts.iloc[:,i][forecasts.iloc[:,i] < 0] = 0
+
+                ensemble_forecasts[j] = forecasts
+
+            return ensemble_forecasts
+
+        ensemble_forecasts = adjust_forecasts(ensemble_forecasts)
+
+        mean_forecasts = original_forecasts
+
 
         def get_forecast_variance() -> pd.DataFrame:
             """ Get variance across forecasts"""
@@ -703,17 +746,18 @@ class LGBModeler(Modeler):
 
             for p in range(len(ensemble_forecasts[0].columns.unique())):
                 period = p + 1
-                dropout_expected_counts = []
+                expected_counts = []
                 for d in ensemble_forecasts:
-                    dropout_expected_counts.append(d[d.columns[p]].sum())
-                forecast_sum_series = pd.Series(dropout_expected_counts)
+                    expected_counts.append(d[d.columns[p]].sum())
+                forecast_sum_series = pd.Series(expected_counts)
+                forecast_sum_expected = np.sum(mean_forecasts.iloc[:,p])
                 forecast_sum_quantiles = forecast_sum_series.quantile([alpha, 0.5, 1 - alpha])
                 df = pd.DataFrame(
                     {"ID": "Sum",
                      "Period": [period],
                      "Lower" + conf + "PercentBound": forecast_sum_quantiles.iloc[0],
                      "Median": forecast_sum_quantiles.iloc[1],
-                     "Mean": forecast_sum_series.mean(),
+                     "Mean": forecast_sum_expected,
                      "Upper" + conf + "PercentBound": forecast_sum_quantiles.iloc[2]
                      }
                 )
@@ -723,6 +767,11 @@ class LGBModeler(Modeler):
         aggregation_prediction_intervals_df = get_aggregation_prediction_intervals()
         prediction_intervals_df = aggregation_prediction_intervals_df.append(prediction_intervals_df)
         prediction_intervals_df.index = np.arange(0, len(prediction_intervals_df.index))
+
+        self.langevin_noise = 0
+
+        self.config["fobj"] = None
+
 
         prediction_intervals_df
 

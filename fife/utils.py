@@ -111,8 +111,12 @@ def compute_aggregation_uncertainty(
         deltas_solved = np.array([])
 
         for mu in means:
+            upper_optim_range = 3
+            if mu > 10:
+                upper_optim_range = 0.35 ** ((np.log10(mu)) - 1)
+
             one_delta = minimize_scalar(minimize_delta_function_upper_bound, args=(mu, alpha),
-                 method="Bounded", bounds=(0, 3)).x
+                 method="Bounded", bounds=(0, upper_optim_range)).x
             deltas_solved = np.append(deltas_solved, one_delta)
 
         upper_bounds = (1 + deltas_solved) * means
@@ -133,8 +137,11 @@ def compute_aggregation_uncertainty(
         deltas_solved = np.array([])
 
         for mu in means:
+            lower_optim_range = 1
+            if mu > 10:
+                lower_optim_range = 0.32 ** ((np.log10(mu)) - 1)
             one_delta = minimize_scalar(minimize_delta_function_lower_bound, args=(mu, alpha),
-                 method="Bounded", bounds=(0, 1)).x
+                 method="Bounded", bounds=(0, lower_optim_range)).x
             deltas_solved = np.append(deltas_solved, one_delta)
 
         lower_bounds = (1 - deltas_solved) * means
@@ -541,3 +548,38 @@ class FIFEArgParser(argparse.ArgumentParser):
             default=128,
             help="The number of observations randomly sampled for SHAP value calculation and plotting.",
         )
+
+
+
+def sigmoid(x):
+    """Sigmoid function needed if defining custom loss function in LightGBM"""
+
+    def _positive_sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    def _negative_sigmoid(x):
+        exp = np.exp(x)
+        return exp / (exp + 1)
+
+    positive = x >= 0
+    negative = ~positive
+    result = np.empty_like(x)
+    result[positive] = _positive_sigmoid(x[positive])
+    result[negative] = _negative_sigmoid(x[negative])
+    return result
+
+def softplus(x):
+    """Softplus function needed if defining custom loss function in LightGBM"""
+
+    def _positive_softplus(x):
+        return x + np.log1p(np.exp(-x))
+
+    def _negative_softplus(x):
+        return np.log1p(np.exp(x))
+
+    positive = x >= 0
+    negative = ~positive
+    result = np.empty_like(x)
+    result[positive] = _positive_softplus(x[positive])
+    result[negative] = _negative_softplus(x[negative])
+    return result

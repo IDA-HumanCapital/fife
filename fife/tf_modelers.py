@@ -629,6 +629,9 @@ class TFModeler(Modeler):
         individual_identifier = self.config["INDIVIDUAL_IDENTIFIER"]
         ids_in_subset = self.data[subset][individual_identifier].unique()
 
+        self.build_model(params = params, n_intervals = self.n_intervals)
+        original_forecasts = self.forecast()
+
 
         if params is None:
             params = self.config
@@ -645,7 +648,7 @@ class TFModeler(Modeler):
             """Compute forecasts for one MC Dropout iteration."""
 
             dropout_model.config["SEED"] = randrange(1, 9999, 1)
-            dropout_model.build_model(params=params)
+            dropout_model.build_model(params=params, n_intervals = self.n_intervals)
             forecasts = dropout_model.forecast()
             forecasts.columns = list(map(str, np.arange(1, len(forecasts.columns) + 1, 1)))
             keep_rows = np.repeat(True, len(forecasts))
@@ -673,6 +676,37 @@ class TFModeler(Modeler):
             sum_forecasts = sum_forecasts + dropout_forecasts[i]
 
         mean_forecasts = sum_forecasts / len(dropout_forecasts)
+
+        original_forecasts.columns = mean_forecasts.columns
+
+        def adjust_forecasts(ensemble_forecasts):
+            '''Adjusts the forecasts based on difference between predictions using default loss function and custom loss function'''
+
+            forecast_difference = original_forecasts - mean_forecasts
+
+            for j in range(n_iterations):
+                forecasts = dropout_forecasts[j]
+                forecasts_set_to_zero = forecasts <= 0
+                forecasts_set_to_one = forecasts >= 1
+
+                for i in range(len(forecasts.columns)):
+                    adjust = (1 - forecasts_set_to_zero.iloc[:,i].astype("int")) * (1 - forecasts_set_to_one.iloc[:,i].astype("int"))
+                    forecasts.iloc[:,i] = forecasts.iloc[:,i] + forecast_difference.iloc[:,i] * adjust
+                    forecasts.iloc[:,i][forecasts.iloc[:,i] > 1] = 1
+                    forecasts.iloc[:,i][forecasts.iloc[:,i] < 0] = 0
+
+                dropout_forecasts[j] = forecasts
+
+            return dropout_forecasts
+
+        dropout_forecasts = adjust_forecasts(dropout_forecasts)
+
+        mean_forecasts = original_forecasts
+
+
+        mean_forecasts = original_forecasts
+
+
 
         def get_forecast_variance() -> pd.DataFrame:
             """ Get variance across forecasts"""

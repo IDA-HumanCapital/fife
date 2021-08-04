@@ -63,7 +63,7 @@ def make_person(i, N_PERIODS, k=0, exit_prob=0.5, exit_type_prob=None, dgp=1, be
         for tp in range(1,len(p)):
             survival_prob.append(survival_prob[tp-1] * (1 - p[tp]))
         time = 0
-        while date <= N_PERIODS:
+        while date < N_PERIODS:
             exit_prob = p[min(time, N_PERIODS - 1)]
             # print([i, date, x3, x1])
             df.append([i, date, x1, x2, x3] + Z)
@@ -91,7 +91,13 @@ def make_person(i, N_PERIODS, k=0, exit_prob=0.5, exit_type_prob=None, dgp=1, be
 
 
     df = pd.DataFrame(df, columns=cols)
+
     df["exit_type"] = exit_type
+
+    if beta_dict is not None:
+        df["exit_prob"] = p[0:len(df)]
+
+
     return df
 
 
@@ -118,13 +124,19 @@ def fabricate_data(
         np.random.seed(SEED)
     if covariates_affect_outcome:
         t = np.arange(1,N_PERIODS + 1)
-        beta_t = np.random.uniform(low = 0, high = 1.2)
+        # beta_t = np.random.uniform(low = 0, high = 1.2)
+        beta_t = 0.6
         beta_0 = np.log((2 ** beta_t) * ((8) ** (-beta_t)) * np.log(1 / (1 - exit_prob)))
-        beta_xa = np.random.normal(scale = 0.5)
-        beta_xb = np.random.normal(scale = 0.5)
-        beta_xc = np.random.normal(scale = 0.5)
-        beta_x2 = np.random.normal(loc = -0.2, scale = 0.7)
-        beta_x3 = np.random.normal(scale = 0.7)
+        # beta_xa = np.random.normal(scale = 0.5)
+        # beta_xb = np.random.normal(scale = 0.5)
+        # beta_xc = np.random.normal(scale = 0.5)
+        # beta_x2 = np.random.normal(loc = -0.2, scale = 0.7)
+        # beta_x3 = np.random.normal(scale = 0.7)
+        beta_xa = 0.5
+        beta_xb = -0.5
+        beta_xc = 0.7
+        beta_x2 = -0.7
+        beta_x3 = 0.2
         beta_dict = {
             "beta_0": beta_0,
             "beta_t": beta_t,
