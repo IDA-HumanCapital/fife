@@ -5,14 +5,14 @@ from typing import List, Union
 from warnings import warn
 
 import dask
-from fife.base_modelers_copy import (
+from fife.base_modelers import (
     default_subset_to_all,
     Modeler,
     SurvivalModeler,
     StateModeler,
     ExitModeler,
 )
-from fife.utils import sigmoid
+from fife.utils import sigmoid, softplus, logloss_init_score
 import lightgbm as lgb
 import numpy as np
 import optuna
@@ -293,6 +293,8 @@ class LGBModeler(Modeler):
             #
             # self.langevin_noise =
             fobj = self.config["fobj"]
+
+
         else:
             fobj = None
         if "feval" in self.config.keys():
@@ -340,6 +342,11 @@ class LGBModeler(Modeler):
                 # params[time_horizon]['lambda_l1'] = 0
                 # params[time_horizon]['lambda_l2'] = 1 / 2 * N
 
+                init_score = np.full_like(train_data.label, logloss_init_score(train_data.label), dtype=float)
+                init_score_val = np.full_like(validation_data.label, logloss_init_score(train_data.label), dtype=float)
+
+                train_data.init_score = init_score
+                validation_data.init_score = init_score_val
 
                 model = lgb.train(
                     params[time_horizon],
@@ -385,9 +392,9 @@ class LGBModeler(Modeler):
 
 
 
-                # print("Period: " + str(time_horizon))
-                # print("Learning Rate: " + str(learning_rate))
-                # print("N: " + str(N))
+
+                init_score = np.full_like(data.label, logloss_init_score(data.label), dtype=float)
+                data.init_score = init_score
 
                 model = lgb.train(
                     params[time_horizon],
@@ -407,8 +414,8 @@ class LGBModeler(Modeler):
         return model
 
     def predict(
-        self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True,
-            use_sigmoid = False
+            self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True,
+            use_sigmoid=False
     ) -> np.ndarray:
         """Use trained LightGBM models to predict the outcome for each observation and time horizon.
 
@@ -435,26 +442,17 @@ class LGBModeler(Modeler):
             ]
         ).T
 
+        init_scores = np.array([], dtype="float")
+
+        for time_horizon in range(len(predictions[0])):
+            labeled_data = self.label_data(time_horizon)
+            labeled_data = self.subset_for_training_horizon(labeled_data, time_horizon)
+            labels_one_horizon = labeled_data["_label"].to_numpy(dtype="int")
+
+            init_scores = np.append(init_scores, logloss_init_score(labels_one_horizon))
 
         if use_sigmoid:
-
-            # def _positive_sigmoid(x):
-            #     return 1 / (1 + np.exp(-x))
-            #
-            # def _negative_sigmoid(x):
-            #     exp = np.exp(x)
-            #     return exp / (exp + 1)
-            #
-            # def sigmoid(x):
-            #     positive = x >= 0
-            #     negative = ~positive
-            #     result = np.empty_like(x)
-            #     result[positive] = _positive_sigmoid(x[positive])
-            #     result[negative] = _negative_sigmoid(x[negative])
-            #     return result
-
-            predictions = sigmoid(predictions)
-
+            predictions = sigmoid(predictions + init_scores)
 
         if cumulative:
             predictions = np.cumprod(predictions, axis=1)
@@ -542,11 +540,16 @@ class LGBModeler(Modeler):
         if params is None:
             params = self.config
 
-        self.langevin_noise = 0
+        if "fobj" in self.config.keys():
+            self.config.pop("fobj")
+        if "feval" in self.config.keys():
+            self.config.pop("feval")
+
 
         self.build_model(params = params, parallelize=False, n_intervals = self.n_intervals)
         original_forecasts = self.forecast()
 
+        self.langevin_noise = 0
 
 
 
@@ -559,31 +562,28 @@ class LGBModeler(Modeler):
         # self.data[subset]["ID"].unique()
 
         def bce_loss(z, lgb_data):
-            t = lgb_data.get_label().astype(int)
+            t = lgb_data.get_label()
             y = sigmoid(z)
             langevin_noise = self.langevin_noise
-            # print("Langevin SD: " + str(langevin_noise))
             if langevin_noise != 0:
                 e = np.random.normal(0, langevin_noise)
             else:
                 e = 0
-            # print("Langevin Noise: " + str(e))
             grad = y - t + e
             hess = y * (1 - y)
             return grad, hess
 
         def bce_eval(z, data):
-            t = data.get_label().astype(int)
+            t = data.get_label()
             loss = t * softplus(-z) + (1 - t) * softplus(z)
             return 'bce', loss.mean(), False
 
+
         self.config["fobj"] = bce_loss
+        self.config["feval"] = bce_eval
 
         self.build_model(params = params, parallelize=False, n_intervals = self.n_intervals)
         forecasts_using_custom_loss = self.forecast()
-
-        forecast_difference = original_forecasts - forecasts_using_custom_loss
-
 
 
         self.langevin_noise = langevin_variance
@@ -628,17 +628,19 @@ class LGBModeler(Modeler):
         mean_forecasts = sum_forecasts / len(ensemble_forecasts)
 
         original_forecasts.columns = mean_forecasts.columns
+        forecasts_using_custom_loss.columns = mean_forecasts.columns
 
 
         def adjust_forecasts(ensemble_forecasts):
             '''Adjusts the forecasts based on difference between predictions using default loss function and custom loss function'''
 
-            forecast_difference = original_forecasts - mean_forecasts
+            # forecast_difference = original_forecasts - mean_forecasts
+            forecast_difference = original_forecasts - forecasts_using_custom_loss
 
             for j in range(n_iterations):
                 forecasts = ensemble_forecasts[j]
-                forecasts_set_to_zero = forecasts <= 0
-                forecasts_set_to_one = forecasts >= 1
+                forecasts_set_to_zero = forecasts <= 0.001
+                forecasts_set_to_one = forecasts >= 0.999
 
                 for i in range(len(forecasts.columns)):
                     adjust = (1 - forecasts_set_to_zero.iloc[:,i].astype("int")) * (1 - forecasts_set_to_one.iloc[:,i].astype("int"))
@@ -650,7 +652,7 @@ class LGBModeler(Modeler):
 
             return ensemble_forecasts
 
-        ensemble_forecasts = adjust_forecasts(ensemble_forecasts)
+        ensemble_forecasts = adjust_forecasts(ensemble_forecasts.copy())
 
         mean_forecasts = original_forecasts
 
@@ -718,6 +720,11 @@ class LGBModeler(Modeler):
                     mean_forecast = mean_forecasts.iloc[rw, p]
                     period_forecasts = forecast_df[forecast_df['period'] == period]['survival_prob']
                     forecast_quantiles = period_forecasts.quantile([alpha, 0.5, 1 - alpha])
+                    if forecast_quantiles.iloc[0] > mean_forecast:
+                        forecast_quantiles.iloc[0] = np.max([0, mean_forecast - (forecast_quantiles.iloc[0] - mean_forecast)])
+                    if forecast_quantiles.iloc[2] < mean_forecast:
+                        forecast_quantiles.iloc[2] = np.min([1, mean_forecast + (mean_forecast - forecast_quantiles.iloc[2])])
+
                     df = pd.DataFrame(
                         {"ID": forecast_df["ID"][0],
                          "Period": [period],
@@ -771,11 +778,14 @@ class LGBModeler(Modeler):
         self.langevin_noise = 0
 
         self.config["fobj"] = None
+        self.config["feval"] = None
 
 
         prediction_intervals_df
 
         return prediction_intervals_df
+
+
 
 
     def plot_forecast_prediction_intervals(self, pi_df: pd.DataFrame, ID: str = "Sum") -> None:

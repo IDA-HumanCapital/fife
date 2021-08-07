@@ -460,14 +460,23 @@ class SurvivalModeler(Modeler):
         metrics = metrics.dropna()
         return metrics
 
+
     def forecast(self) -> pd.core.frame.DataFrame:
         """Tabulate survival probabilities for most recent observations."""
         columns = [
             str(i + 1) + "-period Survival Probability" for i in range(self.n_intervals)
         ]
-        return pd.DataFrame(
+
+        use_sigmoid = False
+
+        if "fobj" in self.config.keys():
+            if self.config["fobj"] is not None:
+                use_sigmoid = True
+
+
+        preds = pd.DataFrame(
             self.predict(
-                subset=self.data[self.predict_col], cumulative=(not self.allow_gaps)
+                subset=self.data[self.predict_col], cumulative=(not self.allow_gaps), use_sigmoid = use_sigmoid
             ),
             columns=columns,
             index=(
@@ -476,6 +485,9 @@ class SurvivalModeler(Modeler):
                 ]
             ),
         )
+
+        return preds
+
 
     def tabulate_survival_by_quantile(
         self, n_quantiles: int, subset: Union[None, pd.core.series.Series] = None
