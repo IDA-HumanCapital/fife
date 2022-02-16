@@ -27,7 +27,7 @@ if '!errorlevel!' == '0' (
 		if '!errorlevel!' == '0' (
 			fife --TREE_MODELS False
 			if '!errorlevel!' == '0' (
-				pip freeze > requirements.txt
+				pip list --format=freeze > requirements.txt
 				color 0A
 				echo "Tests passed."
 			) else (
