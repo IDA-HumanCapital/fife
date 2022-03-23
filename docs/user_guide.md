@@ -4,23 +4,23 @@ Suppose you have a dataset that looks like this:
 
 | ID   | period | feature_1 | feature_2 | feature_3 | ...  |
 | ---- | ------ | --------- | --------- | --------- | ---- |
-| 0    | 2017   | 7.2       | A         | 2AX       | ...  |
-| 0    | 2018   | 6.4       | A         | 2AX       | ...  |
-| 0    | 2019   | 6.6       | A         | 1FX       | ...  |
-| 0    | 2020   | 7.1       | A         | 1FX       | ...  |
-| 1    | 2017   | 5.3       | B         | 1RM       | ...  |
-| 1    | 2018   | 5.4       | B         | 1RM       | ...  |
-| 2    | 2018   | 6.7       | A         | 1FX       | ...  |
-| 2    | 2019   | 6.9       | A         | 1RM       | ...  |
-| 2    | 2020   | 6.9       | A         | 1FX       | ...  |
-| 3    | 2018   | 4.3       | B         | 2AX       | ...  |
-| 3    | 2019   | 4.1       | B         | 2AX       | ...  |
-| 4    | 2020   | 7.4       | B         | 1RM       | ...  |
+| 0    | 2019   | 7.2       | A         | 2AX       | ...  |
+| 0    | 2020   | 6.4       | A         | 2AX       | ...  |
+| 0    | 2021   | 6.6       | A         | 1FX       | ...  |
+| 0    | 2022   | 7.1       | A         | 1FX       | ...  |
+| 1    | 2019   | 5.3       | B         | 1RM       | ...  |
+| 1    | 2020   | 5.4       | B         | 1RM       | ...  |
+| 2    | 2020   | 6.7       | A         | 1FX       | ...  |
+| 2    | 2021   | 6.9       | A         | 1RM       | ...  |
+| 2    | 2022   | 6.9       | A         | 1FX       | ...  |
+| 3    | 2020   | 4.3       | B         | 2AX       | ...  |
+| 3    | 2021   | 4.1       | B         | 2AX       | ...  |
+| 4    | 2022   | 7.4       | B         | 1RM       | ...  |
 | ...  | ...    | ...       | ...       | ...       | ...  |
 
-The entities with IDs 0, 2, and 4 are observed in the dataset in 2020.
+The entities with IDs 0, 2, and 4 are observed in the dataset in 2022.
 
-* What are each of their probabilities of being observed in 2021? 2022? 2023?
+* What are each of their probabilities of being observed in 2023? 2024? 2025?
 * Given that they will be observed, what will be the value of feature_1? feature_3?
 * Suppose entities can exit the dataset under a variety of circumstances. If entities 0, 2, or 4 exit in a given year, what will their circumstances be?
 * How reliable can we expect these forecasts to be?
@@ -75,13 +75,13 @@ FIFE is even simpler to use [from the command line](cli_link.html) (but currentl
 	* Change the current directory in Anaconda Prompt to the location where the `.whl` or `.tar.gz` file is saved.<br/>
 		Example: `cd C:\Users\insert-user-name\Downloads`
 	* Pip install the name of the `.whl` or `.tar.gz` file.<br/>
-		Example: `pip install fife-1.5.1-py3-none-any.whl`
+		Example: `pip install fife-1.5.2-py3-none-any.whl`
 * From GitHub (https://github.com/IDA-HumanCapital/fife):
 	*	Clone the FIFE repository
 	* Open Anaconda Prompt
 	* Change the current directory in Anaconda Prompt to the directory of the cloned FIFE repository
 	* Execute `python setup.py sdist bdist_wheel`
-	* Execute `pip install dist/fife-1.5.1-py3-none-any.whl`
+	* Execute `pip install dist/fife-1.5.2-py3-none-any.whl`
 
 ### Usage
 
@@ -350,7 +350,7 @@ We intend to develop functionality for:
 
 - Model stacking and/or blending
 - GPU training
-- Distributed computing with Apache Spark
+- Distributed computing with Apache Spark (Update: you can find a working package with partial functionality [here](https://github.com/IDA-HumanCapital/fife_for_spark)!)
 
 We invite requests at humancapital@ida.org and issues at https://github.com/IDA-HumanCapital/fife/issues.
 
@@ -360,7 +360,7 @@ If firewall, air gap, or other issues prevent you from installing FIFE, please c
 
 ### License
 
-Copyright (c) 2018 - 2021, Institute for Defense Analyses (IDA).
+Copyright (c) 2018 - 2022, Institute for Defense Analyses (IDA).
 All rights reserved.
 
 FIFE is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
@@ -370,7 +370,7 @@ FIFE is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY
 ### Citation
 Please cite FIFE as:
 
-Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2021. Version 1.x.x.
+Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2022. Version 1.x.x.
 
 BibTex:
 ```bib
@@ -379,8 +379,8 @@ BibTex:
   title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
   howpublished={https://github.com/IDA-HumanCapital/fife},
   note={Version 1.x.x},
-  year={2021}
+  year={2022}
 }
 ```
 
-This document was most recently updated 30 Jan 2021.
+This document was most recently updated 23 Mar 2022.

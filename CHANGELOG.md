@@ -1,4 +1,8 @@
-## 1.5.2-dev0 - 2021-03-31
+## 1.5.2 - 2022-03-23
+
+### Changed
+
+- Tensorflow now an optional dependency
 
 ### Fixed
 

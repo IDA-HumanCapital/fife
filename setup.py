@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="fife",
-    version="1.5.1",
+    version="1.5.2",
     description=(
         "Finite-Interval Forecasting Engine: Machine learning models "
         "for discrete-time survival analysis and multivariate time series "
@@ -30,7 +30,7 @@ setup(
         "License :: OSI Approved :: "
         "GNU Affero General Public License v3 or later (AGPLv3+)",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
     packages=["fife"],
