@@ -348,6 +348,7 @@ You can find our unit tests, powered by pytest, at https://github.com/IDA-HumanC
 
 We intend to develop functionality for:
 
+- Models that train on the full history of observations of an individual, such as the [transformer](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model))
 - Model stacking and/or blending
 - GPU training
 - Distributed computing with Apache Spark (Update: you can find a working package with partial functionality [here](https://github.com/IDA-HumanCapital/fife_for_spark)!)
