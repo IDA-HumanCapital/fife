@@ -116,7 +116,7 @@ def plot_binary_prediction_errors(
     errors: dict,
     width: float = 8,
     height: float = 1,
-    alpha: float = 2 ** -8,
+    alpha: float = 2**-8,
     color: str = "black",
     center_tick_color: str = "green",
     center_tick_height: float = 0.125,

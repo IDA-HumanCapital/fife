@@ -47,8 +47,7 @@ setup(
         "seaborn",
         "scikit-learn",
     ],
-    extras_require={"shap": ["shap"],
-                    "tensorflow": ["tensorflow"]},
+    extras_require={"shap": ["shap"], "tensorflow": ["tensorflow"]},
     entry_points={
         "console_scripts": [
             "fife=fife.__main__:main",
