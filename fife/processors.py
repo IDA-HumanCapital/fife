@@ -177,7 +177,7 @@ def process_categorical_feature(
     )
     col = col.map(cat_map).fillna(0)
     n_bits = 8
-    while col.max() >= 2 ** n_bits:
+    while col.max() >= 2**n_bits:
         n_bits *= 2
     col = col.astype("uint" + str(n_bits))
     return col

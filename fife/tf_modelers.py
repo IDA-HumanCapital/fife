@@ -42,7 +42,7 @@ def binary_encode_feature(col: pd.core.series.Series) -> pd.core.frame.DataFrame
     bits = int(np.log2(max(np.max(col), 1)) + 1)
     binary_columns = pd.DataFrame()
     for i in reversed(range(bits)):
-        digit_value = 2 ** i
+        digit_value = 2**i
         binary_columns[f"{col.name}_bit{i}"] = col >= digit_value
         col = col % digit_value
     return binary_columns
