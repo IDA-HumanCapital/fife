@@ -424,10 +424,7 @@ class SurvivalModeler(Modeler):
             includes concordance index over the restricted mean survival time.
         """
         if subset is None:
-            subset = self.data[self.test_col] & (
-                self.data[self.period_col]
-                == self.data[self.data[self.test_col]][self.period_col].min()
-            )
+            subset = self.data[self.predict_col]
         predictions = self.predict(subset=subset, cumulative=(not self.allow_gaps))
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
@@ -682,10 +679,7 @@ class StateModeler(Modeler):
             states, or, for numeric states, R-squared.
         """
         if subset is None:
-            subset = self.data[self.test_col] & (
-                self.data[self.period_col]
-                == self.data[self.data[self.test_col]][self.period_col].min()
-            )
+            subset = self.data[self.predict_col]
         predictions = self.predict(subset=subset, cumulative=False)
         metrics = []
         lead_lengths = np.arange(self.n_intervals) + 1
