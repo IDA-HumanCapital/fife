@@ -362,9 +362,9 @@ class PanelDataProcessor(DataProcessor):
         self.data["_event_observed"] = (
             self.data["_duration"] < self.data["_maximum_lead"]
         )
-        self.data["_predict_obs"] = (self.data["_period"] + test_intervals + 1) == self.data[
-            "_period"
-        ].max()
+        self.data["_predict_obs"] = (
+            self.data["_period"] + test_intervals + 1
+        ) == self.data["_period"].max()
 
     def check_panel_consistency(self) -> None:
         """Ensure observations have unique individual-period combinations."""
