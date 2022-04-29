@@ -1,3 +1,9 @@
+## 1.6.0 - 2022-04-29
+
+### Changed
+
+- Forecasts now default to first period of test set if a test set exists
+
 ## 1.5.2 - 2022-03-23
 
 ### Changed
