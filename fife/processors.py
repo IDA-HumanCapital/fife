@@ -363,7 +363,7 @@ class PanelDataProcessor(DataProcessor):
             self.data["_duration"] < self.data["_maximum_lead"]
         )
         self.data["_predict_obs"] = (
-            self.data["_period"] + test_intervals + 1
+            self.data["_period"] + max(test_intervals, 0)
         ) == self.data["_period"].max()
 
     def check_panel_consistency(self) -> None:
