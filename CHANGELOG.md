@@ -1,3 +1,9 @@
+## 1.6.1 - 2022-06-07
+
+### Fixed
+
+- Forecasts now default to last period if test set is empty
+
 ## 1.6.0 - 2022-04-29
 
 ### Changed
