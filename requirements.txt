@@ -60,7 +60,7 @@ lifelines==0.27.0
 lightgbm==3.3.2
 llvmlite==0.38.1
 locket==1.0.0
-Mako==1.2.0
+Mako==1.2.2
 Markdown==3.3.4
 MarkupSafe==2.1.1
 matplotlib==3.5.2
