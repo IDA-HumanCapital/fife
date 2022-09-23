@@ -85,7 +85,7 @@ platformdirs==2.5.2
 pluggy==1.0.0
 prettytable==3.3.0
 prompt-toolkit==3.0.29
-protobuf==3.19.1
+protobuf==3.19.5
 pure-eval==0.2.2
 py==1.11.0
 pyasn1==0.4.8
