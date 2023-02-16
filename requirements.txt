@@ -129,7 +129,7 @@ traitlets==5.2.2.post1
 typing_extensions==4.1.1
 urllib3==1.26.9
 wcwidth==0.2.5
-Werkzeug==2.0.3
+Werkzeug==2.2.3
 wheel==0.37.1
 win-inet-pton==1.1.0
 wincertstore==0.2
