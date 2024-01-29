@@ -1,11 +1,11 @@
 COPYRIGHT
-Copyright (c) 2018 - 2022, Institute for Defense Analyses (IDA)
+Copyright (c) 2018 - 2024, Institute for Defense Analyses (IDA)
 All rights reserved.
 
 
 SUGGESTED CITATION
 Institute for Defense Analyses. FIFE: Finite-Interval Forecasting Engine
-[software]. https://github.com/IDA-HumanCapital/fife, 2022. Version 1.x.x.
+[software]. https://github.com/IDA-HumanCapital/fife, 2024. Version 1.x.x.
 
 BibTex:
 ```
@@ -14,7 +14,7 @@ BibTex:
   title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
   howpublished={https://github.com/IDA-HumanCapital/fife},
   note={Version 1.x.x},
-  year={2022}
+  year={2024}
 }
 ```
 

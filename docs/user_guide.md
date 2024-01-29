@@ -361,7 +361,7 @@ If firewall, air gap, or other issues prevent you from installing FIFE, please c
 
 ### License
 
-Copyright (c) 2018 - 2022, Institute for Defense Analyses (IDA).
+Copyright (c) 2018 - 2024, Institute for Defense Analyses (IDA).
 All rights reserved.
 
 FIFE is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
@@ -371,7 +371,7 @@ FIFE is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY
 ### Citation
 Please cite FIFE as:
 
-Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2022. Version 1.x.x.
+Institute for Defense Analyses. **FIFE: Finite-Interval Forecasting Engine [software].** https://github.com/IDA-HumanCapital/fife, 2024. Version 1.x.x.
 
 BibTex:
 ```bib
@@ -380,8 +380,8 @@ BibTex:
   title={{FIFE}: {Finite-Interval Forecasting Engine [software]}},
   howpublished={https://github.com/IDA-HumanCapital/fife},
   note={Version 1.x.x},
-  year={2022}
+  year={2024}
 }
 ```
 
-This document was most recently updated 23 Mar 2022.
+This document was most recently updated 29 Jan 2024.
