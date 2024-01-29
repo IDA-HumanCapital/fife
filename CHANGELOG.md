@@ -1,3 +1,10 @@
+## 1.6.2 - 2024-01-29
+
+### Fixed
+
+- Swapped or removed deprecated LightGBM input parameters
+- The 'shap' package is now a required dependency
+
 ## 1.6.1 - 2022-06-07
 
 ### Fixed

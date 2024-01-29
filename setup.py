@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="fife",
-    version="1.6.1",
+    version="1.6.2",
     description=(
         "Finite-Interval Forecasting Engine: Machine learning models "
         "for discrete-time survival analysis and multivariate time series "
@@ -46,8 +46,9 @@ setup(
         "pandas",
         "seaborn",
         "scikit-learn",
+        "shap"
     ],
-    extras_require={"shap": ["shap"], "tensorflow": ["tensorflow"]},
+    extras_require={"tensorflow": ["tensorflow"]},
     entry_points={
         "console_scripts": [
             "fife=fife.__main__:main",
