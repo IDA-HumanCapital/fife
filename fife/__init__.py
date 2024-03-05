@@ -1,6 +1,6 @@
 """FIFE: Finite-Interval Forecasting Engine.
 
-Copyright (c) 2018 - 2022, Institute for Defense Analyses (IDA)
+Copyright (c) 2018 - 2024, Institute for Defense Analyses (IDA)
 
 Please cite using the suggested citation in the LICENSE file.
 

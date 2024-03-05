@@ -237,11 +237,10 @@ def test_gbtm_predict(setup_config, setup_dataframe):
             {"objective": "binary"},
             train_data,
             num_boost_round=setup_config["MAX_EPOCHS"],
-            early_stopping_rounds=setup_config["PATIENCE"],
+            callbacks=[lgb.early_stopping(setup_config["PATIENCE"])],
             valid_sets=[validation_data],
             valid_names=["validation_set"],
             categorical_feature=cat_features_list,
-            verbose_eval=True,
         )
         models_list.append(model)
     modeler = lgb_modelers.GradientBoostedTreesModeler(

@@ -562,9 +562,9 @@ class SurvivalModeler(Modeler):
         retention_rates = retention_rates.shift(lead_periods)
         retention_rates["Forecast Retention Rate"] = np.nan
         untrained_periods = lead_periods + self.config.get("TEST_PERIODS", 0)
-        retention_rates["Forecast Retention Rate"].iloc[
-            -untrained_periods:
-        ] = retention_rates["Fitted Retention Rate"].iloc[-untrained_periods:]
+        retention_rates["Forecast Retention Rate"].iloc[-untrained_periods:] = (
+            retention_rates["Fitted Retention Rate"].iloc[-untrained_periods:]
+        )
         retention_rates["Fitted Retention Rate"].iloc[-untrained_periods:] = np.nan
         retention_rates.loc[retention_rates.index.max() + period_length] = np.nan
         retention_rates.index.name = "Period"
