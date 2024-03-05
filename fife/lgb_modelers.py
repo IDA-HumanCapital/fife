@@ -87,9 +87,7 @@ class LGBModeler(Modeler):
             """Compute out-of-sample performance for a parameter set."""
             params = {}
             params["num_iterations"] = trial.suggest_int("num_iterations", 8, 128)
-            params["learning_rate"] = trial.suggest_uniform(
-                "learning_rate", 2**-5, 0.5
-            )
+            params["learning_rate"] = trial.suggest_uniform("learning_rate", 2**-5, 0.5)
             params["num_leaves"] = trial.suggest_int("num_leaves", 8, 256)
             params["max_depth"] = trial.suggest_int("max_depth", 4, 32)
             params["min_data_in_leaf"] = trial.suggest_int("min_data_in_leaf", 4, 512)
@@ -174,18 +172,22 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~validation_subset]["_label"],
-                weight=data[~validation_subset][self.weight_col]
-                if self.weight_col
-                else None,
+                weight=(
+                    data[~validation_subset][self.weight_col]
+                    if self.weight_col
+                    else None
+                ),
             )
             validation_data = train_data.create_valid(
                 data[validation_subset][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[validation_subset]["_label"],
-                weight=data[validation_subset][self.weight_col]
-                if self.weight_col
-                else None,
+                weight=(
+                    data[validation_subset][self.weight_col]
+                    if self.weight_col
+                    else None
+                ),
             )
             study = optuna.create_study(
                 pruner=optuna.pruners.MedianPruner(),
@@ -283,18 +285,22 @@ class LGBModeler(Modeler):
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[~data[self.validation_col]]["_label"],
-                weight=data[~data[self.validation_col]][self.weight_col]
-                if self.weight_col
-                else None,
+                weight=(
+                    data[~data[self.validation_col]][self.weight_col]
+                    if self.weight_col
+                    else None
+                ),
             )
             validation_data = train_data.create_valid(
                 data[data[self.validation_col]][
                     self.categorical_features + self.numeric_features
                 ],
                 label=data[data[self.validation_col]]["_label"],
-                weight=data[data[self.validation_col]][self.weight_col]
-                if self.weight_col
-                else None,
+                weight=(
+                    data[data[self.validation_col]][self.weight_col]
+                    if self.weight_col
+                    else None
+                ),
             )
             model = lgb.train(
                 params[time_horizon],
@@ -302,7 +308,7 @@ class LGBModeler(Modeler):
                 valid_sets=[validation_data],
                 valid_names=["validation_set"],
                 categorical_feature=self.categorical_features,
-                callbacks = [lgb.early_stopping(self.config.get("PATIENCE", 4))],
+                callbacks=[lgb.early_stopping(self.config.get("PATIENCE", 4))],
             )
         else:
             data = lgb.Dataset(

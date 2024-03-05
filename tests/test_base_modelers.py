@@ -18,12 +18,12 @@ def test_compute_metrics_for_binary_outcome(fabricate_forecasts):
     metrics["empty actual"] = base_modelers.compute_metrics_for_binary_outcome(
         fabricate_forecasts["empty actual"][0], fabricate_forecasts["empty actual"][1]
     )
-    metrics[
-        "AUROC=1, threshold_positive=1"
-    ] = base_modelers.compute_metrics_for_binary_outcome(
-        fabricate_forecasts["AUROC=1"][0],
-        fabricate_forecasts["AUROC=1"][1],
-        threshold_positive=1.0,
+    metrics["AUROC=1, threshold_positive=1"] = (
+        base_modelers.compute_metrics_for_binary_outcome(
+            fabricate_forecasts["AUROC=1"][0],
+            fabricate_forecasts["AUROC=1"][1],
+            threshold_positive=1.0,
+        )
     )
     if not metrics["AUROC=1"]["AUROC"] == 1.0:
         errors_list.append(f"Condition 1 failed for AUROC=1.")
@@ -57,13 +57,13 @@ def test_compute_metrics_for_categorical_outcome():
     predictions = np.array(
         [[0.1, 0.7, 0.2], [0.01, 0.6, 0.39], [0.01, 0.4, 0.59], [0.0, 0.6, 0.4]]
     )
-    metrics[
-        "one negative class"
-    ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
-    metrics[
-        "positive weights for correct only"
-    ] = base_modelers.compute_metrics_for_categorical_outcome(
-        actuals, predictions, weights=np.array([1, 0, 1, 1])
+    metrics["one negative class"] = (
+        base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
+    )
+    metrics["positive weights for correct only"] = (
+        base_modelers.compute_metrics_for_categorical_outcome(
+            actuals, predictions, weights=np.array([1, 0, 1, 1])
+        )
     )
     actuals = pd.DataFrame(
         [
@@ -73,9 +73,9 @@ def test_compute_metrics_for_categorical_outcome():
             [False, True, False],
         ]
     )
-    metrics[
-        "one positive class"
-    ] = base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
+    metrics["one positive class"] = (
+        base_modelers.compute_metrics_for_categorical_outcome(actuals, predictions)
+    )
     if not isinstance(metrics["one negative class"]["AUROC"], float):
         errors_list.append(
             f"AUROC not a float with one of three classes entirely negative."

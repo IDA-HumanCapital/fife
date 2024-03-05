@@ -94,9 +94,9 @@ def make_surv_array(t, f, breaks):
             if (
                 t[i] < breaks[-1]
             ):  # if failure time is greater than end of last time interval, no time interval will have failure marked
-                y_train[
-                    i, n_intervals + np.where(t[i] < breaks[1:])[0][0]
-                ] = 1  # mark failure at first bin where survival time < upper break-point
+                y_train[i, n_intervals + np.where(t[i] < breaks[1:])[0][0]] = (
+                    1  # mark failure at first bin where survival time < upper break-point
+                )
         else:  # if censored
             y_train[i, 0:n_intervals] = 1.0 * (
                 t[i] >= breaks_midpoint

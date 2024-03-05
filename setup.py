@@ -46,7 +46,7 @@ setup(
         "pandas",
         "seaborn",
         "scikit-learn",
-        "shap"
+        "shap",
     ],
     extras_require={"tensorflow": ["tensorflow"]},
     entry_points={

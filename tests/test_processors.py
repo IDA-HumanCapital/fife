@@ -134,7 +134,12 @@ def test_check_panel_consistency(setup_config, setup_dataframe):
     data_processor = processors.PanelDataProcessor(
         config=setup_config, data=setup_dataframe
     )
-    data_processor.data = data_processor.data.append(data_processor.data.iloc[[1], :])
+    data_processor.data = pd.concat(
+        [
+            data_processor.data,
+            data_processor.data.iloc[[1], :],
+        ],
+    )
     with pytest.raises(AssertionError):
         data_processor.check_panel_consistency()
 
