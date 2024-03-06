@@ -29,7 +29,7 @@ dask==2023.5.0
 decorator==5.1.1
 exceptiongroup==1.2.0
 executing==2.0.1
-fife==1.6.2.dev1
+fife==1.6.2
 fonttools==4.49.0
 formulaic==1.0.1
 frozenlist==1.4.0
