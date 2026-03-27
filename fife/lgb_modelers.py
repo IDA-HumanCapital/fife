@@ -307,7 +307,6 @@ class LGBModeler(Modeler):
                 train_data,
                 valid_sets=[validation_data],
                 valid_names=["validation_set"],
-                categorical_feature=self.categorical_features,
                 callbacks=[lgb.early_stopping(self.config.get("PATIENCE", 4))],
             )
         else:
@@ -319,7 +318,6 @@ class LGBModeler(Modeler):
             model = lgb.train(
                 params[time_horizon],
                 data,
-                categorical_feature=self.categorical_features,
             )
         return model
 
