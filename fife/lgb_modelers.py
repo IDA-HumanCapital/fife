@@ -338,10 +338,29 @@ class LGBModeler(Modeler):
             A numpy array of predictions by observation and lead
             length.
         """
+        if (
+            len(
+                list(self.data.select_dtypes("datetime").columns)
+                + [
+                    col
+                    for col in self.data.select_dtypes("category")
+                    if np.issubdtype(self.data[col].cat.categories.dtype, np.datetime64)
+                ]
+            )
+            > 0
+        ):
+            data = self.transform_features()
+        else:
+            data = self.data.copy(deep=True)
         subset = default_subset_to_all(subset, self.data)
-        predict_data = self.data[self.categorical_features + self.numeric_features][
-            subset
-        ]
+        print((self.categorical_features + self.numeric_features))
+        if not set(self.categorical_features + self.numeric_features).issubset(
+            set(data.columns)
+        ):
+            raise KeyError(
+                f"Columns {[i for i in (self.categorical_features + self.numeric_features) if i not in data.columns]} not found in data or are of an incompatible type"
+            )
+        predict_data = data[self.categorical_features + self.numeric_features][subset]
         predictions = np.array(
             [
                 lead_specific_model.predict(predict_data)
