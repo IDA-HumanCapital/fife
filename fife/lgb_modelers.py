@@ -322,7 +322,10 @@ class LGBModeler(Modeler):
         return model
 
     def predict(
-        self, subset: Union[None, pd.core.series.Series] = None, cumulative: bool = True
+        self,
+        subset: Union[None, pd.core.series.Series] = None,
+        custom_data: Union[None, pd.core.frame.DataFrame] = None,
+        cumulative: bool = True
     ) -> np.ndarray:
         """Use trained LightGBM models to predict the outcome for each observation and time horizon.
 
@@ -330,6 +333,9 @@ class LGBModeler(Modeler):
             subset: A Boolean Series that is True for observations for which
                 predictions will be produced. If None, default to all
                 observations.
+            custom_data: A DataFrame in the same format as the input data for
+                which predictions will be produced. If None, default to the
+                assigned input data.
             cumulative: If True, produce cumulative survival probabilies.
                 If False, produce marginal survival probabilities (i.e., one
                 minus the hazard rate).
@@ -338,28 +344,18 @@ class LGBModeler(Modeler):
             A numpy array of predictions by observation and lead
             length.
         """
-        if (
-            len(
-                list(self.data.select_dtypes("datetime").columns)
-                + [
-                    col
-                    for col in self.data.select_dtypes("category")
-                    if np.issubdtype(self.data[col].cat.categories.dtype, np.datetime64)
-                ]
-            )
-            > 0
-        ):
-            data = self.transform_features()
+        if custom_data is not None:
+            data = self.transform_features(custom_data)
+            if not set(self.categorical_features + self.numeric_features).issubset(
+                    set(data.columns)
+                ):
+                    raise KeyError(
+                        f"Columns {[i for i in (self.categorical_features + self.numeric_features) if i not in data.columns]} not found in data or are of an incompatible type"
+                    )
         else:
             data = self.data.copy(deep=True)
-        subset = default_subset_to_all(subset, self.data)
-        print((self.categorical_features + self.numeric_features))
-        if not set(self.categorical_features + self.numeric_features).issubset(
-            set(data.columns)
-        ):
-            raise KeyError(
-                f"Columns {[i for i in (self.categorical_features + self.numeric_features) if i not in data.columns]} not found in data or are of an incompatible type"
-            )
+        subset = default_subset_to_all(subset, data)
+
         predict_data = data[self.categorical_features + self.numeric_features][subset]
         predictions = np.array(
             [
@@ -371,9 +367,20 @@ class LGBModeler(Modeler):
             predictions = np.cumprod(predictions, axis=1)
         return predictions
 
-    def transform_features(self) -> pd.DataFrame:
-        """Transform features to suit model training."""
-        data = self.data.copy(deep=True)
+    def transform_features(self,
+                           custom_data: Union[None, pd.core.frame.DataFrame] = None
+                           ) -> pd.DataFrame:
+        """Transform features to suit model training.
+
+        Args:
+            custom_data: A DataFrame in the same format as the input data for
+                which predictions will be produced. If None, default to the
+                assigned input data.
+        """
+        if custom_data is not None:
+            data = custom_data.copy(deep=True)
+        else:
+            data = self.data.copy(deep=True)
         if self.config.get("DATETIME_AS_DATE", True):
             date_cols = list(data.select_dtypes("datetime").columns) + [
                 col
